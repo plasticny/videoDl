@@ -1,0 +1,10 @@
+/cookie/*
+!/cookie/readme.txt
+
+/file
+
+/src/__pycache__
+/src/nb.ipynb
+
+/ffmpeg.exe
+/yt-dlp.exe
