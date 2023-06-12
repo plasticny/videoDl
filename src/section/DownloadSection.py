@@ -18,20 +18,21 @@ class DownloadSection (Section) :
       
       # format
       '-f',
-          config.outputFormat,
+         config.outputFormat,
       
       # subtitle
       '--embed-subs',
-          # write auto subtitle
-          config.doWriteAutoSubCommand(),
-          # subtitle lang
-          config.subLang,
+      # write auto subtitle
+      config.doWriteAutoSubCommand(),
+      # subtitle lang
+      '--sub-langs',
+        config.subLang,
       
       # output directory
       '-P',
-          config.outputDir,
+         config.outputDir,
       
       # fixed param
       '--compat-options',
-          'no-live-chat'
+         'no-live-chat'
     ], printCommand=True)

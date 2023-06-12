@@ -3,7 +3,7 @@
 
 /file
 
-/src/__pycache__
+*/__pycache__
 /src/nb.ipynb
 
 /ffmpeg.exe
