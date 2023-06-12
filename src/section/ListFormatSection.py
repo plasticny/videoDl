@@ -11,6 +11,10 @@ class ListFormatSection (Section):
     return super().run(self.__listFormat)
   
   def __listFormat (self):
+    doList = input('List available format?(N) ').upper()
+    if doList=='N' or doList=='':
+      return
+    
     config = self.config
     runCommand(paramCommands=[
         # login

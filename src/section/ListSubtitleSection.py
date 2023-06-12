@@ -11,6 +11,10 @@ class ListSubtitleSection (Section):
     return super().run(self.__listSubTitle)
   
   def __listSubTitle (self):
+    doList = input('List available subtitle?(N) ').upper()
+    if doList=='N' or doList=='':
+      return
+    
     config = self.config
     runCommand(paramCommands=[
         # login

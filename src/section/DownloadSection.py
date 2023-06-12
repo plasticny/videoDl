@@ -13,6 +13,10 @@ class DownloadSection (Section) :
   def __download (self):
     config = self.config
     runCommand(paramCommands=[
+      # output directory
+      '-P',
+        config.outputDir,
+      
       # url
       config.url,
       
@@ -28,11 +32,6 @@ class DownloadSection (Section) :
       '--sub-langs',
         config.subLang,
       
-      # output directory
-      '-P',
-         config.outputDir,
-      
       # fixed param
-      '--compat-options',
-         'no-live-chat'
+      '-no-live-chat'
     ], printCommand=True)
