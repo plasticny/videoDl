@@ -1,11 +1,12 @@
 from section.Section import Section
 import tkinter.filedialog as tkFileDialog
 from dlConfig import dlConfig
+import subprocess
 
 class SetUpDownloadSection(Section):
-  def __init__(self, title):
+  def __init__(self, title, config:dlConfig):
     super().__init__(title)
-    self.config = dlConfig()
+    self.config = config
     
   def run(self) -> dlConfig:
     return super().run(self.__main)
@@ -25,6 +26,15 @@ class SetUpDownloadSection(Section):
     print('## Output directory')
     self.__askOutputDir()
     print('')
+    
+    # output name
+    # print('## Output file name')
+    # self.__askOutputName()
+    # print('')
+    
+    # convert to h.264
+    # print('## H.264')
+    # self.__askH264()
     
     return self.config
     
@@ -51,3 +61,15 @@ class SetUpDownloadSection(Section):
     print(f"Output directory {outputDir}")
     
     self.config.outputDir = outputDir
+
+  def __askOutputName (self):
+    outputName = input('Enter the output file name: (auto) ')
+    if outputName == '':
+      outputName = None
+    
+    self.config.outputName = outputName
+    
+  # ask convert the output to h.264 or not
+  def __askH264 (self):
+    answer = input('Convert the video to H.264 format? (N) ').upper()
+    self.config.h264 = not(answer == 'N' or answer == '')

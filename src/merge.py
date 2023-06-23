@@ -40,7 +40,11 @@ while True:
 
     # perform merging
     print("Merging...")
-    cmd_command = f"ffmpeg -i {video} -i {audio} -c:v copy -c:a aac {output}"
+    outputlib264 = input('output as libx264 format? (N)').upper()
+    if outputlib264 == 'N' or outputlib264 == '':
+        cmd_command = f"ffmpeg -i {video} -i {audio} -c:v copy -c:a aac {output}"
+    else:
+        cmd_command = f"ffmpeg -i {video} -i {audio} -c:v libx264 -c:a aac {output}"
     subprocess.call(cmd_command, shell=True)
     print("done", end="\n\n")
     

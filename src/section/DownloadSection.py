@@ -13,6 +13,9 @@ class DownloadSection (Section) :
   def __download (self):
     config = self.config
     runCommand(paramCommands=[
+      # output file name
+      config.outputNameCommand(),
+      
       # output directory
       '-P',
         config.outputDir,
