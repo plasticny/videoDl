@@ -2,5 +2,5 @@
 download ffmpeg.exe and yt-dlp.exe
 place them into the root folder
 
-ffmpeg.exe: https://ffmpeg.org/download.html <br/>
-yt-dlp.exe: https://github.com/yt-dlp/yt-dlp
+get ffmpeg.exe and yt-dlp.exe
+https://drive.google.com/drive/folders/12alE7avwLOvNJ9ZSZqL1m_18dYtoMgR6?usp=sharing
