@@ -17,9 +17,9 @@ class ListSubtitleSection (Section):
     
     config = self.config
     runCommand(paramCommands=[
-        # login
-        config.cookieFileCommand(),
-        # list subtitle
-        '--list-subs',
-            config.url
+      # login
+      config.cookieFileCommand(),
+      # list subtitle
+      '--list-subs',
+        config.url
     ])

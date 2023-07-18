@@ -35,6 +35,9 @@ class DownloadSection (Section) :
       '--sub-langs',
         config.subLang,
       
-      # fixed param
-      '-no-live-chat'
+      # not download live chat
+      '-no-live-chat',
+      
+      # login
+      config.cookieFileCommand()
     ], printCommand=True)
