@@ -28,7 +28,10 @@ def run ():
         ListFormatSection(title='List Format', config=config).run()
         
         # ask download configs
-        setupConfig = SetUpDownloadSection(title='Set up download', config=config).run()
+        setupConfig = SetUpDownloadSection(
+            title='Set up download', config=config,
+            outputName=False, h264=False
+        ).run()
         config.overwriteConfigBy(setupConfig)
                 
         # config.autoSetFileName()

@@ -1,5 +1,7 @@
 import subprocess
 import tkinter.filedialog as tkFileDialog
+
+from service.merger import merge
 from os import rename
 
 def getInputFile(title, filetypes):
@@ -42,10 +44,10 @@ while True:
     print("Merging...")
     outputlib264 = input('output as libx264 format? (N)').upper()
     if outputlib264 == 'N' or outputlib264 == '':
-        cmd_command = f"ffmpeg -i {video} -i {audio} -c:v copy -c:a aac {output}"
+        merge(video=video, audio=audio, outputDir=output)
     else:
         cmd_command = f"ffmpeg -i {video} -i {audio} -c:v libx264 -c:a aac {output}"
-    subprocess.call(cmd_command, shell=True)
+    # subprocess.call(cmd_command, shell=True)
     print("done", end="\n\n")
     
     contin = input('continue?(N) ').upper()

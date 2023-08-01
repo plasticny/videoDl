@@ -1,49 +1,25 @@
 from __future__ import annotations
 import subprocess
+from service.YtFetcher import getYtSongTitle
 
 class dlConfig:
   def __init__(self) -> None:
     
-    self.url = None
+    self.url : str = None
     self.cookieFile = None
-    self.subLang = None
-    self.doWriteAutoSub = None
-    self.outputFormat = None
+    self.subLang : str = None
+    self.doWriteAutoSub : bool = None
+    self.outputFormat : str = None
     self.outputDir = None
-    self.outputName = None
-    self.outputExt = None
-    self.h264 = None
+    self.outputName : str = None
+    self.outputExt : str = None
+    self.h264 : bool = None
   
   def cookieFileCommand (self) -> str:
     return f'--cookies {self.cookieFile}' if self.cookieFile != None else ''
   
   def doWriteAutoSubCommand (self) -> str:
     return '--write-auto-subs' if self.doWriteAutoSub else ''
-  
-  # ######### #
-  # File Name #
-  
-  def outputNameCommand (self) -> str:
-    if self.outputName == None:
-      return ''
-    return f'-o {self.outputName}.%(ext)s'
-  
-  def autoSetFileName (self) -> None:
-    name = subprocess.getoutput(f'yt-dlp --print filename {self.url}')
-    name = name.replace(' ', '_').replace('&','_')
-    
-    self.outputExt = name[-3:]
-    
-    name = name[:-4]
-    self.outputName = name
-  
-  def getFileName (self) -> str:
-    if self.outputName == None:
-      return subprocess.getoutput(f'yt-dlp --print filename {self.url}')
-    return self.outputName
-  
-  # File Name #
-  # ######### #
   
   # giving another dlConfig c'
   # for every attribute of other is not None
@@ -60,4 +36,31 @@ class dlConfig:
     for (attr, value) in self.__dict__.items():
       if value == None:
         setattr(self, attr, getattr(other, attr))
+  
+  # ###### #
+  # getter #
+  
+  def outputNameCommand (self) -> str:
+    if self.outputName == None:
+      return ''
+    return f'-o {self.outputName}.%(ext)s'
+  
+  def getFileName (self) -> str:
+    if self.outputName == None:
+      self.autoSetFileName()
+    return self.outputName
+
+  def getSubLang (self) -> str:
+    if self.subLang == None:
+      return ''
+    return self.subLang
+
+
+  # ###### #
+  # setter #
+
+  def autoSetFileName (self) -> None:
+    name = f"{getYtSongTitle(self.url)}[{self.url.split('=')[-1]}]"
+    name = name.replace(' ', '_').replace('&','_')
+    self.outputName = name
   

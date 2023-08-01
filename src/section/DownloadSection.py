@@ -33,7 +33,7 @@ class DownloadSection (Section) :
       config.doWriteAutoSubCommand(),
       # subtitle lang
       '--sub-langs',
-        config.subLang,
+        config.getSubLang(),
       
       # not download live chat
       '-no-live-chat',

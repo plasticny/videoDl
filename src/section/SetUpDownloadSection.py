@@ -1,40 +1,53 @@
 from section.Section import Section
 import tkinter.filedialog as tkFileDialog
 from dlConfig import dlConfig
-import subprocess
 
 class SetUpDownloadSection(Section):
-  def __init__(self, title, config:dlConfig):
+  def __init__(
+      self, title, config:dlConfig, 
+      subtitle=True, format=True, outputDir=True, outputName=True, h264=True
+    ):
     super().__init__(title)
     self.config = config
+    
+    self.subtitle = subtitle
+    self.format = format
+    self.outputDir = outputDir
+    self.outputName = outputName
+    self.h264 = h264
     
   def run(self) -> dlConfig:
     return super().run(self.__main)
   
   def __main(self):    
     # ask about subtitle
-    print('## Subtitle')
-    self.__askSubTitle()
-    print('')
+    if self.subtitle:
+      print('## Subtitle')
+      self.__askSubTitle()
+      print('')
     
     # format
-    print('## Format')
-    self.__askFormat()
-    print('')
+    if self.format:
+      print('## Format')
+      self.__askFormat()
+      print('')
 
     # output directory
-    print('## Output directory')
-    self.__askOutputDir()
-    print('')
+    if self.outputDir:
+      print('## Output directory')
+      self.__askOutputDir()
+      print('')
     
     # output name
-    # print('## Output file name')
-    # self.__askOutputName()
-    # print('')
+    if self.outputName:
+      print('## Output file name')
+      self.__askOutputName()
+      print('')
     
     # convert to h.264
-    # print('## H.264')
-    # self.__askH264()
+    if self.h264:
+      print('## H.264')
+      self.__askH264()
     
     return self.config
     
