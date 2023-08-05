@@ -3,6 +3,7 @@ from dlConfig import dlConfig
 from service.merger import merge
 from service.YtFetcher import getYtSongTitle
 from os import remove, rename
+from uuid import uuid4
 
 from section.UrlSection import UrlSection
 from section.DownloadSection import DownloadSection
@@ -24,7 +25,7 @@ def run ():
     ).run()
     config.overwriteConfigBy(setupConfig)
 
-    config.autoSetFileName()
+    config.outputName = uuid4()
 
     # download video (no audio)
     config.outputFormat = '"bv*[ext=mp4]"'
@@ -35,13 +36,13 @@ def run ():
     DownloadSection(title="Downloading", config=config).run()
 
     # merge
-    videoFilePath = f'{config.outputDir}/{config.getFileName()}.mp4'
-    audioFilePath = f'{config.outputDir}/{config.getFileName()}.m4a'
-    outputName = getYtSongTitle(config.url).replace(' ', '_').replace('&','_')
+    videoFilePath = f'{config.outputDir}/{config.outputName}.mp4'
+    audioFilePath = f'{config.outputDir}/{config.outputName}.m4a'
+    mergeName = f'{config.outputDir}/{config.outputName}_merge.mp4'
     merge(
       video = videoFilePath,
       audio = audioFilePath,
-      outputDir = f'{config.outputDir}/{outputName}.mp4'
+      outputDir = mergeName
     )
 
     # remove video and audio file
@@ -49,4 +50,4 @@ def run ():
     remove(audioFilePath)
 
     # rename the output file
-    rename(f'{config.outputDir}/{outputName}.mp4', f'{config.outputDir}/{getYtSongTitle(config.url)}.mp4')
+    rename(mergeName, f'{config.outputDir}/{getYtSongTitle(config.url)}.mp4')
