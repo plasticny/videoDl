@@ -10,7 +10,7 @@ from section.DownloadSection import DownloadSection
 from section.SetUpDownloadSection import SetUpDownloadSection
 
 def run ():
-  print("----------------- 下載 -----------------", end='\n\n')
+  print("----------------- Downlaod -----------------", end='\n\n')
 
   while True:
     config = dlConfig()
@@ -27,7 +27,7 @@ def run ():
 
     config.outputName = uuid4()
 
-    # download video (no audio)
+    # download video
     config.outputFormat = '"bv*[ext=mp4]"'
     DownloadSection(title="Downloading", config=config).run()
 
@@ -36,13 +36,14 @@ def run ():
     DownloadSection(title="Downloading", config=config).run()
 
     # merge
-    videoFilePath = f'{config.outputDir}/{config.outputName}.mp4'
-    audioFilePath = f'{config.outputDir}/{config.outputName}.m4a'
-    mergeName = f'{config.outputDir}/{config.outputName}_merge.mp4'
+    filePath = f'{config.outputDir}/{config.outputName}'
+    videoFilePath = f'{filePath}.mp4'
+    audioFilePath = f'{filePath}.m4a'
+    mergeFilePath = f'{filePath}_merge.mp4'
     merge(
       video = videoFilePath,
       audio = audioFilePath,
-      outputDir = mergeName
+      outputDir = mergeFilePath
     )
 
     # remove video and audio file
@@ -50,4 +51,8 @@ def run ():
     remove(audioFilePath)
 
     # rename the output file
-    rename(mergeName, f'{config.outputDir}/{getYtSongTitle(config.url)}.mp4')
+    title = getYtSongTitle(config.url)
+    ESCAPE_CHR = ['"', '*', '/', ':', '<', '>', '?', '\\', '|', ' ', '&']
+    for chr in ESCAPE_CHR:
+      title = title.replace(chr, '_')
+    rename(mergeFilePath, f'{config.outputDir}/{title}.mp4')
