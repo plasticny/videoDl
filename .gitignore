@@ -9,3 +9,7 @@ __pycache__
 
 /ffmpeg.exe
 /yt-dlp.exe
+
+build
+dist
+*.spec
