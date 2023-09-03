@@ -22,6 +22,9 @@ class DownloadSection (Section) :
       
       # url
       config.url,
+
+      # not download live chat
+      '--compat-options no-live-chat',
       
       # format
       '-f',
@@ -34,9 +37,6 @@ class DownloadSection (Section) :
       # subtitle lang
       '--sub-langs',
         config.getSubLang(),
-      
-      # not download live chat
-      '-no-live-chat',
       
       # login
       config.cookieFileCommand()
