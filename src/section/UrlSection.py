@@ -1,5 +1,5 @@
 from section.Section import Section
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, urlunparse
 
 class UrlSection (Section):
   def __init__ (self, title):
@@ -12,17 +12,33 @@ class UrlSection (Section):
     while True:
       url = input("Enter the url: ").strip()
 
+      # check if empty url
       if url == '':
         print('Url must not be empty')
-      elif not(self.__checkUrlValid(url)):
-        print('Invalid url')
+        continue
+
+      # check url valid
+      valid, err = self.__checkUrlValid(url)
+      if not(valid):
+        print(err)
       else:
-        break    
+        break
     return url
   
-  def __checkUrlValid (self, url):
+  # checking if the url is valid
+  # return: valid (bool), err (str/None)
+  def __checkUrlValid (self, url) -> (str, None):
+    # check if it is url
     try:
       urlparse(url)
-      return True
     except:
-      return False
+      return False, 'Invalid url: Not url'
+    
+    # for 'www.youtube.com' url, check if it contain query 'v'
+    if url.count('www.youtube.com') != 0:
+      if 'v' not in parse_qs(urlparse(url).query):
+        return False, 'Invalid url: www.youtube.com url should have the query v'
+
+    # valid checked
+    return True, None
+
