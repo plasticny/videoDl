@@ -36,16 +36,24 @@ def run ():
     filePath = f'{config.outputDir}/{config.outputName}'
     videoFilePath = f'{filePath}.mp4'
     config.outputFormat = '"bv*[ext=mp4]"'
-    while (not(exists(videoFilePath))):
+    tryCnt = 0
+    while (not(exists(videoFilePath)) and tryCnt < 3):
       # try to download until success
       DownloadSection(title="Downloading", config=config).run()
+      tryCnt += 1
+    if not(exists(videoFilePath)):
+      raise Exception("failed on downloading video")
 
     # download audio
     audioFilePath = f'{filePath}.m4a'
     config.outputFormat = '"ba*[ext=m4a]"'
-    while (not(exists(audioFilePath))):
+    tryCnt = 0
+    while (not(exists(audioFilePath)) and tryCnt < 3):
       # try to download until success
       DownloadSection(title="Downloading", config=config).run()
+      tryCnt += 1
+    if not(exists(audioFilePath)):
+      raise Exception("failed on downloading audio")
 
     # merge
     mergeFilePath = f'{filePath}_merge.mp4'
