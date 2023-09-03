@@ -28,7 +28,7 @@ class DownloadSection (Section) :
       
       # format
       '-f',
-         config.outputFormat,
+        config.outputFormat,
       
       # subtitle
       '--embed-subs' if config.subLang is not None else '',
