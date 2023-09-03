@@ -9,6 +9,7 @@ from uuid import uuid4
 from section.UrlSection import UrlSection
 from section.DownloadSection import DownloadSection
 from section.SetUpDownloadSection import SetUpDownloadSection
+from section.ListSubtitleSection import ListSubtitleSection
 
 def run ():
   print("----------------- Downlaod -----------------", end='\n\n')
@@ -19,10 +20,13 @@ def run ():
     # ask the url
     config.url = UrlSection(title='Url').run()
     
+    # list subtitle
+    ListSubtitleSection(title='List Subtitle', config=config).run()
+
     # ask the output dir
     setupConfig = SetUpDownloadSection(
       title='Set up download', config=config,
-      subtitle=False, format=False, outputName=False, h264=False
+      format=False, outputName=False, h264=False
     ).run()
     config.overwriteConfigBy(setupConfig)
 
