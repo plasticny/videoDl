@@ -53,7 +53,8 @@ class SetUpDownloadSection(Section):
     
   def __askSubTitle (self):
     # subtitle language
-    self.config.subLang = input("Enter the language of subtitle:(auto) ")
+    lang = input("Enter the language of subtitle:(en) ")
+    self.config.subLang = 'en' if lang == '' else lang
     
     # write auto subtitle
     doWriteAutoSub = input("Wirte the auto subtitle?:(N) ").upper()

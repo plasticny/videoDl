@@ -28,15 +28,14 @@ class DownloadSection (Section) :
       
       # format
       '-f',
-         config.outputFormat,
+        config.outputFormat,
       
       # subtitle
-      '--embed-subs',
+      '--embed-subs' if config.subLang is not None else '',
       # write auto subtitle
       config.doWriteAutoSubCommand(),
       # subtitle lang
-      '--sub-langs',
-        config.getSubLang(),
+      config.getSubLang(),
       
       # login
       config.cookieFileCommand()

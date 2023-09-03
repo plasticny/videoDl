@@ -6,6 +6,8 @@ YT_EXE_FILE = 'yt-dlp.exe'
 def runCommand (execCommand=YT_EXE_FILE, paramCommands:list=[], printCommand:bool=False):
     command = execCommand
     for param in paramCommands:
+        if len(param) == 0:
+            continue
         command = f'{command} {param}'
 
     if printCommand:

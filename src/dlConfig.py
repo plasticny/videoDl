@@ -53,7 +53,7 @@ class dlConfig:
   def getSubLang (self) -> str:
     if self.subLang == None:
       return ''
-    return self.subLang
+    return f'--sub-langs {self.subLang}'
 
 
   # ###### #
