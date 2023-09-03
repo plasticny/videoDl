@@ -23,6 +23,9 @@ class UrlSection (Section):
         print(err)
       else:
         break
+
+    url = self.__removeSurplusParam(url)
+
     return url
   
   # checking if the url is valid
@@ -42,3 +45,26 @@ class UrlSection (Section):
     # valid checked
     return True, None
 
+    
+  # remove surplus url param that cause download error
+  # return a url string without those params
+  def __removeSurplusParam (self, url : str):
+    # helper function
+    def keepQuery(url, keepKey : list):
+      parsedUrl = urlparse(url)
+      queryParams = parse_qs(parsedUrl.query)
+
+      # Remove specified query parameters
+      queryParams = {key: value for key, value in queryParams.items() if key in keepKey}
+
+      # Reconstruct the URL without the removed query parameters
+      updatedQuery = '&'.join([f"{key}={value[0]}" for key, value in queryParams.items()])
+      updatedUrl = urlunparse(parsedUrl._replace(query=updatedQuery))
+
+      return updatedUrl
+
+    # 'www.youtube.com' url
+    if url.count('www.youtube.com') != 0:
+      url = keepQuery(url, ['v'])
+    
+    return url
