@@ -2,6 +2,8 @@ from dlConfig import dlConfig
 
 from service.merger import merge
 from service.YtFetcher import getYtSongTitle
+from service.urlHelper import getSource, UrlSource
+
 from os import remove, rename
 from os.path import exists
 from uuid import uuid4
@@ -10,6 +12,7 @@ from section.UrlSection import UrlSection
 from section.DownloadSection import DownloadSection
 from section.SetUpDownloadSection import SetUpDownloadSection
 from section.ListSubtitleSection import ListSubtitleSection
+from section.LoginSection import LoginSection
 
 def run ():
   print("----------------- Downlaod -----------------", end='\n\n')
@@ -17,9 +20,13 @@ def run ():
   while True:
     config = dlConfig()
 
-    # ask the url
+    # ask the urls
     config.url = UrlSection(title='Url').run()
     
+    # ask login if bilibili
+    if getSource(config.url) == UrlSource.BILIBILI:
+      config.cookieFile = LoginSection(title='Login').run()
+
     # list subtitle
     ListSubtitleSection(title='List Subtitle', config=config).run()
 
