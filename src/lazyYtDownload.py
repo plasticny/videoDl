@@ -67,7 +67,8 @@ def run ():
     merge(
       video = videoFilePath,
       audio = audioFilePath,
-      outputDir = mergeFilePath
+      outputDir = mergeFilePath,
+      videoFormat= 'libx264'
     )
 
     # remove video and audio file
