@@ -1,5 +1,4 @@
 from __future__ import annotations
-import subprocess
 from service.YtFetcher import getYtSongTitle
 
 class dlConfig:

@@ -1,1 +1,1 @@
-python src/lYDMain.py
+python src/lazyYtDownload.py

@@ -42,3 +42,6 @@ def run ():
         # convert to h264
         # if config.h264 == True:
         #     H264Section(title='Convert to h264', config=config).run()
+
+if __name__ == "__main__":
+    run()

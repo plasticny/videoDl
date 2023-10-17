@@ -81,3 +81,6 @@ def run ():
     for chr in ESCAPE_CHR:
       title = title.replace(chr, '_')
     rename(mergeFilePath, f'{config.outputDir}/{title}.mp4')
+
+if __name__ == "__main__":
+  run()

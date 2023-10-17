@@ -1,1 +1,1 @@
-python src/dlMain.py
+python src/dl.py
