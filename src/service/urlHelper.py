@@ -9,19 +9,19 @@ class UrlSource (Enum):
 # checking if the url is valid
 # return: valid (bool), err (str/None)
 def isValid (url : str) -> (bool, str):
-  # check if it is url
-    try:
-      urlparse(url)
-    except:
-      return False, 'Invalid url: Not url'
-    
-    # for 'www.youtube.com' url, check if it contain query 'v'
-    if url.count('www.youtube.com') != 0:
-      if 'v' not in parse_qs(urlparse(url).query):
-        return False, 'Invalid url: www.youtube.com url should have the query v'
+  parsedUrl = urlparse(url)
 
-    # valid checked
-    return True, None
+  # check if it is url
+  if not(all([parsedUrl.scheme, parsedUrl.netloc, parsedUrl.path])):
+    return False, 'Invalid url: Not url'
+           
+  # for 'www.youtube.com' url, check if it contain query 'v'
+  if url.count('www.youtube.com') != 0:
+    if 'v' not in parse_qs(urlparse(url).query):
+      return False, 'Invalid url: www.youtube.com url should have the query v'
+
+  # valid checked
+  return True, None
 
 # get the source of the url
 def getSource (url : str) -> UrlSource:
