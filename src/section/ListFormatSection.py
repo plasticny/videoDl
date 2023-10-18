@@ -1,6 +1,6 @@
 from section.Section import Section
 from dlConfig import dlConfig
-from commandUtils import runCommand
+from service.commandUtils import runCommand, YT_EXEC
 
 class ListFormatSection (Section):
   def __init__(self, title, config:dlConfig):
@@ -16,10 +16,13 @@ class ListFormatSection (Section):
       return
     
     config = self.config
-    runCommand(paramCommands=[
+    runCommand(
+      execCommand=YT_EXEC,
+      paramCommands=[
         # login
         config.cookieFileCommand(),
         # list format
         '--list-formats',
             config.url
-    ])
+      ]
+    )

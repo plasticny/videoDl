@@ -1,5 +1,24 @@
-from subprocess import call as subCall
+from service.commandUtils import runCommand, FFMPEG_EXEC
 
-def merge (video, audio, outputDir, videoFormat='copy') :
-  cmd_command = f"ffmpeg -i {video} -i {audio} -c:v {videoFormat} -c:a aac -c:s mov_text {outputDir}"
-  subCall(cmd_command, shell=True)
+def merge (videoPath:str, audioPath:str, outputDir:str, videoFormat='copy') :
+  runCommand(
+    execCommand=FFMPEG_EXEC, 
+    paramCommands=[
+      '-i',
+        videoPath,
+        
+      '-i',
+        audioPath,
+        
+      '-c:v',
+        videoFormat,
+        
+      '-c:a',
+        'aac',
+        
+      '-c:s',
+        'mov_text',
+        
+      outputDir
+    ]
+  )

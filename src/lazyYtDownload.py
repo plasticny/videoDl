@@ -65,8 +65,8 @@ def run ():
     # merge
     mergeFilePath = f'{filePath}_merge.mp4'
     merge(
-      video = videoFilePath,
-      audio = audioFilePath,
+      videoPath = videoFilePath,
+      audioPath = audioFilePath,
       outputDir = mergeFilePath,
       videoFormat= 'libx264'
     )

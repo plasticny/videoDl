@@ -1,6 +1,7 @@
 from section.Section import Section
-from commandUtils import runCommand
+from service.commandUtils import runCommand, FFMPEG_EXEC
 from dlConfig import dlConfig
+
 from time import time
 from os import rename, remove
 
@@ -17,18 +18,21 @@ class H264Section(Section):
     inFileWholePath = f'{self.config.outputDir}/{self.config.getFileName()}.{self.config.outputExt}'
     outFileWholePath = f'{self.config.outputDir}/{int(time())}.mp4'
     
-    runCommand(execCommand='ffmpeg', paramCommands=[
-      '-i',
-        inFileWholePath,
-        
-      '-c:v',
-        'libx264',
-        
-      '-c:a',
-        'copy',
-        
-      outFileWholePath
-    ])
+    runCommand(
+      execCommand=FFMPEG_EXEC, 
+      paramCommands=[
+        '-i',
+          inFileWholePath,
+          
+        '-c:v',
+          'libx264',
+          
+        '-c:a',
+          'copy',
+          
+        outFileWholePath
+      ]
+    )
     
     remove(inFileWholePath)
     rename(outFileWholePath, inFileWholePath)

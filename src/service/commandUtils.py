@@ -1,9 +1,10 @@
 from subprocess import call
 
-YT_EXE_FILE = 'yt-dlp.exe'
+YT_EXEC = 'yt-dlp.exe'
+FFMPEG_EXEC = 'ffmpeg.exe'
 
 # paramCommands: list of params command
-def runCommand (execCommand=YT_EXE_FILE, paramCommands:list=[], printCommand:bool=False):
+def runCommand (execCommand, paramCommands:list=[], printCommand:bool=False):
     command = execCommand
     for param in paramCommands:
         if len(param) == 0:
