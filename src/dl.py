@@ -1,4 +1,4 @@
-from dlConfig import dlConfig
+from dlConfig import dlConfig, DefaultConfig
 
 from section.UrlSection import UrlSection
 from section.LoginSection import LoginSection
@@ -34,7 +34,8 @@ def run ():
         ).run()
         config.overwriteConfigBy(setupConfig)
                 
-        # config.autoSetFileName()
+        # output name
+        config.outputName = DefaultConfig.outputName.value
                 
         # do download
         DownloadSection(title="Downloading", config=config).run()

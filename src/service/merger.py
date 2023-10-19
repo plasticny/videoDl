@@ -1,6 +1,6 @@
 from service.commandUtils import runCommand, FFMPEG_EXEC
 
-def merge (videoPath:str, audioPath:str, outputDir:str, videoFormat='copy') :
+def merge (videoPath:str, audioPath:str, outputDir:str, videoFormat='copy', quiet=False) :
   runCommand(
     execCommand=FFMPEG_EXEC, 
     paramCommands=[
@@ -19,6 +19,8 @@ def merge (videoPath:str, audioPath:str, outputDir:str, videoFormat='copy') :
       '-c:s',
         'mov_text',
         
-      outputDir
+      outputDir,
+
+      '-hide_banner -loglevel error' if quiet else ''
     ]
   )

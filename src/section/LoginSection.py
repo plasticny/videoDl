@@ -1,3 +1,4 @@
+from dlConfig import DefaultConfig
 from section.Section import Section
 import tkinter.filedialog as tkFileDialog
 
@@ -11,7 +12,7 @@ class LoginSection(Section):
   
   def __login(self):
     cookieFile = self.__askLogin()
-    if cookieFile == None:
+    if cookieFile == DefaultConfig.cookieFile.value:
         print("Not login")
     else:
         print(f'Login with cookie file: {cookieFile}')
@@ -20,11 +21,11 @@ class LoginSection(Section):
   def __askLogin(self):
     doLogin = input("Login?(N) ").upper()
     if doLogin == 'N' or doLogin == '':
-        return None
+      return DefaultConfig.cookieFile.value
     
     print('')
     print('## Select the login cookie file')
     cookieFile = tkFileDialog.askopenfilename(title='Select the login cookie file')
     if len(cookieFile) == 0:
-        return None
+      return DefaultConfig.cookieFile.value
     return cookieFile
