@@ -1,6 +1,7 @@
 from section.Section import Section
 from dlConfig import dlConfig
 from service.commandUtils import runCommand, YT_EXEC
+from service.YtDlpHelper import CommandConverter
 
 class ListSubtitleSection (Section):
   def __init__(self, title, config:dlConfig):
@@ -15,14 +16,10 @@ class ListSubtitleSection (Section):
     if doList=='N' or doList=='':
       return
     
-    config = self.config
+    cc = CommandConverter(self.config)
     runCommand(
       execCommand=YT_EXEC,
       paramCommands=[
-        # login
-        config.cookieFileCommand(),
-        # list subtitle
-        '--list-subs',
-          config.url
+        cc.listSubs
       ]
     )

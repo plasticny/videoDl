@@ -1,24 +1,39 @@
 from __future__ import annotations
-from service.YtFetcher import getYtSongTitle
+from enum import Enum
+
+class DefaultConfig (Enum):
+  url = ''
+  cookieFile = ''
+  subLang = ''
+  doWriteAutoSub = False
+  outputFormat = ''
+  outputDir = ''
+  outputName = ''
+  outputExt = ''
+  h264 = False
 
 class dlConfig:
   def __init__(self) -> None:
-    
+    # url
     self.url : str = None
+
+    # cookies (for login)
     self.cookieFile = None
+
+    # subtitle
     self.subLang : str = None
     self.doWriteAutoSub : bool = None
+
+    # output setting
     self.outputFormat : str = None
-    self.outputDir = None
+    self.outputDir : str = None
     self.outputName : str = None
     self.outputExt : str = None
     self.h264 : bool = None
-  
-  def cookieFileCommand (self) -> str:
-    return f'--cookies {self.cookieFile}' if self.cookieFile != None else ''
-  
-  def doWriteAutoSubCommand (self) -> str:
-    return '--write-auto-subs' if self.doWriteAutoSub else ''
+
+  @property
+  def doWriteSub (self) -> bool:
+    return self.subLang != None
   
   # giving another dlConfig c'
   # for every attribute of other is not None
@@ -35,31 +50,4 @@ class dlConfig:
     for (attr, value) in self.__dict__.items():
       if value == None:
         setattr(self, attr, getattr(other, attr))
-  
-  # ###### #
-  # getter #
-  
-  def outputNameCommand (self) -> str:
-    if self.outputName == None:
-      return ''
-    return f'-o {self.outputName}.%(ext)s'
-  
-  def getFileName (self) -> str:
-    if self.outputName == None:
-      self.autoSetFileName()
-    return self.outputName
-
-  def getSubLang (self) -> str:
-    if self.subLang == None:
-      return ''
-    return f'--sub-langs {self.subLang}'
-
-
-  # ###### #
-  # setter #
-
-  def autoSetFileName (self) -> None:
-    name = f"{getYtSongTitle(self.url)}[{self.url.split('=')[-1]}]"
-    name = name.replace(' ', '_').replace('&','_')
-    self.outputName = name
   

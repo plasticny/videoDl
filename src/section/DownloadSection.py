@@ -1,6 +1,7 @@
 from section.Section import Section
 from dlConfig import dlConfig
 from service.commandUtils import runCommand, YT_EXEC
+from service.YtDlpHelper import CommandConverter
 
 class DownloadSection (Section) :
   def __init__(self, title, config:dlConfig):
@@ -11,36 +12,32 @@ class DownloadSection (Section) :
     return super().run(self.__download)
   
   def __download (self):
-    config = self.config
+    cc = CommandConverter(self.config)
     runCommand(
       execCommand=YT_EXEC,
       paramCommands=[
-        # output file name
-        config.outputNameCommand(),
-        
-        # output directory
-        '-P',
-          config.outputDir,
-        
         # url
-        config.url,
+        cc.url,
 
-        # not download live chat
-        '--compat-options no-live-chat',
+        # output file name
+        cc.outputName,
+        # output directory
+        cc.outputDir,
+        # otuput format
+        cc.outputFormat,
         
-        # format
-        '-f',
-          config.outputFormat,
+        # not download live chat
+        cc.noLiveChat,
         
         # subtitle
-        '--embed-subs' if config.subLang is not None else '',
+        cc.embedSubs,
         # write auto subtitle
-        config.doWriteAutoSubCommand(),
+        cc.writeAutoSubs,
         # subtitle lang
-        config.getSubLang(),
+        cc.subLang,
         
         # login
-        config.cookieFileCommand()
+        cc.cookies
       ], 
       printCommand=True
     )

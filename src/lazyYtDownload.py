@@ -1,4 +1,4 @@
-from dlConfig import dlConfig
+from dlConfig import dlConfig, DefaultConfig
 
 from service.merger import merge
 from service.YtFetcher import getYtSongTitle
@@ -26,6 +26,8 @@ def run ():
     # ask login if bilibili
     if getSource(config.url) == UrlSource.BILIBILI:
       config.cookieFile = LoginSection(title='Login').run()
+    else:
+      config.cookieFile = DefaultConfig.cookieFile.value
 
     # list subtitle
     ListSubtitleSection(title='List Subtitle', config=config).run()
