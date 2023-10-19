@@ -59,7 +59,7 @@ class CommandConverter:
       raise Exception('outputFormat is not set')
     if self.config.outputFormat == DefaultConfig.outputFormat.value:
       return ''
-    return f'-f {self.config.outputFormat}' if self.config.outputFormat != None else ''
+    return f'-f {self.config.outputFormat}'
   
   # live chat
   @property
@@ -69,14 +69,14 @@ class CommandConverter:
   # list info
   @property
   def listFormat (self) -> str:
-    if self.config.url == '':
+    if self.config.url == None:
       raise Exception('url is not set')
     if self.config.url == DefaultConfig.url.value:
       return ''
     return f'--list-formats {self.url}'
   @property
   def listSubs (self) -> str:
-    if self.config.url == '':
+    if self.config.url == None:
       raise Exception('url is not set')
     if self.config.url == DefaultConfig.url.value:
       return ''
