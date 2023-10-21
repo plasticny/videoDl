@@ -6,7 +6,6 @@ from section.ListSubtitleSection import ListSubtitleSection
 from section.ListFormatSection import ListFormatSection
 from section.SetUpDownloadSection import SetUpDownloadSection
 from section.DownloadSection import DownloadSection
-from section.H264Section import H264Section
 
 # main process
 def run ():
@@ -39,10 +38,6 @@ def run ():
                 
         # do download
         DownloadSection(title="Downloading", config=config).run()
-        
-        # convert to h264
-        # if config.h264 == True:
-        #     H264Section(title='Convert to h264', config=config).run()
 
 if __name__ == "__main__":
     run()
