@@ -17,10 +17,10 @@ class Section:
         
     result = None
     
-    print(self.header())
+    print(self.header)
     if callable(bodyFunc):
       result = bodyFunc()
-    print(self.footer())
+    print(self.footer)
     
     return result
   
