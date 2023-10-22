@@ -1,5 +1,11 @@
+from enum import Enum
+
 from section.Section import Section
 from service.urlHelper import isValid, removeSurplusParam
+
+class Message(Enum):
+  INPUT_URL = 'Enter the url: '
+  EMPTY_URL = 'Url must not be empty'
 
 class UrlSection (Section):
   def __init__ (self, title):
@@ -10,11 +16,11 @@ class UrlSection (Section):
   
   def __askUrl (self):
     while True:
-      url = input("Enter the url: ").strip()
+      url = input(Message.INPUT_URL.value).strip()
 
       # check if empty url
       if url == '':
-        print('Url must not be empty')
+        print(Message.EMPTY_URL.value)
         continue
 
       # check url valid
