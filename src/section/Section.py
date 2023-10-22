@@ -3,11 +3,13 @@ import sys
 class Section:
   def __init__(self, title):
     self.title = title
-    
-  def __header (self):
+  
+  @property
+  def header (self):
     return f"================= {self.title} ================="
   
-  def __footer (self):
+  @property
+  def footer (self):
     return ''
   
   def run (self, bodyFunc=None):
@@ -15,10 +17,10 @@ class Section:
         
     result = None
     
-    print(self.__header())
+    print(self.header())
     if callable(bodyFunc):
       result = bodyFunc()
-    print(self.__footer())
+    print(self.footer())
     
     return result
   
