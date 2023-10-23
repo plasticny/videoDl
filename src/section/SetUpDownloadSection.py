@@ -1,20 +1,23 @@
-from section.Section import Section
-import tkinter.filedialog as tkFileDialog
+from section.Section import Section, HeaderType
+from section.SubTitleSection import SubTitleSection
+from section.FormatSection import FormatSection
+from section.OutputSection import OutputSection
 from dlConfig import dlConfig
 
 class SetUpDownloadSection(Section):
   def __init__(
       self, title, config:dlConfig, 
-      subtitle=True, format=True, outputDir=True, outputName=True, h264=True
+      subtitle=True, format=True, outputDir=True, outputName=True
     ):
     super().__init__(title)
     self.config = config
     
     self.subtitle = subtitle
+    
     self.format = format
+
     self.outputDir = outputDir
     self.outputName = outputName
-    self.h264 = h264
     
   def run(self) -> dlConfig:
     return super().run(self.__main)
@@ -22,68 +25,31 @@ class SetUpDownloadSection(Section):
   def __main(self):    
     # ask about subtitle
     if self.subtitle:
-      print('## Subtitle')
-      self.__askSubTitle()
-      print('')
+      subSection = SubTitleSection('SubTitle')
+      subSection.headerType = HeaderType.SUB_HEADER
+
+      lang, doWriteAutoSub = subSection.run()
+
+      self.config.subLang = lang
+      self.config.doWriteAutoSub = doWriteAutoSub
     
     # format
     if self.format:
-      print('## Format')
-      self.__askFormat()
-      print('')
+      formatSection = FormatSection('Format')
+      formatSection.headerType = HeaderType.SUB_HEADER
+      self.config.outputFormat = formatSection.run()
 
-    # output directory
-    if self.outputDir:
-      print('## Output directory')
-      self.__askOutputDir()
-      print('')
-    
-    # output name
-    if self.outputName:
-      print('## Output file name')
-      self.__askOutputName()
-      print('')
-    
-    # convert to h.264
-    if self.h264:
-      print('## H.264')
-      self.__askH264()
+    # output directory & output name
+    if self.outputName or self.outputDir:
+      outSection = OutputSection(
+        title='Output',
+        askDir=self.outputDir,
+        askName=self.outputName,
+      )
+      outSection.headerType = HeaderType.SUB_HEADER
+      outputDir, outputName = outSection.run()
+
+      self.config.outputDir = outputDir
+      self.config.outputName = outputName
     
     return self.config
-    
-  def __askSubTitle (self):
-    # subtitle language
-    lang = input("Enter the language of subtitle:(en) ")
-    self.config.subLang = 'en' if lang == '' else lang
-    
-    # write auto subtitle
-    doWriteAutoSub = input("Wirte the auto subtitle?:(N) ").upper()
-    self.config.doWriteAutoSub = doWriteAutoSub != ''
-      
-  def __askFormat (self):
-    fo = input("Enter the format:(auto) ").lower()
-    self.config.outputFormat = 'mp4' if fo == 'auto' or fo == '' else fo
-      
-  def __askOutputDir (self):
-    outputDir = None
-    while outputDir == None:  
-      dir = tkFileDialog.askdirectory()
-      if len(dir) > 0:
-        outputDir = dir
-        break
-      print("Invalid output directory, select again")
-    print(f"Output directory {outputDir}")
-    
-    self.config.outputDir = outputDir
-
-  def __askOutputName (self):
-    outputName = input('Enter the output file name: (auto) ')
-    if outputName == '':
-      outputName = None
-    
-    self.config.outputName = outputName
-    
-  # ask convert the output to h.264 or not
-  def __askH264 (self):
-    answer = input('Convert the video to H.264 format? (N) ').upper()
-    self.config.h264 = not(answer == 'N' or answer == '')

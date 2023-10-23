@@ -29,7 +29,7 @@ def run ():
         # ask download configs
         setupConfig = SetUpDownloadSection(
             title='Set up download', config=config,
-            outputName=False, h264=False
+            outputName=False
         ).run()
         config.overwriteConfigBy(setupConfig)
                 
