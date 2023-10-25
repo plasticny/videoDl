@@ -1,7 +1,12 @@
+from enum import Enum
+
 from service.commandUtils import runCommand, FFMPEG_EXEC
 
+class Message (Enum):
+  MERGE_FAILED = 'Merge failed'
+
 def merge (videoPath:str, audioPath:str, outputDir:str, videoFormat='copy', quiet=False) :
-  runCommand(
+  retc = runCommand(
     execCommand=FFMPEG_EXEC, 
     paramCommands=[
       '-i',
@@ -24,3 +29,6 @@ def merge (videoPath:str, audioPath:str, outputDir:str, videoFormat='copy', quie
       '-hide_banner -loglevel error' if quiet else ''
     ]
   )
+
+  if retc != 0:
+    raise Exception(Message.MERGE_FAILED.value)

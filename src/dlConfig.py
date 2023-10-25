@@ -10,26 +10,30 @@ class DefaultConfig (Enum):
   outputDir = ''
   outputName = ''
   outputExt = ''
-  h264 = False
 
 class dlConfig:
-  def __init__(self) -> None:
+  def __init__(
+      self,
+      url:str = None,
+      cookieFile:str = None,
+      subLang:str = None, doWriteAutoSub:bool = None,
+      outputFormat:str = None, outputDir:str = None, outputName:str = None, outputExt:str = None,
+    ) -> None:
     # url
-    self.url : str = None
+    self.url:str = url
 
     # cookies (for login)
-    self.cookieFile = None
+    self.cookieFile:str = cookieFile
 
     # subtitle
-    self.subLang : str = None
-    self.doWriteAutoSub : bool = None
+    self.subLang:str = subLang
+    self.doWriteAutoSub:bool = doWriteAutoSub
 
     # output setting
-    self.outputFormat : str = None
-    self.outputDir : str = None
-    self.outputName : str = None
-    self.outputExt : str = None
-    self.h264 : bool = None
+    self.outputFormat:str = outputFormat
+    self.outputDir:str = outputDir
+    self.outputName:str = outputName
+    self.outputExt:str = outputExt
 
   @property
   def doWriteSub (self) -> bool:
@@ -50,4 +54,8 @@ class dlConfig:
     for (attr, value) in self.__dict__.items():
       if value == None:
         setattr(self, attr, getattr(other, attr))
-  
+
+  # set all attribute to default value
+  def default(self):
+    for (attr, value) in DefaultConfig.__members__.items():
+      setattr(self, attr, value.value)
