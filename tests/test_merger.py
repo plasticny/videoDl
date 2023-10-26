@@ -1,7 +1,8 @@
+""" NOTE: vm on git action already install ffmpeg """
+
 from unittest.mock import patch
 from pytest import raises as pytest_raises
 
-from os import mkdir, listdir, remove
 from os.path import exists
 from pymediainfo import MediaInfo
 from enum import Enum
@@ -39,7 +40,7 @@ def test_merge():
   )
 
   # check if output file exists
-  assert exists(f'{OUTPUT_FOLDER}/test_videoo_out.mp4')
+  assert exists(OUTPUT_VIDEO_PATH)
 
   mediaInfo = MediaInfo.parse(OUTPUT_VIDEO_PATH)
 
