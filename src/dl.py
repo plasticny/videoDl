@@ -8,10 +8,10 @@ from section.SetUpDownloadSection import SetUpDownloadSection
 from section.DownloadSection import DownloadSection
 
 # main process
-def run ():
+def run (loop=True):
     print("----------------- Download -----------------", end='\n\n')
 
-    while True:
+    while loop:
         config = dlConfig()
                 
         # ask url

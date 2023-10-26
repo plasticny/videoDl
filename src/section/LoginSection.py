@@ -15,10 +15,10 @@ class LoginSection(Section):
   def __init__(self, title):
     super().__init__(title)
     
-  def run(self):
+  def run(self) -> str:
     return super().run(self.__login)
   
-  def __login(self):
+  def __login(self) -> str:
     cookieFile = self.__askLogin()
     if cookieFile == DefaultConfig.cookieFile.value:
       print(Message.NOT_LOGIN.value)
@@ -26,7 +26,7 @@ class LoginSection(Section):
       print(Message.LOGIN.value.format(cookieFile))
     return cookieFile
   
-  def __askLogin(self):
+  def __askLogin(self) -> str:
     doLogin = input(Message.ASK_LOGIN.value).upper()
     if doLogin == 'N' or doLogin == '':
       return DefaultConfig.cookieFile.value
