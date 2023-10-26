@@ -7,6 +7,7 @@ from os import remove
 from os.path import exists
 
 from tests.fakers import fake_CommandConverter
+from tests.testFileHelper import prepare_output_folder
 
 from src.section.DownloadSection import DownloadSection
 from src.dlConfig import dlConfig
@@ -62,8 +63,7 @@ def test_with_fail_mock(cc_mock, runCommand_mock):
   assert excinfo.type == Exception
 
 def test_with_real_download():
-  if exists('tests/testFiles/output/test.mp4'):
-    remove('tests/testFiles/output/test.mp4')
+  prepare_output_folder()
 
   config = dlConfig()
   config.url = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'

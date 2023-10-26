@@ -6,6 +6,8 @@ from os.path import exists
 from pymediainfo import MediaInfo
 from enum import Enum
 
+from tests.testFileHelper import prepare_output_folder
+
 from src.service.merger import merge
 
 class TrackType(Enum):
@@ -27,13 +29,7 @@ def test_merge():
   INPUT_AUDIO_PATH = f'{INPUT_FOLDER}/test_audio.m4a'
   OUTPUT_VIDEO_PATH = f'{OUTPUT_FOLDER}/test_video_out.mp4'
 
-  # create output folder if not exists
-  if not exists(OUTPUT_FOLDER):
-    mkdir(OUTPUT_FOLDER)
-
-  # clear output folder
-  for file in listdir(OUTPUT_FOLDER):
-    remove(f'{OUTPUT_FOLDER}/{file}')
+  prepare_output_folder()
 
   merge(
     videoPath=INPUT_VIDEO_PATH,
@@ -43,7 +39,7 @@ def test_merge():
   )
 
   # check if output file exists
-  assert exists(OUTPUT_VIDEO_PATH)
+  assert exists(f'{OUTPUT_FOLDER}/test_videoo_out.mp4')
 
   mediaInfo = MediaInfo.parse(OUTPUT_VIDEO_PATH)
 
