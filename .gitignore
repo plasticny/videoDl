@@ -8,7 +8,6 @@ __pycache__
 /src/model
 
 /ffmpeg.exe
-/yt-dlp.exe
 
 build
 dist

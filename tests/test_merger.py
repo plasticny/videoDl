@@ -1,10 +1,13 @@
+""" NOTE: vm on git action already install ffmpeg """
+
 from unittest.mock import patch
 from pytest import raises as pytest_raises
 
-from os import mkdir, listdir, remove
 from os.path import exists
 from pymediainfo import MediaInfo
 from enum import Enum
+
+from tests.testFileHelper import prepare_output_folder
 
 from src.service.merger import merge
 
@@ -27,13 +30,7 @@ def test_merge():
   INPUT_AUDIO_PATH = f'{INPUT_FOLDER}/test_audio.m4a'
   OUTPUT_VIDEO_PATH = f'{OUTPUT_FOLDER}/test_video_out.mp4'
 
-  # create output folder if not exists
-  if not exists(OUTPUT_FOLDER):
-    mkdir(OUTPUT_FOLDER)
-
-  # clear output folder
-  for file in listdir(OUTPUT_FOLDER):
-    remove(f'{OUTPUT_FOLDER}/{file}')
+  prepare_output_folder()
 
   merge(
     videoPath=INPUT_VIDEO_PATH,

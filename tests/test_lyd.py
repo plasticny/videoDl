@@ -3,8 +3,9 @@ from unittest.mock import patch, Mock
 from os import remove, listdir
 from uuid import uuid4
 
+from tests.testFileHelper import prepare_output_folder
+
 from src.lazyYtDownload import login, configDownload, run
-from src.service.urlHelper import UrlSource
 from src.dlConfig import dlConfig, DefaultConfig
 
 # test login function
@@ -51,9 +52,7 @@ def test_configDownlaod(url_mock, login_mock, setup_mock, uuid_mock):
 # test with download a video
 @patch('src.lazyYtDownload.configDownload')
 def test_with_download(config_mock):
-  # remove all files in output folder
-  for file in listdir('tests/testFiles/output'):
-    remove(f'tests/testFiles/output/{file}')
+  prepare_output_folder()
 
   config = dlConfig()
   config.default()
