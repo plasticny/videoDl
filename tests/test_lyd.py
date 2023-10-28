@@ -1,6 +1,5 @@
 from unittest.mock import patch, Mock
 
-from os import remove, listdir
 from uuid import uuid4
 
 from tests.testFileHelper import prepare_output_folder

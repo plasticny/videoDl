@@ -11,7 +11,7 @@ from section.DownloadSection import DownloadSection
 def run (loop=True):
     print("----------------- Download -----------------", end='\n\n')
 
-    while loop:
+    while True:
         config = dlConfig()
                 
         # ask url
@@ -38,6 +38,9 @@ def run (loop=True):
                 
         # do download
         DownloadSection(title="Downloading", config=config).run()
+
+        if not loop:
+            break
 
 if __name__ == "__main__":
     run()

@@ -48,11 +48,11 @@ def configDownload() -> dlConfig:
 def run (loop=True):
   print("----------------- Downlaod -----------------", end='\n\n')
 
-  while loop:
+  while True:
     config = configDownload()
 
     # download section, 2 retry when download failed
-    download_section = DownloadSection(title="Downloading", config=config, tryCnt=2)
+    download_section = DownloadSection(title="Downloading", config=config, retry=2)
 
     filePath = f'{config.outputDir}/{config.outputName}'
 
@@ -82,6 +82,9 @@ def run (loop=True):
     # rename the output file
     title = getYtSongTitle(config.url, escape=True)
     rename(mergeFilePath, f'{config.outputDir}/{title}.mp4')
+
+    if not loop:
+      break
 
 if __name__ == "__main__":
   run()
