@@ -1,3 +1,5 @@
+windows only
+
 # First of all
 download ffmpeg.exe and yt-dlp.exe
 place them into the root folder
