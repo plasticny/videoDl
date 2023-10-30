@@ -15,12 +15,11 @@ permissions:
 jobs:
   build:
 
-    runs-on: ${{ matrix.os }}}
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        #os: [windows-latest, ubuntu-latest, macos-latest]
-        os: [windows-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
     - uses: actions/checkout@v3
