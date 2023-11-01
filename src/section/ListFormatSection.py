@@ -20,6 +20,7 @@ class ListFormatSection (Section):
     runCommand(
       execCommand=YT_EXEC,
       paramCommands=[
-        cc.listFormat
+        cc.listFormat,
+        cc.cookies
       ]
     )
