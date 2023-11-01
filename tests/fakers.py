@@ -1,11 +1,5 @@
 class fake_CommandConverter:
-  def __init__(
-      self, config,
-      doListFormat:bool=False,
-      doListSubs:bool=False,
-    ) -> None:
-    self.doListFormat = doListFormat
-    self.doListSubs = doListSubs
+  def __init__(self, config) -> None:
     pass
 
   @property
@@ -24,13 +18,9 @@ class fake_CommandConverter:
 
   @property
   def listFormat(self) -> str:
-    if not(self.doListFormat):
-      raise AttributeError()
     return 'list format'
   @property
   def listSubs(self) -> str:
-    if not(self.doListSubs):
-      raise AttributeError()
     return 'list subs'
   
   @property
@@ -50,9 +40,6 @@ class fake_CommandConverter:
   @property
   def cookies(self) -> str:
     return 'cookies'
-
-def fake_runCommand(execCommand, paramCommands:list=[], printCommand:bool=False):
-  pass
 
 class fake_CompletedProcess():
   def __init__(self, rc):
