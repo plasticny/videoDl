@@ -20,6 +20,7 @@ class ListSubtitleSection (Section):
     runCommand(
       execCommand=YT_EXEC,
       paramCommands=[
-        cc.listSubs
+        cc.listSubs,
+        cc.cookies
       ]
     )
