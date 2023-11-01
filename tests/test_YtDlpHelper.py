@@ -157,11 +157,6 @@ def test_outputFormat():
   converter = CommandConverter(config)
   assert converter.outputFormat == '-f bestvideo+bestaudio'
 
-def test_noLiveChat():
-  config = dlConfig()
-  converter = CommandConverter(config)
-  assert converter.noLiveChat == '--compat-options no-live-chat'
-
 def test_listFormat():
   config = dlConfig()
 

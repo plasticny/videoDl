@@ -8,6 +8,7 @@ from pymediainfo import MediaInfo
 from enum import Enum
 
 from tests.testFileHelper import prepare_output_folder
+from tests.fakers import fake_CompletedProcess
 
 from src.service.merger import merge
 
@@ -23,7 +24,7 @@ def get_track(mediaInfo : MediaInfo, trackType : TrackType):
   return None
 
 def test_merge():
-  INPUT_FOLDER = 'tests/testFiles/input'
+  INPUT_FOLDER = 'tests/testFiles/test_merger'
   OUTPUT_FOLDER = 'tests/testFiles/output'
 
   INPUT_VIDEO_PATH = f'{INPUT_FOLDER}/test_video.mp4'
@@ -60,12 +61,12 @@ def test_merge():
 
 @patch('src.service.merger.runCommand')
 def test_merge_fail(run_mock):
-  run_mock.return_value = 1
+  run_mock.return_value = fake_CompletedProcess(1)
 
   with pytest_raises(Exception) as excinfo:
     merge(
-      videoPath='tests/testFiles/input/test_video.mp4',
-      audioPath='tests/testFiles/input/test_audio.m4a',
+      videoPath='tests/testFiles/test_merger/test_video.mp4',
+      audioPath='tests/testFiles/test_merger/test_audio.m4a',
       outputDir='tests/testFiles/output/test_video_out.mp4',
       quiet=True
     )

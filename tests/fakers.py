@@ -53,3 +53,10 @@ class fake_CommandConverter:
 
 def fake_runCommand(execCommand, paramCommands:list=[], printCommand:bool=False):
   pass
+
+class fake_CompletedProcess():
+  def __init__(self, rc):
+    self.rc = rc
+  @property
+  def returncode(self):
+    return self.rc

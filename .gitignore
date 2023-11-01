@@ -1,11 +1,10 @@
 /cookie/*
 !/cookie/readme.txt
 
-/file
-
 __pycache__
-/src/nb.ipynb
 /src/model
+/src/*.exe
+/src/draft.py
 
 /ffmpeg.exe
 

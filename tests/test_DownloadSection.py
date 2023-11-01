@@ -6,7 +6,7 @@ from pytest import raises as pytest_raises
 from os import remove
 from os.path import exists
 
-from tests.fakers import fake_CommandConverter
+from tests.fakers import fake_CommandConverter, fake_CompletedProcess
 from tests.testFileHelper import prepare_output_folder
 
 from src.section.DownloadSection import DownloadSection
@@ -21,7 +21,7 @@ def test_with_success_mock(cc_mock, runCommand_mock):
 
   fake_cc = fake_CommandConverter(config)
   cc_mock.return_value = fake_cc
-  runCommand_mock.return_value = 0
+  runCommand_mock.return_value = fake_CompletedProcess(0)
 
   section.run()
 
@@ -53,7 +53,7 @@ def test_with_fail_mock(cc_mock, runCommand_mock):
 
   fake_cc = fake_CommandConverter(config)
   cc_mock.return_value = fake_cc
-  runCommand_mock.return_value = 1
+  runCommand_mock.return_value = fake_CompletedProcess(1)
 
   with pytest_raises(Exception) as excinfo:
     section.run()

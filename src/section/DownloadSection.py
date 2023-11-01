@@ -31,7 +31,7 @@ class DownloadSection (Section) :
     retc = None
 
     while retc != 0 and tryCnt <= self.retry:
-      retc = runCommand(
+      result = runCommand(
         execCommand=YT_EXEC,
         paramCommands=[
           # url
@@ -59,6 +59,7 @@ class DownloadSection (Section) :
         ], 
         printCommand=True
       )
+      retc = result.returncode
       tryCnt += 1
 
     if retc != 0:
