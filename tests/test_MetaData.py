@@ -17,7 +17,7 @@ def test_fetchMetaData_video():
   assert md.url == expected['original_url']
 
 # test fetch metadata of bilibili playlist with config object
-def test_fetchMetaData_ls():
+def test_fetchMetaData_bili_ls():
   config = dlConfig()
   config.url = 'https://www.bilibili.com/video/BV1bN411s7VT'
 

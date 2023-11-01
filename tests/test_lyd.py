@@ -82,7 +82,7 @@ def test_download_bili_video(config_mock):
 
 @patch('src.lazyYtDownload.download')
 @patch('src.lazyYtDownload.configDownload')
-def test_download_list(config_mock, download_mock):
+def test_download_bili_list(config_mock, download_mock):
   prepare_output_folder()
 
   config = dlConfig()
