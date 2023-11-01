@@ -1,6 +1,7 @@
 from unittest.mock import patch, Mock
 
 from uuid import uuid4
+from os.path import exists
 
 from tests.testFileHelper import prepare_output_folder
 
@@ -46,11 +47,9 @@ def test_configDownlaod(url_mock, login_mock, setup_mock, uuid_mock):
   assert config.subLang == 'en'
   assert config.doWriteAutoSub == True
   assert config.outputDir == 'outputDir'
-  assert config.outputName == 'outputName'
 
-# test with download a video
 @patch('src.lazyYtDownload.configDownload')
-def test_with_download(config_mock):
+def test_download_yt_video(config_mock):
   prepare_output_folder()
 
   config = dlConfig()
@@ -58,8 +57,39 @@ def test_with_download(config_mock):
   config.url = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
   config.cookieFile = ''
   config.outputDir = 'tests/testFiles/output'
-  config.outputName = uuid4()
 
   config_mock.return_value = config
 
   run(loop=False)
+
+  assert exists('tests/testFiles/output/test video for videoDl.mp4')
+
+@patch('src.lazyYtDownload.configDownload')
+def test_download_bili_video(config_mock):
+  prepare_output_folder()
+
+  config = dlConfig()
+  config.default()
+  config.url = 'https://www.bilibili.com/video/BV1154y1T765'
+  config.cookieFile = ''
+  config.outputDir = 'tests/testFiles/output'
+
+  config_mock.return_value = config
+
+  run(loop=False)
+
+  assert exists('tests/testFiles/output/小 僧 觉 得 很 痛.mp4')
+
+@patch('src.lazyYtDownload.download')
+@patch('src.lazyYtDownload.configDownload')
+def test_download_list(config_mock, download_mock):
+  prepare_output_folder()
+
+  config = dlConfig()
+  config.default()
+  config.url = 'https://www.bilibili.com/video/BV1bN411s7VT'
+  config_mock.return_value = config
+
+  run(loop=False)
+
+  assert download_mock.call_count == 3
