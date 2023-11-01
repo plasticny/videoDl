@@ -61,11 +61,6 @@ class CommandConverter:
       return ''
     return f'-f {self.config.outputFormat}'
   
-  # live chat
-  @property
-  def noLiveChat (self) -> str:
-    return '--compat-options no-live-chat'
-  
   # list info
   @property
   def listFormat (self) -> str:
@@ -81,3 +76,16 @@ class CommandConverter:
     if self.config.url == DefaultConfig.url.value:
       return ''
     return f'--list-subs {self.url}'
+  
+  # meta data
+  @property
+  def getMetaData (self) -> str:
+    return '-J'
+
+  # other
+  @property
+  def noLiveChat (self) -> str:
+    return '--compat-options no-live-chat'
+  @property
+  def skipDownload (self) -> str:
+    return '--skip-download'
