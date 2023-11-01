@@ -6,7 +6,7 @@ class Message (Enum):
   MERGE_FAILED = 'Merge failed'
 
 def merge (videoPath:str, audioPath:str, outputDir:str, videoFormat='copy', quiet=False) :
-  retc = runCommand(
+  result = runCommand(
     execCommand=FFMPEG_EXEC, 
     paramCommands=[
       '-i',
@@ -30,5 +30,5 @@ def merge (videoPath:str, audioPath:str, outputDir:str, videoFormat='copy', quie
     ]
   )
 
-  if retc != 0:
+  if result.returncode != 0:
     raise Exception(Message.MERGE_FAILED.value)
