@@ -3,9 +3,9 @@ from dlConfig import dlConfig, DefaultConfig
 from service.merger import merge
 from service.YtFetcher import getYtSongTitle
 from service.urlHelper import getSource, UrlSource
+from service.MetaData import MetaData
 
 from os import remove, rename
-from os.path import exists
 from uuid import uuid4
 
 from section.UrlSection import UrlSection
@@ -40,10 +40,44 @@ def configDownload() -> dlConfig:
   ).run()
   config.overwriteConfigBy(setupConfig)
 
+  return config
+
+def download(title, url, config : dlConfig):
+  config.url = url
+
   # set a random output name
   config.outputName = uuid4()
 
-  return config
+  # download section, 2 retry when download failed
+  download_section = DownloadSection(title="Downloading", config=config, retry=2)
+
+  filePath = f'{config.outputDir}/{config.outputName}'
+
+  # download video
+  videoFilePath = f'{filePath}.mp4'
+  config.outputFormat = '"bv*[ext=mp4]"'
+  download_section.run()
+
+  # download audio
+  audioFilePath = f'{filePath}.m4a'
+  config.outputFormat = '"ba*[ext=m4a]"'
+  download_section.run()
+
+  # merge
+  mergeFilePath = f'{filePath}_merge.mp4'
+  merge(
+    videoPath = videoFilePath,
+    audioPath = audioFilePath,
+    outputDir = mergeFilePath,
+    videoFormat= 'libx264'
+  )
+
+  # remove video and audio file
+  remove(videoFilePath)
+  remove(audioFilePath)
+
+  # rename the output file
+  rename(mergeFilePath, f'{config.outputDir}/{title}.mp4')
 
 def run (loop=True):
   print("----------------- Downlaod -----------------", end='\n\n')
@@ -51,37 +85,10 @@ def run (loop=True):
   while True:
     config = configDownload()
 
-    # download section, 2 retry when download failed
-    download_section = DownloadSection(title="Downloading", config=config, retry=2)
+    md = MetaData.fetchMetaData(config=config)
 
-    filePath = f'{config.outputDir}/{config.outputName}'
-
-    # download video
-    videoFilePath = f'{filePath}.mp4'
-    config.outputFormat = '"bv*[ext=mp4]"'
-    download_section.run()
-
-    # download audio
-    audioFilePath = f'{filePath}.m4a'
-    config.outputFormat = '"ba*[ext=m4a]"'
-    download_section.run()
-
-    # merge
-    mergeFilePath = f'{filePath}_merge.mp4'
-    merge(
-      videoPath = videoFilePath,
-      audioPath = audioFilePath,
-      outputDir = mergeFilePath,
-      videoFormat= 'libx264'
-    )
-
-    # remove video and audio file
-    remove(videoFilePath)
-    remove(audioFilePath)
-
-    # rename the output file
-    title = getYtSongTitle(config.url, escape=True)
-    rename(mergeFilePath, f'{config.outputDir}/{title}.mp4')
+    for videoMd in md.getVideos():
+      download(title=videoMd.title, url=videoMd.url, config=config)
 
     if not loop:
       break
