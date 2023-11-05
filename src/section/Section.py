@@ -6,12 +6,16 @@ class HeaderType(Enum):
   SUB_HEADER = 2
 
 class Section:
-  def __init__(self, title):
+  def __init__(
+      self, title:str='',
+      doShowHeader:bool=True, doShowFooter:bool=True,
+      headerType:HeaderType=HeaderType.HEADER
+    ):
     self.title = title
-    self.doShowHeader = True
-    self.doShowFooter = True
+    self.doShowHeader = doShowHeader
+    self.doShowFooter = doShowFooter
 
-    self.headerType = HeaderType.HEADER
+    self.headerType = headerType
   
   @property
   def header (self):
@@ -25,7 +29,7 @@ class Section:
   def footer (self):
     return ''
     
-  def run (self, bodyFunc=None):
+  def run (self, bodyFunc=None, **kwargs):
     sys.stdout.flush()
         
     result = None
@@ -39,7 +43,7 @@ class Section:
 
     # body
     if callable(bodyFunc):
-      result = bodyFunc()
+      result = bodyFunc(**kwargs)
 
     # footer
     if self.doShowFooter:

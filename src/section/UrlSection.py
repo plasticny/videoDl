@@ -7,10 +7,7 @@ class Message(Enum):
   INPUT_URL = 'Enter the url: '
   EMPTY_URL = 'Url must not be empty'
 
-class UrlSection (Section):
-  def __init__ (self, title):
-    super().__init__(title)
-  
+class UrlSection (Section):  
   def run (self):
     return super().run(self.__askUrl)
   

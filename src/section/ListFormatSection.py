@@ -1,26 +1,26 @@
-from section.Section import Section
-from dlConfig import dlConfig
-from service.commandUtils import runCommand, YT_EXEC
-from service.YtDlpHelper import CommandConverter
+from yt_dlp import YoutubeDL
 
-class ListFormatSection (Section):
-  def __init__(self, title, config:dlConfig):
-    super().__init__(title)
-    self.config = config
-    
-  def run(self):
-    return super().run(self.__listFormat)
+from enum import Enum
+
+from section.Section import Section
+from service.YtDlpHelper import Opts
+
+class VALUE(Enum):
+  IN_NOT_LIST = 'N'
+  IN_EMPTY = ''
+
+class Message(Enum):
+  ASK_DO_LIST = 'List available format?(N) '
+
+class ListFormatSection (Section):    
+  def run(self, url:str, opts:Opts=Opts()) -> None:
+    return super().run(self.__listFormat, url=url, opts=opts)
   
-  def __listFormat (self):
-    doList = input('List available format?(N) ').upper()
-    if doList=='N' or doList=='':
+  def __listFormat (self, url:str, opts:Opts):
+    doList = input(Message.ASK_DO_LIST.value).upper()
+    if doList==VALUE.IN_NOT_LIST.value or doList==VALUE.IN_EMPTY.value:
       return
-    
-    cc = CommandConverter(self.config)
-    runCommand(
-      execCommand=YT_EXEC,
-      paramCommands=[
-        cc.listFormat,
-        cc.cookies
-      ]
-    )
+
+    YoutubeDL(
+      params=opts.copy().skip_download().listFormats()()
+    ).download([url])

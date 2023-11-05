@@ -1,97 +1,130 @@
-from dlConfig import dlConfig, DefaultConfig
-
 from service.merger import merge
-from service.YtFetcher import getYtSongTitle
 from service.urlHelper import getSource, UrlSource
-from service.MetaData import MetaData
+from service.MetaData import MetaData, VideoMetaData
+from service.YtDlpHelper import Opts
 
 from os import remove, rename
 from uuid import uuid4
 
+from section.Section import Section, HeaderType
 from section.UrlSection import UrlSection
 from section.DownloadSection import DownloadSection
-from section.SetUpDownloadSection import SetUpDownloadSection
 from section.ListSubtitleSection import ListSubtitleSection
 from section.LoginSection import LoginSection
+from section.SubTitleSection import SubTitleSection
+from section.OutputSection import OutputSection
 
-def login(config : dlConfig) -> str:
-  # ask login if bilibili
-  if getSource(config.url) == UrlSource.BILIBILI:
-    return LoginSection(title='Login').run()
-  else:
-    return DefaultConfig.cookieFile.value
+class lazyYtDownload:
+  def __init__(self) -> None:
+    self.opts = Opts()
 
-def configDownload() -> dlConfig:
-  config = dlConfig()
+  def run (self, loop=True):
+    print("----------------- Downlaod -----------------", end='\n\n')
 
-  # ask the urls
-  config.url = UrlSection(title='Url').run()
+    while True:
+      url = UrlSection(title='Url').run()
 
-  # ask login    
-  config.cookieFile = login(config)
+      self.opts = self.configDownload(url)
 
-  # list subtitle
-  ListSubtitleSection(title='List Subtitle', config=config).run()
+      md = MetaData.fetchMetaData(url)
+      
+      # check the number of video need to download
+      videos : list[VideoMetaData] = []
+      if md.isPlaylist():
+        videos.extend(md.getVideos())
+      else:
+        videos.append(md)
+      print(f'Video found: {len(videos)}')
 
-  # ask the output dir
-  setupConfig = SetUpDownloadSection(
-    title='Set up download', config=config,
-    format=False, outputName=False
-  ).run()
-  config.overwriteConfigBy(setupConfig)
+      # download
+      for idx, v in enumerate(videos):
+        Section(title=f'Video {idx+1} of {len(videos)}').run(
+          self.download, 
+          title=v.title, url=v.url
+        )
 
-  return config
+      if not loop:
+        break
+    return
 
-def download(title, url, config : dlConfig):
-  config.url = url
+  def configDownload(self, url) -> Opts:
+    # ask login    
+    self.login(url)
 
-  # set a random output name
-  config.outputName = uuid4()
+    # list subtitle
+    ListSubtitleSection(title='List Subtitle').run(url, self.opts)
 
-  # download section, 2 retry when download failed
-  download_section = DownloadSection(title="Downloading", config=config, retry=2)
+    # set up download
+    # subtitle, output dir
+    self.opts = Section(title='Set up download').run(self.setup)
 
-  filePath = f'{config.outputDir}/{config.outputName}'
+    return self.opts
+  
+  def login(self, url:str):
+    # ask login if bilibili
+    if getSource(url) == UrlSource.BILIBILI:
+      return LoginSection(title='Login').run(self.opts)
+    return None
 
-  # download video
-  videoFilePath = f'{filePath}.mp4'
-  config.outputFormat = '"bv*[ext=mp4]"'
-  download_section.run()
+  def setup(self) -> Opts:
+    # subtitle
+    self.opts = SubTitleSection(
+      title='Subtitle',
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(self.opts)
 
-  # download audio
-  audioFilePath = f'{filePath}.m4a'
-  config.outputFormat = '"ba*[ext=m4a]"'
-  download_section.run()
+    # output dir
+    self.opts = OutputSection(
+      title='Output',
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(self.opts, askName=False)
 
-  # merge
-  mergeFilePath = f'{filePath}_merge.mp4'
-  merge(
-    videoPath = videoFilePath,
-    audioPath = audioFilePath,
-    outputDir = mergeFilePath,
-    videoFormat= 'libx264'
-  )
+    return self.opts
 
-  # remove video and audio file
-  remove(videoFilePath)
-  remove(audioFilePath)
+  def download(self, title, url):
+    # set a random output name
+    fileNm = uuid4().__str__()
 
-  # rename the output file
-  rename(mergeFilePath, f'{config.outputDir}/{title}.mp4')
+    # download video
+    self.opts.format("bv*[ext=mp4]").outputName(fileNm+'.mp4')
+    DownloadSection(
+      title="Downloading video",
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(url, self.opts, retry=2)
 
-def run (loop=True):
-  print("----------------- Downlaod -----------------", end='\n\n')
+    # download audio
+    self.opts.format("ba*[ext=m4a]").outputName(fileNm+'.m4a')
+    DownloadSection(
+      title="Downloading audio",
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(url, self.opts, retry=2)
 
-  while True:
-    config = configDownload()
+    # merge
+    optsObj = self.opts()
+    filePath = f'{optsObj["paths"]["home"]}/{fileNm}'
+    videoFilePath = f'{filePath}.mp4'
+    audioFilePath = f'{filePath}.m4a'
+    mergeFilePath = f'{filePath}_merge.mp4'
+    Section(title="Merging").run(
+      bodyFunc=merge, 
+      videoPath=videoFilePath, 
+      audioPath=audioFilePath, 
+      outputDir=mergeFilePath,
+      videoFormat='libx264'
+    )
 
-    md = MetaData.fetchMetaData(config=config)
+    # remove video and audio file
+    remove(videoFilePath)
+    remove(audioFilePath)
 
-    for videoMd in md.getVideos():
-      download(title=videoMd.title, url=videoMd.url, config=config)
+    # rename the output file
+    rename(mergeFilePath, f'{optsObj["paths"]["home"]}/{title}.mp4')
 
-    if not loop:
-      break
+    return
 
 if __name__ == "__main__":
-  run()
+  lazyYtDownload().run()

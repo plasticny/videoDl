@@ -1,60 +1,41 @@
 from __future__ import annotations
 
-from enum import Enum
-from json import loads as jsonLoads
+from sys import path as sysPath
+sysPath.append('src')
 
-from dlConfig import dlConfig
-from service.commandUtils import runCommand, YT_EXEC
-from service.YtDlpHelper import CommandConverter
+from yt_dlp import YoutubeDL
+from enum import Enum
+
+from service.YtDlpHelper import Opts
 
 class ErrMessage (Enum):
   NO_PARAM = 'should provide either config or url'
   GET_METADATA_FAILED = 'Get metadata failed'
 
-class TYPE (Enum):
-  VIDEO = 'video'
-  PLAYLIST = 'playlist'
-
 class MetaData:
   @staticmethod
-  def fetchMetaData(config:dlConfig=None, url:str=None) -> VideoMetaData | PlaylistMetaData:
-    # check parameter
-    if config == None and url == None:
-      raise Exception(ErrMessage.NO_PARAM.value)
-    
-    # set up config
-    if config == None:
-      config = dlConfig()
-      config.url = url
-    cc = CommandConverter(config)
-
+  def fetchMetaData(url:str) -> VideoMetaData | PlaylistMetaData:
     # download metadata
-    result = runCommand(
-      execCommand=YT_EXEC, 
-      paramCommands=[
-        cc.url,
-        cc.skipDownload,
-        cc.getMetaData
-      ],
-      catch_stdout=True
-    )
-
-    if result.returncode != 0:
+    opts = Opts()
+    opts.quiet()
+    try:
+      metadata = YoutubeDL(opts()).extract_info(
+        url = url,
+        download = False
+      )
+    except Exception as e:
+      print(e)
       raise Exception(ErrMessage.GET_METADATA_FAILED.value)
-
-    # parse metadata
-    metadata = jsonLoads(result.stdout)
-    if metadata['_type'] == TYPE.VIDEO.value:
+    
+    try:
+      if metadata['_type'] == 'playlist':
+        return PlaylistMetaData(metadata)
+    except:
       return VideoMetaData(metadata)
-    elif metadata['_type'] == TYPE.PLAYLIST.value:
-      return PlaylistMetaData(metadata)
 
   @property
   def title(self):
     return self.metadata['title']
-  @property
-  def _type(self):
-    return self.metadata['_type']
   @property
   def url(self):
     return self.metadata['original_url']
@@ -62,18 +43,21 @@ class MetaData:
   def __init__ (self, metadata):
     self.metadata = metadata
 
-  def getVideos(self) -> list[VideoMetaData]:
+  def isPlaylist(self) -> bool:
     raise NotImplementedError
 
 class VideoMetaData (MetaData):
-  def getVideos(self) -> list[VideoMetaData]:
-    return [self]
+  def isPlaylist(self) -> bool:
+    return False
 
 class PlaylistMetaData (MetaData):
   @property
   def playlist_count(self):
     return self.metadata['playlist_count']
   
+  def isPlaylist(self) -> bool:
+    return True
+
   def getVideos(self) -> list[VideoMetaData]:
     videos = []
     for videoMd in self.metadata['entries']:
