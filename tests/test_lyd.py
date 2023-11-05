@@ -1,3 +1,6 @@
+from sys import path
+path.append('src')
+
 from unittest.mock import patch, Mock
 
 from uuid import uuid4
@@ -5,91 +8,60 @@ from os.path import exists
 
 from tests.testFileHelper import prepare_output_folder
 
-from src.lazyYtDownload import login, configDownload, run
-from src.dlConfig import dlConfig, DefaultConfig
+from src.lazyYtDownload import lazyYtDownload
+from src.service.YtDlpHelper import Opts
 
 # test login function
 @patch('src.lazyYtDownload.LoginSection.run')
 def test_login(login_mock):
-  config = dlConfig()
+  lyd = lazyYtDownload()
 
   login_mock.return_value = 'cookie'
 
   # test other
-  config.url = 'other'
-  assert login(config) == DefaultConfig.cookieFile.value
+  url = 'other'
+  assert lyd.login(url) == None
   login_mock.assert_not_called()
 
   # test bilibili
-  config.url = 'www.bilibili.com/video/BV1QK4y1d7dQ'
-  assert login(config) == 'cookie'
+  url = 'www.bilibili.com/video/BV1QK4y1d7dQ'
+  assert lyd.login(url) == 'cookie'
   login_mock.assert_called_once()
 
-# test configDownload function
-@patch('src.lazyYtDownload.uuid4')
-@patch('src.lazyYtDownload.SetUpDownloadSection.run')
-@patch('src.lazyYtDownload.login')
+@patch('src.lazyYtDownload.lazyYtDownload.download')
+@patch('src.lazyYtDownload.lazyYtDownload.configDownload')
 @patch('src.lazyYtDownload.UrlSection.run')
-@patch('src.lazyYtDownload.ListSubtitleSection.run', Mock)
-def test_configDownlaod(url_mock, login_mock, setup_mock, uuid_mock):
-  url_mock.return_value = 'url'
-  login_mock.return_value = 'cookie'
-  setup_mock.return_value = dlConfig(
-    subLang='en', doWriteAutoSub=True,
-    outputDir='outputDir'
-  )
-  uuid_mock.return_value = 'outputName'
+def test_download_call_count_yt_video(url_mock, _, download_mock):
+  url_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
+  lazyYtDownload().run(loop=False)
+  assert download_mock.call_count == 1
 
-  config = configDownload()
-  
-  assert config.url == 'url'
-  assert config.cookieFile == 'cookie'
-  assert config.subLang == 'en'
-  assert config.doWriteAutoSub == True
-  assert config.outputDir == 'outputDir'
+@patch('src.lazyYtDownload.lazyYtDownload.download')
+@patch('src.lazyYtDownload.lazyYtDownload.configDownload')
+@patch('src.lazyYtDownload.UrlSection.run')
+def test_download_call_count_bili_list(url_mock, _, download_mock):
+  url_mock.return_value = 'https://www.bilibili.com/video/BV1bN411s7VT'
+  lazyYtDownload().run(loop=False)
+  assert download_mock.call_count == 3
 
-@patch('src.lazyYtDownload.configDownload')
-def test_download_yt_video(config_mock):
+@patch('src.lazyYtDownload.lazyYtDownload.configDownload')
+@patch('builtins.input')
+def test_download_yt_video(input_mock, config_mock):
   prepare_output_folder()
 
-  config = dlConfig()
-  config.default()
-  config.url = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
-  config.cookieFile = ''
-  config.outputDir = 'tests/testFiles/output'
+  input_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
+  config_mock.return_value = Opts().outputDir('tests/testFiles/output')
 
-  config_mock.return_value = config
-
-  run(loop=False)
-
+  lazyYtDownload().run(loop=False)
   assert exists('tests/testFiles/output/test video for videoDl.mp4')
 
-@patch('src.lazyYtDownload.configDownload')
-def test_download_bili_video(config_mock):
+@patch('src.lazyYtDownload.lazyYtDownload.configDownload')
+@patch('builtins.input')
+def test_download_bili_video(input_mock, config_mock):
   prepare_output_folder()
 
-  config = dlConfig()
-  config.default()
-  config.url = 'https://www.bilibili.com/video/BV1154y1T765'
-  config.cookieFile = ''
-  config.outputDir = 'tests/testFiles/output'
+  input_mock.return_value = 'https://www.bilibili.com/video/BV1154y1T765'
+  config_mock.return_value = Opts().outputDir('tests/testFiles/output')
 
-  config_mock.return_value = config
-
-  run(loop=False)
-
+  lazyYtDownload().run(loop=False)
   assert exists('tests/testFiles/output/小 僧 觉 得 很 痛.mp4')
-
-@patch('src.lazyYtDownload.download')
-@patch('src.lazyYtDownload.configDownload')
-def test_download_bili_list(config_mock, download_mock):
-  prepare_output_folder()
-
-  config = dlConfig()
-  config.default()
-  config.url = 'https://www.bilibili.com/video/BV1bN411s7VT'
-  config_mock.return_value = config
-
-  run(loop=False)
-
-  assert download_mock.call_count == 3
