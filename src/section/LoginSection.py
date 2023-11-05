@@ -13,7 +13,7 @@ class Message(Enum):
 # ask the login cookie
 class LoginSection(Section):    
   def run(self, opts:Opts=Opts()) -> Opts:
-    return super().run(self.__login, opts=opts)
+    return super().run(self.__login, opts=opts.copy())
   
   # ask if login
   def __askLogin(self) -> bool:
@@ -33,7 +33,6 @@ class LoginSection(Section):
       opts.cookieFile(cookieFile)
       print(Message.LOGIN.value.format(cookieFile))
     else:
-      opts.cookieFile(None)
       print(Message.NOT_LOGIN.value)
     
     return opts

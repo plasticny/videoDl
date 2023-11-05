@@ -16,7 +16,7 @@ class Message(Enum):
 
 class OutputSection (Section):
   def run(self, opts:Opts=Opts(), askDir:bool=True, askName:bool=True) -> Opts:
-    return super().run(self.__main, opts=opts, askDir=askDir, askName=askName)
+    return super().run(self.__main, opts=opts.copy(), askDir=askDir, askName=askName)
   
   def __main(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
     if askDir:

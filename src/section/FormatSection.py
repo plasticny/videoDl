@@ -13,7 +13,7 @@ class Message(Enum):
 
 class FormatSection (Section):
   def run(self, opts:Opts = Opts()) -> Opts:
-    return super().run(self.__main, opts=opts)
+    return super().run(self.__main, opts=opts.copy())
   
   def __main(self, opts:Opts) -> Opts:
     fo = input(Message.ASK_FORMAT.value).lower()

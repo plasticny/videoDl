@@ -18,20 +18,18 @@ from section.SubTitleSection import SubTitleSection
 from section.OutputSection import OutputSection
 
 class lazyYtDownload:
-  def __init__(self) -> None:
-    self.opts = Opts()
-
   def run (self, loop=True):
     print("----------------- Downlaod -----------------", end='\n\n')
 
     while True:
+      opts = Opts()
+
       url = UrlSection(title='Url').run()
 
-      self.opts = self.configDownload(url)
+      opts = self.configDownload(url, opts)
 
-      md = MetaData.fetchMetaData(url)
-      
       # check the number of video need to download
+      md = MetaData.fetchMetaData(url)
       videos : list[VideoMetaData] = []
       if md.isPlaylist():
         videos.extend(md.getVideos())
@@ -42,7 +40,7 @@ class lazyYtDownload:
       # download
       for idx, v in enumerate(videos):
         Section(title=f'Video {idx+1} of {len(videos)}').run(
-          self.download, 
+          self.download, opts=opts,
           title=v.title, url=v.url
         )
 
@@ -50,64 +48,64 @@ class lazyYtDownload:
         break
     return
 
-  def configDownload(self, url) -> Opts:
+  def configDownload(self, url, opts) -> Opts:
     # ask login    
-    self.login(url)
+    opts = self.login(url)
 
     # list subtitle
-    ListSubtitleSection(title='List Subtitle').run(url, self.opts)
+    ListSubtitleSection(title='List Subtitle').run(url, opts)
 
     # set up download
     # subtitle, output dir
-    self.opts = Section(title='Set up download').run(self.setup)
+    opts = Section(title='Set up download').run(self.setup, opts)
 
-    return self.opts
+    return opts
   
-  def login(self, url:str):
+  def login(self, url:str, opts:Opts) -> Opts:
     # ask login if bilibili
     if getSource(url) == UrlSource.BILIBILI:
-      return LoginSection(title='Login').run(self.opts)
-    return None
+      return LoginSection(title='Login').run(opts)
+    return opts
 
-  def setup(self) -> Opts:
+  def setup(self, opts) -> Opts:
     # subtitle
-    self.opts = SubTitleSection(
+    opts = SubTitleSection(
       title='Subtitle',
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(self.opts)
+    ).run(opts)
 
     # output dir
-    self.opts = OutputSection(
+    opts = OutputSection(
       title='Output',
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(self.opts, askName=False)
+    ).run(opts, askName=False)
 
-    return self.opts
+    return opts
 
-  def download(self, title, url):
+  def download(self, opts:Opts, title, url):
     # set a random output name
     fileNm = uuid4().__str__()
 
     # download video
-    self.opts.format("bv*[ext=mp4]").outputName(fileNm+'.mp4')
+    opts.format("bv*[ext=mp4]").outputName(fileNm+'.mp4')
     DownloadSection(
       title="Downloading video",
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(url, self.opts, retry=2)
+    ).run(url, opts, retry=2)
 
     # download audio
-    self.opts.format("ba*[ext=m4a]").outputName(fileNm+'.m4a')
+    opts.format("ba*[ext=m4a]").outputName(fileNm+'.m4a')
     DownloadSection(
       title="Downloading audio",
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(url, self.opts, retry=2)
+    ).run(url, opts, retry=2)
 
     # merge
-    optsObj = self.opts()
+    optsObj = opts()
     filePath = f'{optsObj["paths"]["home"]}/{fileNm}'
     videoFilePath = f'{filePath}.mp4'
     audioFilePath = f'{filePath}.m4a'

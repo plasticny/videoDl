@@ -13,7 +13,7 @@ class DownloadSection (Section) :
   # PARMAS:
   #   retry: int, the times of try to download again, default is 0    
   def run(self, url:str, opts:Opts=Opts(), retry:int=0):
-    return super().run(self.__download, url=url, opts=opts, retry=retry)
+    return super().run(self.__download, url=url, opts=opts.copy(), retry=retry)
   
   # download video
   def __download (self, url:str, opts:Opts, retry:int):

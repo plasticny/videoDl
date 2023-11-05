@@ -14,59 +14,58 @@ from section.OutputSection import OutputSection
 from service.YtDlpHelper import Opts
 
 class Dl:
-  def __init__(self) -> None:
-    self.opts = Opts()
-
   # main process
   def run (self, loop=True):
     print("----------------- Download -----------------", end='\n\n')
 
     while True:
-      self.opts.reset()
+      opts = Opts()
 
       # ask url
       url = UrlSection(title='Url').run()
                       
       # ask Login
-      LoginSection(title='Login').run(self.opts)
+      opts = LoginSection(title='Login').run(opts)
   
       # list subtitle
-      ListSubtitleSection(title='List Subtitle').run(url, self.opts)
+      ListSubtitleSection(title='List Subtitle').run(url, opts)
   
       # list format
-      ListFormatSection(title='List Format').run(url, self.opts)
+      ListFormatSection(title='List Format').run(url, opts)
       
       # set up download
       # subtitle, format, output dir
-      Section(title='Set up download').run(self.setup)
+      opts = Section(title='Set up download').run(self.setup, opts)
                                   
       # do download
-      DownloadSection(title="Downloading").run(url=url, opts=self.opts)
+      DownloadSection(title="Downloading").run(url=url, opts=opts)
 
       if not loop:
         break
   
-  def setup(self):
+  def setup(self, opts) -> Opts:
     # subtitle
-    SubTitleSection(
+    opts = SubTitleSection(
       title='Subtitle',
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(self.opts)
+    ).run(opts)
 
     # format
-    FormatSection(
+    opts = FormatSection(
       title='Format',
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(self.opts)
+    ).run(opts)
 
     # output dir
-    OutputSection(
+    opts = OutputSection(
       title='Output',
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(self.opts, askName=False)
+    ).run(opts, askName=False)
+
+    return opts
 
 if __name__ == "__main__":
   Dl().run()

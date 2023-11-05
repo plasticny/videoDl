@@ -15,7 +15,7 @@ class Message(Enum):
 class ListSubtitleSection (Section):
   # opts is necessary for the cookie
   def run(self, url:str, opts:Opts=Opts()) -> None:
-    return super().run(self.__listSubTitle, url=url, opts=opts)
+    return super().run(self.__listSubTitle, url=url, opts=opts.copy())
   
   def __listSubTitle (self, url:str, opts:Opts) -> None:
     doList = input(Message.ASK_DO_LIST.value).upper()
@@ -23,5 +23,5 @@ class ListSubtitleSection (Section):
       return
     
     YoutubeDL(
-      params=opts.copy().skip_download().listSubtitle()()
+      params=opts.skip_download().listSubtitle()()
     ).download([url])

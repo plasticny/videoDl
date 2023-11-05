@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import copy
 
 class Opts:
@@ -9,7 +8,38 @@ class Opts:
 
   def __call__(self) -> dict:
     return self.opts
-  
+  def __eq__(self, other: Opts) -> bool:
+    def compareDict(a:dict, b:dict) -> bool:
+      if a is None and b is None:
+        return True
+      if (a is None) != (b is None) or len(a) != len(b):
+        return False
+      for key in a.keys():
+        if not(key in b) or a[key] != b[key]:
+          return False
+      return True
+            
+    def compareList(a:list, b:list) -> bool:
+      if a is None and b is None:
+        return True
+      if (a is None) != (b is None) or len(a) != len(b):
+        return False
+      for i in range(len(a)):
+        if a[i] != b[i]:
+          return False
+      return True
+
+    for key in self.opts:
+      my_v = self.opts[key]
+      other_v = other.opts[key]
+      if key == 'paths' and not compareDict(my_v, other_v):
+        return False
+      elif key == 'subtitleslangs' and not compareList(my_v, other_v):
+        return False
+      elif my_v != other_v:
+        return False
+    return True
+
   def copy(self) -> Opts:
     return copy.deepcopy(self)
   def reset(self) -> Opts:

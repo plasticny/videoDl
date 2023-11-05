@@ -14,7 +14,7 @@ class Message(Enum):
 
 class ListFormatSection (Section):    
   def run(self, url:str, opts:Opts=Opts()) -> None:
-    return super().run(self.__listFormat, url=url, opts=opts)
+    return super().run(self.__listFormat, url=url, opts=opts.copy())
   
   def __listFormat (self, url:str, opts:Opts):
     doList = input(Message.ASK_DO_LIST.value).upper()
@@ -22,5 +22,5 @@ class ListFormatSection (Section):
       return
 
     YoutubeDL(
-      params=opts.copy().skip_download().listFormats()()
+      params=opts.skip_download().listFormats()()
     ).download([url])
