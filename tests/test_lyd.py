@@ -1,7 +1,7 @@
 from sys import path
 path.append('src')
 
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 from uuid import uuid4
 from os.path import exists
@@ -16,16 +16,12 @@ from src.service.YtDlpHelper import Opts
 def test_login(login_mock):
   lyd = lazyYtDownload()
 
-  login_mock.return_value = 'cookie'
-
   # test other
-  url = 'other'
-  assert lyd.login(url) == None
+  lyd.login('other', Opts())
   login_mock.assert_not_called()
 
   # test bilibili
-  url = 'www.bilibili.com/video/BV1QK4y1d7dQ'
-  assert lyd.login(url) == 'cookie'
+  lyd.login('www.bilibili.com/video/BV1QK4y1d7dQ', Opts())
   login_mock.assert_called_once()
 
 @patch('src.lazyYtDownload.lazyYtDownload.download')

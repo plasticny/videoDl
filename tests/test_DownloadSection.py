@@ -42,3 +42,10 @@ def test_with_real_download_bili():
   )
 
   assert exists('tests/testFiles/output/小 僧 觉 得 很 痛 [BV1154y1T765].mp4')
+
+@patch('src.section.DownloadSection.YoutubeDL.download')
+def test_not_change_param_opts(_):
+  opts = Opts()
+  backup_opts = opts.copy()
+  DownloadSection().run('url', opts)
+  assert opts == backup_opts

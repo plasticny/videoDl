@@ -34,3 +34,11 @@ def test_login_canceled(print_mock,_,__):
   ).run(Opts())
   assert opts()["cookiefile"] == None
   assert print_mock.mock_calls.count(call(Message.NOT_LOGIN.value)) == 1
+
+@patch('tkinter.filedialog.askopenfilename', return_value='cookie.txt')
+@patch('builtins.input', return_value='Y')
+def test_not_change_param_opts(_, __):
+  opts = Opts()
+  backup_opts = opts.copy()
+  LoginSection().run(opts)
+  assert opts == backup_opts

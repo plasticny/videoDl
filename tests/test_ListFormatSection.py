@@ -4,6 +4,7 @@ sysPath.append('src')
 from unittest.mock import patch
 
 from src.section.ListFormatSection import ListFormatSection, VALUE
+from src.service.YtDlpHelper import Opts
 
 @patch('builtins.input', return_value='Y')
 @patch('src.section.ListFormatSection.YoutubeDL')
@@ -25,3 +26,11 @@ def test_not_list_format(input_mock, youtubeDl_mock):
   section.run('')
 
   assert youtubeDl_mock.call_count == 0
+
+@patch('builtins.input', return_value='Y')
+@patch('src.section.ListFormatSection.YoutubeDL.download')
+def test_not_change_param_opts(_, __):
+  opts = Opts()
+  backup_opts = opts.copy()
+  ListFormatSection().run('', opts)
+  assert opts == backup_opts

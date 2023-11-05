@@ -41,3 +41,12 @@ def test_doWriteAutoSub(input_mock):
   assert opts()['writesubtitles'] == True
   assert opts()['writeautomaticsub'] == True
   assert opts()['subtitleslangs'] == ['zh']
+
+@patch('builtins.input')
+def test_not_change_param_opts(input_mock):
+  opts = Opts()
+  backup_opts = opts.copy()
+
+  input_mock.side_effect = ['Y', 'zh', 'Y']
+  SubTitleSection('').run(opts)
+  assert opts == backup_opts

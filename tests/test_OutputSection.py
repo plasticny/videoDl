@@ -43,3 +43,11 @@ def test_askOutputName(print_mock, input_mock):
   print_mock.mock_calls[2] == call(section.footer)
   assert opts()['paths'] == {}
   assert opts()['outtmpl'] == 'output_name.mp4'
+
+@patch('builtins.input', return_value='output_name.mp4')
+@patch('tkinter.filedialog.askdirectory', return_value='/path/to/output/dir')
+def test_not_change_param_opts(_, __):
+  opts = Opts()
+  backup_opts = opts.copy()
+  OutputSection('').run(askDir=True, askName=True, opts=opts)
+  assert opts == backup_opts
