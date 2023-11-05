@@ -1,3 +1,6 @@
+import service.packageChecker as packageChecker
+packageChecker.check()
+
 from section.Section import Section, HeaderType
 from section.UrlSection import UrlSection
 from section.LoginSection import LoginSection
@@ -29,7 +32,7 @@ class Dl:
   
       # list subtitle
       ListSubtitleSection(title='List Subtitle').run(url, self.opts)
-
+  
       # list format
       ListFormatSection(title='List Format').run(url, self.opts)
       

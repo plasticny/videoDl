@@ -29,6 +29,6 @@ jobs:
         pip install -r requirements.txt
         pip install -r test-requirements.txt
     - name: Test with pytest
-      # skip bili related tests since the download seems to be blocked when running on github actions
+      # skip bilibili related tests since the download seems to be blocked when running on github actions
       run: |
         pytest -k "not bili"

@@ -1,3 +1,6 @@
+import service.packageChecker as packageChecker
+packageChecker.check()
+
 from service.merger import merge
 from service.urlHelper import getSource, UrlSource
 from service.MetaData import MetaData, VideoMetaData
