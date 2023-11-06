@@ -50,14 +50,14 @@ class lazyYtDownload:
 
   def configDownload(self, url, opts) -> Opts:
     # ask login    
-    opts = self.login(url)
+    opts = self.login(url, opts=opts)
 
     # list subtitle
     ListSubtitleSection(title='List Subtitle').run(url, opts)
 
     # set up download
     # subtitle, output dir
-    opts = Section(title='Set up download').run(self.setup, opts)
+    opts = Section(title='Set up download').run(self.setup, opts=opts)
 
     return opts
   

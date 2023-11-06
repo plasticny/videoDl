@@ -35,7 +35,7 @@ class Dl:
       
       # set up download
       # subtitle, format, output dir
-      opts = Section(title='Set up download').run(self.setup, opts)
+      opts = Section(title='Set up download').run(self.setup, opts=opts)
                                   
       # do download
       DownloadSection(title="Downloading").run(url=url, opts=opts)
