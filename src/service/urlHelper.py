@@ -15,7 +15,6 @@ class SourcePrefix (Enum):
 class ErrMessage (Enum):
   INVALID_URL = 'Invalid url: Not url'
   INVALID_YOUTUBE_URL = 'Invalid url: www.youtube.com url should have the query v'
-  URL_SOURCE_NOT_TESTED = 'Warning: download may fail because this url source is not tested'
 
 # checking if the url is valid
 # return: valid (bool), err (str/None)
@@ -78,7 +77,4 @@ def removeSurplusParam (url : str) -> str:
   if urlSource == UrlSource.BILIBILI:
     return keepQuery(url, [])
   
-  # not defined
-  if urlSource == UrlSource.NOT_DEFINED:
-    print(ErrMessage.URL_SOURCE_NOT_TESTED.value)
-    return url
+  return url

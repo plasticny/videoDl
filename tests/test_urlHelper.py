@@ -58,9 +58,7 @@ def test_removeSurplusParam_bilibili():
   result = removeSurplusParam(url)
   assert result == expected_url
 
-@patch('builtins.print')
-def test_removeSurplusParam_not_defined(print_mock):
+def test_removeSurplusParam_not_defined():
   url = "https://example.com"
   assert removeSurplusParam(url) == url
-  assert print_mock.mock_calls.count(call(ErrMessage.URL_SOURCE_NOT_TESTED.value)) == 1
 # ========== End removeSurplusParam ========== #
