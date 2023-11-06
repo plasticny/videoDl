@@ -7,6 +7,10 @@ class UrlSource (Enum):
   YOUTUBE = 0
   BILIBILI = 1
 
+class SourcePrefix (Enum):
+  YOUTUBE = ['www.youtube.com', 'youtu.be']
+  BILIBILI = ['www.bilibili.com/video/']
+
 # error message
 class ErrMessage (Enum):
   INVALID_URL = 'Invalid url: Not url'
@@ -31,12 +35,18 @@ def isValid (url : str) -> (bool, str):
 
 # get the source of the url
 def getSource (url : str) -> UrlSource:
-  # 'www.youtube.com' url
-  if url.count('www.youtube.com') != 0:
+  def check(url:str, prefix:SourcePrefix):
+    for p in prefix.value:
+      if url.count(p) != 0:
+        return True
+    return False
+
+  # 'youtube' url
+  if check(url, SourcePrefix.YOUTUBE) != 0:
     return UrlSource.YOUTUBE
   
   # 'www.bilibili.com/video' url
-  if url.count('www.bilibili.com/video') != 0:
+  if check(url, SourcePrefix.BILIBILI) != 0:
     return UrlSource.BILIBILI
   
   return UrlSource.NOT_DEFINED

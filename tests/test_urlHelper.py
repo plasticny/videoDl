@@ -28,6 +28,11 @@ def test_getSource_youtube():
   source = getSource(url)
   assert source == UrlSource.YOUTUBE
 
+def test_getSource_youtube_short():
+  url = "https://youtu.be/dQw4w9WgXcQ"
+  source = getSource(url)
+  assert source == UrlSource.YOUTUBE
+
 def test_getSource_bilibili():
   url = "https://www.bilibili.com/video/BV1Kb411W75N"
   source = getSource(url)
