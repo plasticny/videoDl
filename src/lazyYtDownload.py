@@ -35,7 +35,6 @@ class lazyYtDownload:
         videos.extend(md.getVideos())
       else:
         videos.append(md)
-      print(f'Video found: {len(videos)}')
 
       # download
       for idx, v in enumerate(videos):

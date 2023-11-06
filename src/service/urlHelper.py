@@ -15,6 +15,7 @@ class SourcePrefix (Enum):
 class ErrMessage (Enum):
   INVALID_URL = 'Invalid url: Not url'
   INVALID_YOUTUBE_URL = 'Invalid url: www.youtube.com url should have the query v'
+  URL_SOURCE_NOT_TESTED = 'Warning: download may fail because this url source is not tested'
 
 # checking if the url is valid
 # return: valid (bool), err (str/None)
@@ -35,18 +36,18 @@ def isValid (url : str) -> (bool, str):
 
 # get the source of the url
 def getSource (url : str) -> UrlSource:
-  def check(url:str, prefix:SourcePrefix):
+  def __check(url:str, prefix:SourcePrefix):
     for p in prefix.value:
       if url.count(p) != 0:
         return True
     return False
 
   # 'youtube' url
-  if check(url, SourcePrefix.YOUTUBE) != 0:
+  if __check(url, SourcePrefix.YOUTUBE):
     return UrlSource.YOUTUBE
   
   # 'www.bilibili.com/video' url
-  if check(url, SourcePrefix.BILIBILI) != 0:
+  if __check(url, SourcePrefix.BILIBILI):
     return UrlSource.BILIBILI
   
   return UrlSource.NOT_DEFINED
@@ -79,4 +80,5 @@ def removeSurplusParam (url : str) -> str:
   
   # not defined
   if urlSource == UrlSource.NOT_DEFINED:
-    raise NotImplementedError()
+    print(ErrMessage.URL_SOURCE_NOT_TESTED.value)
+    return url

@@ -51,13 +51,23 @@ def test_download_yt_video(input_mock, config_mock):
   lazyYtDownload().run(loop=False)
   assert exists('tests/testFiles/output/test video for videoDl.mp4')
 
-@patch('src.lazyYtDownload.lazyYtDownload.configDownload')
+
+def outputSection_faker(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
+  return opts.copy().outputDir('tests/testFiles/output')
+
+@patch('src.lazyYtDownload.OutputSection.run', outputSection_faker)
 @patch('builtins.input')
-def test_download_bili_video(input_mock, config_mock):
+def test_download_fullRun_bili_video(input_mock):
   prepare_output_folder()
 
-  input_mock.return_value = 'https://www.bilibili.com/video/BV1154y1T765'
-  config_mock.return_value = Opts().outputDir('tests/testFiles/output')
+  input_mock.side_effect = [
+    'https://www.bilibili.com/video/BV1154y1T765', # url
+    'N', # login
+    'Y', # list subtitle
+    'Y', # write subtitle
+    '', # subtitle lang
+    'N', # write auto subtitle
+  ]
 
   lazyYtDownload().run(loop=False)
   assert exists('tests/testFiles/output/小 僧 觉 得 很 痛.mp4')

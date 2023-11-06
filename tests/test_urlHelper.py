@@ -1,4 +1,5 @@
 from pytest import raises as pytest_raises
+from unittest.mock import patch, call
 
 from src.service.urlHelper import *
 
@@ -57,9 +58,9 @@ def test_removeSurplusParam_bilibili():
   result = removeSurplusParam(url)
   assert result == expected_url
 
-def test_removeSurplusParam_not_defined():
+@patch('builtins.print')
+def test_removeSurplusParam_not_defined(print_mock):
   url = "https://example.com"
-  with pytest_raises(NotImplementedError) as e_info:
-    removeSurplusParam(url)
-  assert e_info.type == NotImplementedError
+  assert removeSurplusParam(url) == url
+  assert print_mock.mock_calls.count(call(ErrMessage.URL_SOURCE_NOT_TESTED.value)) == 1
 # ========== End removeSurplusParam ========== #
