@@ -9,40 +9,43 @@ class Opts:
   def __call__(self) -> dict:
     return self.opts
   def __eq__(self, other: Opts) -> bool:
-    def sameItem(a, b) -> bool:
-      if a is None and b is None:
-        return True
-      if (a is None) != (b is None):
-        return False
-      if isinstance(a, dict) and not sameDict(a, b):
-        return False
-      if isinstance(a, list) and not sameList(a, b):
-        return False
-      if a != b:
-        return False
-      return True
+    return self.opts == other.opts
 
-    def sameDict(a:dict, b:dict) -> bool:
-      if len(a) != len(b):
-        return False
-      for key in a.keys():
-        if not(key in b) or not sameItem(a[key], b[key]):
-          return False
-      return True
+    # === codes for deep comparison, useless now ===
+    # def sameItem(a, b) -> bool:
+    #   if a is None and b is None:
+    #     return True
+    #   if (a is None) != (b is None):
+    #     return False
+    #   if isinstance(a, dict) and not sameDict(a, b):
+    #     return False
+    #   if isinstance(a, list) and not sameList(a, b):
+    #     return False
+    #   if a != b:
+    #     return False
+    #   return True
+
+    # def sameDict(a:dict, b:dict) -> bool:
+    #   if len(a) != len(b):
+    #     return False
+    #   for key in a.keys():
+    #     if not(key in b) or not sameItem(a[key], b[key]):
+    #       return False
+    #   return True
             
-    def sameList(a:list, b:list) -> bool:
-      if len(a) != len(b):
-        return False
-      for a_v, b_v in zip(a, b):
-        if not sameItem(a_v, b_v):
-          return False
-      return True
-
-    for key in self.opts:
-      # suppose self and other must have the same keys
-      if not sameItem(self.opts[key], other.opts[key]):
-        return False
-    return True
+    # def sameList(a:list, b:list) -> bool:
+    #   if len(a) != len(b):
+    #     return False
+    #   for a_v, b_v in zip(a, b):
+    #     if not sameItem(a_v, b_v):
+    #       return False
+    #   return True
+    
+    # for key in self.opts:
+    #   # suppose self and other must have the same keys
+    #   if not sameItem(self.opts[key], other.opts[key]):
+    #     return False
+    # return True
 
   def copy(self) -> Opts:
     return copy.deepcopy(self)
@@ -63,6 +66,8 @@ class Opts:
       # list
       'listformats': None,
       'listsubtitles': None,
+      # postprocessor
+      'postprocessors': [],
       # others
       'skip_download': None,
       'quiet': None,
@@ -95,6 +100,15 @@ class Opts:
     return self
   def subtitlesLang (self, val:str) -> Opts:
     self.opts['subtitleslangs'] = [val]
+    return self
+  def embedSubtitle (self, val:bool = True) -> Opts:
+    KEY = 'FFmpegEmbedSubtitle'
+    if val:
+      self.opts['postprocessors'].append({'key': KEY})
+    else:
+      self.opts['postprocessors'] = list(
+        filter(lambda pp: pp['key'] != KEY, self.opts['postprocessors'])
+      )
     return self
   
   # cookie

@@ -34,4 +34,7 @@ class SubTitleSection (Section):
       lang = None
       doWriteAutoSub = None
     
-    return opts.writeSubtitles(doWriteSub).subtitlesLang(lang).writeAutomaticSub(doWriteAutoSub)
+    doEmbedSub = doWriteSub or doWriteAutoSub
+
+    # return opts.writeSubtitles(doWriteSub).subtitlesLang(lang).writeAutomaticSub(doWriteAutoSub)
+    return opts.subtitlesLang(lang).writeSubtitles(doWriteSub).writeAutomaticSub(doWriteAutoSub).embedSubtitle(doEmbedSub)
