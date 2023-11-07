@@ -122,6 +122,7 @@ class lazyYtDownload:
     remove(audioFilePath)
 
     # rename the output file
+    title = title.replace('"', '')
     rename(mergeFilePath, f'{optsObj["paths"]["home"]}/{title}.mp4')
 
     return
