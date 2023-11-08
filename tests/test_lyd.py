@@ -1,12 +1,12 @@
 from sys import path
 path.append('src')
 
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from uuid import uuid4
 from os.path import exists
 
-from tests.testFileHelper import prepare_output_folder
+from tests.testFileHelper import prepare_output_folder, OUTPUT_FOLDER_PATH
 
 from src.lazyYtDownload import lazyYtDownload
 from src.service.YtDlpHelper import Opts
@@ -46,18 +46,15 @@ def test_download_yt_video(input_mock, config_mock):
   prepare_output_folder()
 
   input_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
-  config_mock.return_value = Opts().outputDir('tests/testFiles/output')
+  config_mock.return_value = Opts().outputDir(OUTPUT_FOLDER_PATH)
 
   lazyYtDownload().run(loop=False)
-  assert exists('tests/testFiles/output/test video for videoDl.mp4')
+  assert exists(f'{OUTPUT_FOLDER_PATH}/test video for videoDl.mp4')
 
 
-def outputSection_faker(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
-  return opts.copy().outputDir('tests/testFiles/output')
-
-@patch('src.lazyYtDownload.OutputSection.run', outputSection_faker)
+@patch('src.lazyYtDownload.OutputSection.run')
 @patch('builtins.input')
-def test_download_fullRun_bili_video(input_mock):
+def test_download_fullRun_bili_video(input_mock, outputSection_mock):
   prepare_output_folder()
 
   input_mock.side_effect = [
@@ -69,5 +66,23 @@ def test_download_fullRun_bili_video(input_mock):
     'N', # write auto subtitle
   ]
 
-  lazyYtDownload().run(loop=False)
-  assert exists('tests/testFiles/output/小 僧 觉 得 很 痛.mp4')
+  def outputSection_faker(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
+    return opts.copy().outputDir(OUTPUT_FOLDER_PATH)
+
+  with patch('src.lazyYtDownload.OutputSection.run', outputSection_faker):
+    lazyYtDownload().run(loop=False)
+  assert exists(f'{OUTPUT_FOLDER_PATH}/小 僧 觉 得 很 痛.mp4')
+
+# test renameFile function escape special char and rename file correctly
+def test_renameFile():
+  # create a test file
+  old_title = f'{str(uuid4())}.txt'
+  with open(f'{OUTPUT_FOLDER_PATH}\\{old_title}', 'w'):
+    pass
+
+  new_title = '"*:<>?|test.txt'
+  expected_escape_title = 'test.txt'
+  lazyYtDownload().renameFile(OUTPUT_FOLDER_PATH, old_title, new_title)
+
+  assert not exists(f'{OUTPUT_FOLDER_PATH}\\{old_title}')
+  assert exists(f'{OUTPUT_FOLDER_PATH}\\{expected_escape_title}')

@@ -105,27 +105,36 @@ class lazyYtDownload:
 
     # merge
     optsObj = opts()
-    filePath = f'{optsObj["paths"]["home"]}/{fileNm}'
-    videoFilePath = f'{filePath}.mp4'
-    audioFilePath = f'{filePath}.m4a'
-    mergeFilePath = f'{filePath}_merge.mp4'
+    outputDir = optsObj["paths"]["home"]
+    videoFileNm = f'{fileNm}.mp4'
+    audioFileNm = f'{fileNm}.m4a'
+    mergeFileNm = f'{fileNm}_merge.mp4'
     Section(title="Merging").run(
       bodyFunc=merge, 
-      videoPath=videoFilePath, 
-      audioPath=audioFilePath, 
-      outputDir=mergeFilePath,
+      videoPath=f"{outputDir}/{videoFileNm}", 
+      audioPath=f"{outputDir}/{audioFileNm}",
+      outputDir=f"{outputDir}/{mergeFileNm}",
       videoFormat='libx264'
     )
 
     # remove video and audio file
-    remove(videoFilePath)
-    remove(audioFilePath)
+    remove(f"{outputDir}/{videoFileNm}")
+    remove(f"{outputDir}/{audioFileNm}")
 
     # rename the output file
-    title = title.replace('"', '')
-    rename(mergeFilePath, f'{optsObj["paths"]["home"]}/{title}.mp4')
-
+    self.renameFile(outputDir, f'{fileNm}_merge.mp4', f'{title}.mp4')
+    
     return
+  
+  # rename file with escape special character
+  def renameFile(self, dirPath, oldName, newName):
+    ESCAPE_CHAR = {'"', '*', ':', '<', '>', '?', '|'}
+    
+    escaped_newName = ''
+    for c in newName:
+      escaped_newName += '' if c in ESCAPE_CHAR else c
+
+    rename(f'{dirPath}/{oldName}', f'{dirPath}/{escaped_newName}')
 
 if __name__ == "__main__":
   lazyYtDownload().run()

@@ -75,6 +75,7 @@ class Opts:
     }
     return self
 
+  # ========= fast setter function for the opts params =========
   # output
   def outputName (self, val:str) -> Opts:
     self.opts['outtmpl'] = val
@@ -134,3 +135,4 @@ class Opts:
   def overwrites (self, val:bool = True) -> Opts:
     self.opts['overwrites'] = val
     return self
+  # ========= END fast setter function for the opts params END =========
