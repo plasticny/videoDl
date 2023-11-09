@@ -71,7 +71,8 @@ class Opts:
       # others
       'skip_download': None,
       'quiet': None,
-      'overwrites': None
+      'overwrites': None,
+      'ffmpeg_location': 'ffmpeg'
     }
     return self
 
@@ -134,5 +135,8 @@ class Opts:
     return self
   def overwrites (self, val:bool = True) -> Opts:
     self.opts['overwrites'] = val
+    return self
+  def ffmpeg_location (self, val:str) -> Opts:
+    self.opts['ffmpeg_location'] = val
     return self
   # ========= END fast setter function for the opts params END =========

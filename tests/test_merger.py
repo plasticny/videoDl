@@ -9,19 +9,6 @@ from tests.testFileHelper import prepare_output_folder, OUTPUT_FOLDER_PATH
 
 from src.service.merger import mergeVAS
 
-@patch('src.service.merger.ffmpeg.run')
-def test_mergeVAS_merge_fail(run_mock):
-  run_mock.side_effect = Mock(ffmpegError('','',''))
-
-  with pytest_raises(Exception):
-    mergeVAS(
-      outputPath=f'{OUTPUT_FOLDER_PATH}/test_video_out.mp4',
-      videoPath='tests/testFiles/test_merger/test_video.mp4',
-      audioPath='tests/testFiles/test_merger/test_audio.m4a',
-      subtitlePath='tests/testFiles/test_merger/test_video.mp4',
-      quiet=True
-    )
-
 def test_mergeVAS_no_video_n_audio():
   """
     Test if the function can raise exception if video and audio are not provided

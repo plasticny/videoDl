@@ -1,12 +1,14 @@
 import service.packageChecker as packageChecker
 packageChecker.check()
 
-from service.merger import merge
+from service.merger import mergeVAS
 from service.urlHelper import getSource, UrlSource
 from service.MetaData import MetaData, VideoMetaData
 from service.YtDlpHelper import Opts
+from service.fileHelper import perpare_temp_folder, clear_temp_folder, TEMP_FOLDER_PATH
 
-from os import remove, rename
+from os import rename, remove
+from os.path import exists
 from uuid import uuid4
 
 from section.Section import Section, HeaderType
@@ -20,6 +22,8 @@ from section.OutputSection import OutputSection
 class lazyYtDownload:
   def run (self, loop=True):
     print("----------------- Downlaod -----------------", end='\n\n')
+
+    perpare_temp_folder()
 
     while True:
       opts = Opts()
@@ -38,10 +42,13 @@ class lazyYtDownload:
 
       # download
       for idx, v in enumerate(videos):
-        Section(title=f'Video {idx+1} of {len(videos)}').run(
-          self.download, opts=opts,
-          title=v.title, url=v.url
-        )
+        try:
+          Section(title=f'Video {idx+1} of {len(videos)}').run(
+            self.download, opts=opts,
+            title=v.title, url=v.url
+          )
+        finally:
+          clear_temp_folder()
 
       if not loop:
         break
@@ -84,8 +91,18 @@ class lazyYtDownload:
     return opts
 
   def download(self, opts:Opts, title, url):
+    """
+      For lyd, download video and audio separately, then merge them.
+
+      Args hint:
+        `title` will be the title of the output video
+    """
+
     # set a random output name
     fileNm = uuid4().__str__()
+    # store the output dir path and replace it with temp folder
+    outputDir = opts()["paths"]["home"]
+    opts = opts.copy().outputDir(TEMP_FOLDER_PATH)
 
     # download video
     opts.format("bv*[ext=mp4]").outputName(fileNm+'.mp4')
@@ -97,6 +114,7 @@ class lazyYtDownload:
 
     # download audio
     opts.format("ba*[ext=m4a]").outputName(fileNm+'.m4a')
+    opts.writeAutomaticSub(False).writeSubtitles(False).embedSubtitle(False) # already embeded subtitle when download video
     DownloadSection(
       title="Downloading audio",
       doShowFooter=False,
@@ -104,37 +122,45 @@ class lazyYtDownload:
     ).run(url, opts, retry=2)
 
     # merge
-    optsObj = opts()
-    outputDir = optsObj["paths"]["home"]
     videoFileNm = f'{fileNm}.mp4'
     audioFileNm = f'{fileNm}.m4a'
     mergeFileNm = f'{fileNm}_merge.mp4'
     Section(title="Merging").run(
-      bodyFunc=merge, 
-      videoPath=f"{outputDir}/{videoFileNm}", 
-      audioPath=f"{outputDir}/{audioFileNm}",
-      outputDir=f"{outputDir}/{mergeFileNm}",
-      videoFormat='libx264'
+      bodyFunc=mergeVAS, 
+      outputPath=f"{TEMP_FOLDER_PATH}/{mergeFileNm}",
+      videoPath=f"{TEMP_FOLDER_PATH}/{videoFileNm}", 
+      audioPath=f"{TEMP_FOLDER_PATH}/{audioFileNm}",
+      subtitlePath=f"{TEMP_FOLDER_PATH}/{videoFileNm}" # subtitle is embeded inside the download video
     )
 
-    # remove video and audio file
-    remove(f"{outputDir}/{videoFileNm}")
-    remove(f"{outputDir}/{audioFileNm}")
-
     # rename the output file
-    self.renameFile(outputDir, f'{fileNm}_merge.mp4', f'{title}.mp4')
-    
+    self.renameFile(
+      f'{fileNm}_merge.mp4', f'{title}.mp4',
+      dirPath=TEMP_FOLDER_PATH, toDirPath=outputDir,
+      overwrite=True
+    )
+        
     return
   
-  # rename file with escape special character
-  def renameFile(self, dirPath, oldName, newName):
+  def renameFile(self, oldName, newName, dirPath, toDirPath=None, overwrite=False):
+    """
+      Rename file with escape special character
+
+      Args hint:
+        `dirPath` is the directory of the file.\n
+        If `toDirPath` is provided, the file will also move to the given dir\n
+        If `overwrite` is True, the file will overwrite the file with the same name in the target dir
+    """
     ESCAPE_CHAR = {'"', '*', ':', '<', '>', '?', '|'}
     
     escaped_newName = ''
     for c in newName:
       escaped_newName += '' if c in ESCAPE_CHAR else c
+    target_name = f'{dirPath if toDirPath is None else toDirPath}/{escaped_newName}'
 
-    rename(f'{dirPath}/{oldName}', f'{dirPath}/{escaped_newName}')
+    if overwrite and exists(target_name):
+      remove(target_name)
+    rename(f'{dirPath}/{oldName}',target_name)
 
 if __name__ == "__main__":
   lazyYtDownload().run()

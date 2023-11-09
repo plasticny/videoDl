@@ -82,7 +82,10 @@ def test_renameFile():
 
   new_title = '"*:<>?|test.txt'
   expected_escape_title = 'test.txt'
-  lazyYtDownload().renameFile(OUTPUT_FOLDER_PATH, old_title, new_title)
+  lazyYtDownload().renameFile(
+    oldName=old_title, newName=new_title,
+    dirPath=OUTPUT_FOLDER_PATH
+  )
 
   assert not exists(f'{OUTPUT_FOLDER_PATH}\\{old_title}')
   assert exists(f'{OUTPUT_FOLDER_PATH}\\{expected_escape_title}')
