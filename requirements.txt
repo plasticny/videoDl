@@ -1,1 +1,2 @@
+ffmpeg-python==0.2.0
 yt_dlp==2023.10.13
