@@ -6,6 +6,8 @@ __pycache__
 /src/*.exe
 /src/draft.py
 
+/temp/*
+
 build
 dist
 *.spec
