@@ -1,7 +1,8 @@
 from sys import path
 path.append('src')
 
-from unittest.mock import patch, Mock
+from unittest.mock import patch
+from pytest import raises as pytest_raises
 
 from uuid import uuid4
 from os.path import exists
@@ -73,8 +74,10 @@ def test_download_fullRun_bili_video(input_mock, outputSection_mock):
     lazyYtDownload().run(loop=False)
   assert exists(f'{OUTPUT_FOLDER_PATH}/小 僧 觉 得 很 痛.mp4')
 
-# test renameFile function escape special char and rename file correctly
-def test_renameFile():
+def test_renameFile_escape():
+  """
+    test renameFile function escape special char and rename file correctly
+  """
   # create a test file
   old_title = f'{str(uuid4())}.txt'
   with open(f'{OUTPUT_FOLDER_PATH}\\{old_title}', 'w'):
@@ -89,3 +92,38 @@ def test_renameFile():
 
   assert not exists(f'{OUTPUT_FOLDER_PATH}\\{old_title}')
   assert exists(f'{OUTPUT_FOLDER_PATH}\\{expected_escape_title}')
+
+def test_renameFile_overwrite():
+  """
+    test renameFile can overwrite file, if overwrite is true and file is exist
+  """
+  # create a old file that will be rename
+  old_title = 'old.txt'
+  with open(f'{OUTPUT_FOLDER_PATH}\\{old_title}', 'w') as f:
+    f.write('old')
+  
+  # create a existed file that will be overwrite
+  new_title = 'new.txt'
+  with open(f'{OUTPUT_FOLDER_PATH}\\{new_title}', 'w') as f:
+    f.write('new')
+
+  # expect a error will be raise if not overwrite
+  with pytest_raises(FileExistsError):
+    lazyYtDownload().renameFile(
+      oldName=old_title, newName=new_title,
+      dirPath=OUTPUT_FOLDER_PATH,
+      overwrite=False
+    )
+
+  # rename and overwrite
+  lazyYtDownload().renameFile(
+    oldName=old_title, newName=new_title,
+    dirPath=OUTPUT_FOLDER_PATH,
+    overwrite=True
+  )
+
+  # check file content
+  assert not exists(f'{OUTPUT_FOLDER_PATH}\\{old_title}')
+  assert exists(f'{OUTPUT_FOLDER_PATH}\\{new_title}')
+  with open(f'{OUTPUT_FOLDER_PATH}\\{new_title}', 'r') as f:
+    assert f.read() == 'old'
