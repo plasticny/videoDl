@@ -1,43 +1,52 @@
-from unittest.mock import patch, call
+from sys import path
+path.append('src')
 
-from src.section.SubTitleSection import SubTitleSection, VALUE, Message
+from unittest.mock import patch
+
+from src.section.SubTitleSection import SubTitleSection, VALUE
+from src.service.YtDlpHelper import Opts
+
+@patch('builtins.input', return_value='N')
+def test_noWriteSub(_):
+  section = SubTitleSection('')
+
+  opts = section.run(Opts())
+  assert opts()['writesubtitles'] == False
+  assert opts()['writeautomaticsub'] == None
+  assert opts()['subtitleslangs'] == [None]
 
 @patch('builtins.input')
 def test_subLang(input_mock):
   section = SubTitleSection('')
 
   # Test with custom language
-  input_mock.return_value = 'zh'
-  lang, _ = section.run()
-  assert lang == 'zh'
+  input_mock.side_effect = ['Y','zh', 'N']
+  opts = section.run(Opts())
+  assert opts()['writesubtitles'] == True
+  assert opts()['writeautomaticsub'] == False
+  assert opts()['subtitleslangs'] == ['zh']
 
   # Test with default language
-  input_mock.return_value = ''
-  lang, _ = section.run()
-  assert lang == VALUE.DEFAULT_IN_LANG.value
+  input_mock.side_effect = ['Y','', 'N']
+  opts = section.run(Opts())
+  assert opts()['writesubtitles'] == True
+  assert opts()['writeautomaticsub'] == False
+  assert opts()['subtitleslangs'] == [VALUE.DEFAULT_IN_LANG.value]
 
 @patch('builtins.input')
 def test_doWriteAutoSub(input_mock):
-  section = SubTitleSection('')
-
-  # Test with write auto subtitle
-  input_mock.return_value = 'Y'
-  _, doWriteAutoSub = section.run()
-  assert doWriteAutoSub == True
-
-  # Test with not write auto subtitle
-  input_mock.return_value = 'N'
-  _, doWriteAutoSub = section.run()
-  assert doWriteAutoSub == False
+  # Test with custom language
+  input_mock.side_effect = ['Y','zh', 'Y']
+  opts = SubTitleSection('').run(Opts())
+  assert opts()['writesubtitles'] == True
+  assert opts()['writeautomaticsub'] == True
+  assert opts()['subtitleslangs'] == ['zh']
 
 @patch('builtins.input')
-def test_ui_output(input_mock):
-  section = SubTitleSection('')
+def test_not_change_param_opts(input_mock):
+  opts = Opts()
+  backup_opts = opts.copy()
 
-  # Test with custom language and write auto subtitle
-  input_mock.side_effect = ['zh', 'Y']
-  section.run()
-  input_mock.assert_has_calls([
-    call(Message.ASK_LANG.value),
-    call(Message.ASK_WRITE_AUTO_SUB.value),
-  ])
+  input_mock.side_effect = ['Y', 'zh', 'Y']
+  SubTitleSection('').run(opts)
+  assert opts == backup_opts

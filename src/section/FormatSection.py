@@ -1,6 +1,7 @@
 from enum import Enum
 
 from section.Section import Section
+from service.YtDlpHelper import Opts
 
 class VALUE(Enum):
   IN_AUTO = 'auto'
@@ -11,11 +12,13 @@ class Message(Enum):
   ASK_FORMAT = f'Enter the format:({VALUE.IN_AUTO.value}) '
 
 class FormatSection (Section):
-  def run(self) -> str:
-    return super().run(self.__main)
+  def run(self, opts:Opts = Opts()) -> Opts:
+    return super().run(self.__main, opts=opts.copy())
   
-  def __main(self) -> str:
+  def __main(self, opts:Opts) -> Opts:
     fo = input(Message.ASK_FORMAT.value).lower()
     if fo == VALUE.IN_AUTO.value or fo == VALUE.IN_EMPTY.value:
-      return VALUE.OUT_DEFAULT.value
-    return fo
+      opts.format(VALUE.OUT_DEFAULT.value)
+    else:
+      opts.format(fo)
+    return opts

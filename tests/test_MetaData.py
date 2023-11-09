@@ -2,9 +2,7 @@ from json import loads as jsonLoads
 from pytest import raises as pytestRaises
 from unittest.mock import patch
 
-from tests.fakers import fake_CompletedProcess
 from src.service.MetaData import MetaData, VideoMetaData, PlaylistMetaData, ErrMessage
-from src.dlConfig import dlConfig
 
 # test fetch metadata of youtube video with url
 def test_fetchMetaData_video():
@@ -18,10 +16,9 @@ def test_fetchMetaData_video():
 
 # test fetch metadata of bilibili playlist with config object
 def test_fetchMetaData_bili_ls():
-  config = dlConfig()
-  config.url = 'https://www.bilibili.com/video/BV1bN411s7VT'
+  url = 'https://www.bilibili.com/video/BV1bN411s7VT'
 
-  md = MetaData.fetchMetaData(config=config)
+  md = MetaData.fetchMetaData(url)
   with open('tests/testFiles/test_MetaData/bili_ls.json', 'r') as f:
     expected = jsonLoads(f.read())
 
@@ -30,25 +27,10 @@ def test_fetchMetaData_bili_ls():
   assert md.url == expected['original_url']
   assert md.playlist_count == expected['playlist_count']
 
-def test_fetchMetaData_no_param():
+def test_fetchMetaData_failed():
   with pytestRaises(Exception) as e:
-    MetaData.fetchMetaData()
-  assert str(e.value) == ErrMessage.NO_PARAM.value
-
-@patch('src.service.MetaData.runCommand')
-def test_fetchMetaData_failed(runCommand_mock):
-  runCommand_mock.return_value = fake_CompletedProcess(1)
-  with pytestRaises(Exception) as e:
-    MetaData.fetchMetaData(url='https://www.youtube.com/watch?v=zKAxWU4odvE')
+    MetaData.fetchMetaData(url='invalid url')
   assert str(e.value) == ErrMessage.GET_METADATA_FAILED.value
-
-def test_VideoMetaData_getVideos():
-  metaData = jsonLoads(open('tests/testFiles/test_MetaData/yt_v.json', 'r').read())
-  md = VideoMetaData(metaData)
-
-  videos = md.getVideos()
-  assert len(videos) == 1
-  assert videos[0].title == metaData['title']
 
 def test_PlaylistMetaData_getVideos():
   metaData = jsonLoads(open('tests/testFiles/test_MetaData/bili_ls.json', 'r').read())

@@ -1,97 +1,140 @@
-from dlConfig import dlConfig, DefaultConfig
+import service.packageChecker as packageChecker
+packageChecker.check()
 
 from service.merger import merge
-from service.YtFetcher import getYtSongTitle
 from service.urlHelper import getSource, UrlSource
-from service.MetaData import MetaData
+from service.MetaData import MetaData, VideoMetaData
+from service.YtDlpHelper import Opts
 
 from os import remove, rename
 from uuid import uuid4
 
+from section.Section import Section, HeaderType
 from section.UrlSection import UrlSection
 from section.DownloadSection import DownloadSection
-from section.SetUpDownloadSection import SetUpDownloadSection
 from section.ListSubtitleSection import ListSubtitleSection
 from section.LoginSection import LoginSection
+from section.SubTitleSection import SubTitleSection
+from section.OutputSection import OutputSection
 
-def login(config : dlConfig) -> str:
-  # ask login if bilibili
-  if getSource(config.url) == UrlSource.BILIBILI:
-    return LoginSection(title='Login').run()
-  else:
-    return DefaultConfig.cookieFile.value
+class lazyYtDownload:
+  def run (self, loop=True):
+    print("----------------- Downlaod -----------------", end='\n\n')
 
-def configDownload() -> dlConfig:
-  config = dlConfig()
+    while True:
+      opts = Opts()
 
-  # ask the urls
-  config.url = UrlSection(title='Url').run()
+      url = UrlSection(title='Url').run()
 
-  # ask login    
-  config.cookieFile = login(config)
+      opts = self.configDownload(url, opts)
 
-  # list subtitle
-  ListSubtitleSection(title='List Subtitle', config=config).run()
+      # check the number of video need to download
+      md = MetaData.fetchMetaData(url)
+      videos : list[VideoMetaData] = []
+      if md.isPlaylist():
+        videos.extend(md.getVideos())
+      else:
+        videos.append(md)
 
-  # ask the output dir
-  setupConfig = SetUpDownloadSection(
-    title='Set up download', config=config,
-    format=False, outputName=False
-  ).run()
-  config.overwriteConfigBy(setupConfig)
+      # download
+      for idx, v in enumerate(videos):
+        Section(title=f'Video {idx+1} of {len(videos)}').run(
+          self.download, opts=opts,
+          title=v.title, url=v.url
+        )
 
-  return config
+      if not loop:
+        break
+    return
 
-def download(title, url, config : dlConfig):
-  config.url = url
+  def configDownload(self, url, opts) -> Opts:
+    # ask login    
+    opts = self.login(url, opts=opts)
 
-  # set a random output name
-  config.outputName = uuid4()
+    # list subtitle
+    ListSubtitleSection(title='List Subtitle').run(url, opts)
 
-  # download section, 2 retry when download failed
-  download_section = DownloadSection(title="Downloading", config=config, retry=2)
+    # set up download
+    # subtitle, output dir
+    opts = Section(title='Set up download').run(self.setup, opts=opts)
 
-  filePath = f'{config.outputDir}/{config.outputName}'
+    return opts
+  
+  def login(self, url:str, opts:Opts) -> Opts:
+    # ask login if bilibili
+    if getSource(url) == UrlSource.BILIBILI:
+      return LoginSection(title='Login').run(opts)
+    return opts
 
-  # download video
-  videoFilePath = f'{filePath}.mp4'
-  config.outputFormat = '"bv*[ext=mp4]"'
-  download_section.run()
+  def setup(self, opts) -> Opts:
+    # subtitle
+    opts = SubTitleSection(
+      title='Subtitle',
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(opts)
 
-  # download audio
-  audioFilePath = f'{filePath}.m4a'
-  config.outputFormat = '"ba*[ext=m4a]"'
-  download_section.run()
+    # output dir
+    opts = OutputSection(
+      title='Output',
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(opts, askName=False)
 
-  # merge
-  mergeFilePath = f'{filePath}_merge.mp4'
-  merge(
-    videoPath = videoFilePath,
-    audioPath = audioFilePath,
-    outputDir = mergeFilePath,
-    videoFormat= 'libx264'
-  )
+    return opts
 
-  # remove video and audio file
-  remove(videoFilePath)
-  remove(audioFilePath)
+  def download(self, opts:Opts, title, url):
+    # set a random output name
+    fileNm = uuid4().__str__()
 
-  # rename the output file
-  rename(mergeFilePath, f'{config.outputDir}/{title}.mp4')
+    # download video
+    opts.format("bv*[ext=mp4]").outputName(fileNm+'.mp4')
+    DownloadSection(
+      title="Downloading video",
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(url, opts, retry=2)
 
-def run (loop=True):
-  print("----------------- Downlaod -----------------", end='\n\n')
+    # download audio
+    opts.format("ba*[ext=m4a]").outputName(fileNm+'.m4a')
+    DownloadSection(
+      title="Downloading audio",
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(url, opts, retry=2)
 
-  while True:
-    config = configDownload()
+    # merge
+    optsObj = opts()
+    outputDir = optsObj["paths"]["home"]
+    videoFileNm = f'{fileNm}.mp4'
+    audioFileNm = f'{fileNm}.m4a'
+    mergeFileNm = f'{fileNm}_merge.mp4'
+    Section(title="Merging").run(
+      bodyFunc=merge, 
+      videoPath=f"{outputDir}/{videoFileNm}", 
+      audioPath=f"{outputDir}/{audioFileNm}",
+      outputDir=f"{outputDir}/{mergeFileNm}",
+      videoFormat='libx264'
+    )
 
-    md = MetaData.fetchMetaData(config=config)
+    # remove video and audio file
+    remove(f"{outputDir}/{videoFileNm}")
+    remove(f"{outputDir}/{audioFileNm}")
 
-    for videoMd in md.getVideos():
-      download(title=videoMd.title, url=videoMd.url, config=config)
+    # rename the output file
+    self.renameFile(outputDir, f'{fileNm}_merge.mp4', f'{title}.mp4')
+    
+    return
+  
+  # rename file with escape special character
+  def renameFile(self, dirPath, oldName, newName):
+    ESCAPE_CHAR = {'"', '*', ':', '<', '>', '?', '|'}
+    
+    escaped_newName = ''
+    for c in newName:
+      escaped_newName += '' if c in ESCAPE_CHAR else c
 
-    if not loop:
-      break
+    rename(f'{dirPath}/{oldName}', f'{dirPath}/{escaped_newName}')
 
 if __name__ == "__main__":
-  run()
+  lazyYtDownload().run()

@@ -1,38 +1,33 @@
 from sys import path as sys_path
 sys_path.append('src')
 
-from unittest.mock import patch, Mock
+from unittest.mock import patch, call
 
 from src.section.UrlSection import UrlSection, Message
 from src.service.urlHelper import ErrMessage
 
-def test(capfd):
-  section = UrlSection('Url')
+@patch('builtins.print')
+@patch('builtins.input')
+def test_problematic_url(input_mock, print_mock):
+  section = UrlSection(doShowHeader=False, doShowFooter=False)
 
-  # input mocks
-  input_mock_empty_url = Mock()
-  input_mock_empty_url.strip.return_value = ''
+  # test problematic url
+  input_mock.side_effect = [
+    '', # empty url
+    'invalid url', # invalid url
+    'https://www.nicovideo.jp/watch/sm32010061' # unhandled url source
+  ]
 
-  input_mock_invalid_url = Mock()
-  input_mock_invalid_url.strip.return_value = 'invalid url'
+  url = section.run()
+  assert print_mock.mock_calls[0] == call(Message.EMPTY_URL.value)
+  assert print_mock.mock_calls[1] == call(ErrMessage.INVALID_URL.value)
+  assert print_mock.mock_calls[2] == call(Message.URL_SOURCE_NOT_TESTED.value)
+  assert url == 'https://www.nicovideo.jp/watch/sm32010061'
 
-  input_mock_valid_url = Mock()
-  input_mock_valid_url.strip.return_value = 'https://www.youtube.com/watch?v=123&list=123'
-
-  input_mock = Mock()
-  input_mock.side_effect = [input_mock_empty_url, input_mock_invalid_url, input_mock_valid_url]
-
-  # execute
-  with patch('builtins.input', input_mock):
-    url = section.run()
-
-    out, err = capfd.readouterr()
-
-    expected_out = f'{section.header}\n'
-    expected_out += f'{Message.EMPTY_URL.value}\n'
-    expected_out += f'{ErrMessage.INVALID_URL.value}\n'
-    expected_out += f'{section.footer}\n'
-    assert out == expected_out
-    assert err == ''
-
-    assert url == 'https://www.youtube.com/watch?v=123'
+# test url that should be well handled
+@patch('builtins.print')
+@patch('builtins.input')
+def test_valid_url(input_mock, print_mock):
+  input_mock.return_value = 'https://www.youtube.com/watch?v=9bZkp7q19f0'
+  assert UrlSection(doShowHeader=False, doShowFooter=False).run() == 'https://www.youtube.com/watch?v=9bZkp7q19f0'
+  assert print_mock.mock_calls == []

@@ -1,7 +1,7 @@
 from enum import Enum
 
-from dlConfig import DefaultConfig
 from section.Section import Section
+from service.YtDlpHelper import Opts
 import tkinter.filedialog as tkFileDialog
 
 class Message(Enum):
@@ -11,29 +11,28 @@ class Message(Enum):
   SELECT_COOKIE_FILE = "## Select the login cookie file"
 
 # ask the login cookie
-class LoginSection(Section):
-  def __init__(self, title):
-    super().__init__(title)
-    
-  def run(self) -> str:
-    return super().run(self.__login)
+class LoginSection(Section):    
+  def run(self, opts:Opts=Opts()) -> Opts:
+    return super().run(self.__login, opts=opts.copy())
   
-  def __login(self) -> str:
-    cookieFile = self.__askLogin()
-    if cookieFile == DefaultConfig.cookieFile.value:
-      print(Message.NOT_LOGIN.value)
-    else:
-      print(Message.LOGIN.value.format(cookieFile))
-    return cookieFile
-  
-  def __askLogin(self) -> str:
+  # ask if login
+  def __askLogin(self) -> bool:
     doLogin = input(Message.ASK_LOGIN.value).upper()
-    if doLogin == 'N' or doLogin == '':
-      return DefaultConfig.cookieFile.value
-    
+    return doLogin != 'N' and doLogin != ''
+
+  def __login(self, opts:Opts) -> Opts:
+    doLogin = self.__askLogin()
+    if not doLogin:
+      print(Message.NOT_LOGIN.value)
+      return opts
+
     print('')
     print(Message.SELECT_COOKIE_FILE.value)
     cookieFile = tkFileDialog.askopenfilename(title=Message.SELECT_COOKIE_FILE.value)
-    if len(cookieFile) == 0:
-      return DefaultConfig.cookieFile.value
-    return cookieFile
+    if len(cookieFile) != 0:
+      opts.cookieFile(cookieFile)
+      print(Message.LOGIN.value.format(cookieFile))
+    else:
+      print(Message.NOT_LOGIN.value)
+    
+    return opts

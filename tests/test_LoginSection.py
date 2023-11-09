@@ -1,51 +1,44 @@
-from unittest.mock import patch
+from sys import path as sysPath
+sysPath.append('src')
 
-from src.dlConfig import DefaultConfig
+from unittest.mock import patch, call
+
 from src.section.LoginSection import LoginSection, Message
+from src.service.YtDlpHelper import Opts
 
-def test_not_login(capfd):
-  section = LoginSection("Test Login Section")
+@patch('builtins.input', return_value='N')
+@patch('builtins.print')
+def test_not_login(print_mock,_):
+  opts:Opts = LoginSection(
+    '', doShowFooter=False, doShowHeader=False
+  ).run(Opts())
+  assert opts()["cookiefile"] == None
+  assert print_mock.mock_calls[0] == call(Message.NOT_LOGIN.value)
 
-  with patch('builtins.input', return_value='N'):
-    cookieFile = section.run()
-    assert cookieFile == DefaultConfig.cookieFile.value
-  
-  out, err = capfd.readouterr()
-  expectedOut = section.header + '\n'
-  expectedOut += Message.NOT_LOGIN.value + '\n'
-  expectedOut += section.footer + '\n'
-  assert out == expectedOut
-  assert err == '' 
+@patch('builtins.input', return_value='Y')
+@patch('tkinter.filedialog.askopenfilename', return_value='cookie.txt')
+@patch('builtins.print')
+def test_login(print_mock,_,__):
+  opts:Opts = LoginSection(
+    "", doShowFooter=False, doShowHeader=False
+  ).run(Opts())
+  assert opts()["cookiefile"] == 'cookie.txt'
+  assert print_mock.mock_calls.count(call(Message.LOGIN.value.format('cookie.txt'))) == 1
 
-def test_login(capfd):
-  section = LoginSection("Test Login Section")
+@patch('builtins.input', return_value='Y')
+@patch('tkinter.filedialog.askopenfilename', return_value='')
+@patch('builtins.print')
+def test_login_canceled(print_mock,_,__):
+  opts:Opts = LoginSection(
+    "", doShowFooter=False, doShowHeader=False
+  ).run(Opts())
+  assert opts()["cookiefile"] == None
+  assert print_mock.mock_calls.count(call(Message.NOT_LOGIN.value)) == 1
 
-  with patch('builtins.input', return_value='Y'):
-    with patch('tkinter.filedialog.askopenfilename', return_value='cookie.txt'):
-      cookieFile = section.run()
-      assert cookieFile == 'cookie.txt'
-
-  out, err = capfd.readouterr()
-  expectedOut = section.header + '\n'
-  expectedOut += '\n' + Message.SELECT_COOKIE_FILE.value + '\n'
-  expectedOut += Message.LOGIN.value.format('cookie.txt') + '\n'
-  expectedOut += section.footer + '\n'
-  assert out == expectedOut
-  assert err == ''
-
-def test_login_canceled(capfd):
-  section = LoginSection("Test Login Section")
-
-  with patch('builtins.input', return_value='Y'):
-    # simulate the user cancel the file selection
-    with patch('tkinter.filedialog.askopenfilename', return_value=''):
-      cookieFile = section.run()
-      assert cookieFile == DefaultConfig.cookieFile.value
-
-  out, err = capfd.readouterr()
-  expectedOut = section.header + '\n'
-  expectedOut += '\n' + Message.SELECT_COOKIE_FILE.value + '\n'
-  expectedOut += Message.NOT_LOGIN.value + '\n'
-  expectedOut += section.footer + '\n'
-  assert out == expectedOut
-  assert err == ''
+@patch('tkinter.filedialog.askopenfilename', return_value='cookie.txt')
+@patch('builtins.input', return_value='Y')
+def test_not_change_param_opts(_, __):
+  opts = Opts()
+  backup_opts = opts.copy()
+  LoginSection().run(opts)
+  assert opts == backup_opts

@@ -1,66 +1,31 @@
 from enum import Enum
 
+from yt_dlp import YoutubeDL
+
 from section.Section import Section
-from dlConfig import dlConfig
-from service.commandUtils import runCommand, YT_EXEC
-from service.YtDlpHelper import CommandConverter
+from service.YtDlpHelper import Opts
 
 class Message (Enum):
   DOWNLOAD_FAILED = 'Download failed'
+  RETRY = 'Retry {} times'
 
 class DownloadSection (Section) :
   # PARMAS:
-  #   retry: int, the times of try to download again, default is 0
-  def __init__(
-      self, 
-      title, 
-      config:dlConfig, retry:int=0
-    ):
-    super().__init__(title)
-    self.config = config
-    self.retry = retry
-    
-  def run(self):
-    return super().run(self.__download)
+  #   retry: int, the times of try to download again, default is 0    
+  def run(self, url:str, opts:Opts=Opts(), retry:int=0):
+    return super().run(self.__download, url=url, opts=opts.copy(), retry=retry)
   
   # download video
-  def __download (self):
-    cc = CommandConverter(self.config)
+  def __download (self, url:str, opts:Opts, retry:int):
+    opts = opts.copy().overwrites()
 
     tryCnt = 0
-    retc = None
-
-    while retc != 0 and tryCnt <= self.retry:
-      result = runCommand(
-        execCommand=YT_EXEC,
-        paramCommands=[
-          # url
-          cc.url,
-
-          # output file name
-          cc.outputName,
-          # output directory
-          cc.outputDir,
-          # otuput format
-          cc.outputFormat,
-          
-          # not download live chat
-          cc.noLiveChat,
-          
-          # subtitle
-          cc.embedSubs,
-          # write auto subtitle
-          cc.writeAutoSubs,
-          # subtitle lang
-          cc.subLang,
-          
-          # login
-          cc.cookies
-        ], 
-        printCommand=True
-      )
-      retc = result.returncode
-      tryCnt += 1
-
-    if retc != 0:
-      raise Exception(Message.DOWNLOAD_FAILED.value)
+    while True:
+      try:
+        YoutubeDL(opts()).download([url])
+        break
+      except:
+        tryCnt += 1
+        if tryCnt > retry:
+          raise Exception(Message.DOWNLOAD_FAILED.value)
+        print(Message.RETRY.value.format(tryCnt))

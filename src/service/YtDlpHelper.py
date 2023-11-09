@@ -1,91 +1,138 @@
-from dlConfig import dlConfig, DefaultConfig
+from __future__ import annotations
+import copy
 
-# ======== Convert Config Param to Command Param ======== #
-class CommandConverter:
-  def __init__ (self, config : dlConfig):
-    self.config = config
+class Opts:
+  def __init__(self) -> None:
+    self.opts = {}
+    self.reset()
 
-  # url
-  @property
-  def url(self) -> str:
-    if self.config.url == None:
-      raise Exception('url is not set')
-    return self.config.url
-  
-  # cookies
-  @property
-  def cookies(self) -> str:
-    if self.config.cookieFile == None:
-      raise Exception('cookieFile is not set')
-    if self.config.cookieFile == DefaultConfig.cookieFile.value:
-      return ''
-    return f'--cookies {self.config.cookieFile}'
+  def __call__(self) -> dict:
+    return self.opts
+  def __eq__(self, other: Opts) -> bool:
+    return self.opts == other.opts
 
-  # subtitle
-  @property
-  def embedSubs (self) -> str:
-    return '--embed-subs' if self.config.subLang != None else ''
-  @property
-  def subLang (self) -> str:
-    if self.config.subLang == None:
-      raise Exception('subLang is not set')
-    if self.config.subLang == DefaultConfig.subLang.value:
-      return ''
-    return f'--sub-lang {self.config.subLang}'
-  @property
-  def writeAutoSubs (self) -> str:
-    if self.config.doWriteAutoSub == None:
-      raise Exception('doWriteAutoSub is not set')
-    return '--write-auto-subs' if self.config.doWriteSub and self.config.doWriteAutoSub else ''
+    # === codes for deep comparison, useless now ===
+    # def sameItem(a, b) -> bool:
+    #   if a is None and b is None:
+    #     return True
+    #   if (a is None) != (b is None):
+    #     return False
+    #   if isinstance(a, dict) and not sameDict(a, b):
+    #     return False
+    #   if isinstance(a, list) and not sameList(a, b):
+    #     return False
+    #   if a != b:
+    #     return False
+    #   return True
 
+    # def sameDict(a:dict, b:dict) -> bool:
+    #   if len(a) != len(b):
+    #     return False
+    #   for key in a.keys():
+    #     if not(key in b) or not sameItem(a[key], b[key]):
+    #       return False
+    #   return True
+            
+    # def sameList(a:list, b:list) -> bool:
+    #   if len(a) != len(b):
+    #     return False
+    #   for a_v, b_v in zip(a, b):
+    #     if not sameItem(a_v, b_v):
+    #       return False
+    #   return True
+    
+    # for key in self.opts:
+    #   # suppose self and other must have the same keys
+    #   if not sameItem(self.opts[key], other.opts[key]):
+    #     return False
+    # return True
+
+  def copy(self) -> Opts:
+    return copy.deepcopy(self)
+  def reset(self) -> Opts:
+    self.opts = {
+      # output
+      'outtmpl': None,
+      'paths': {},
+      # format
+      'format': None,
+      'merge_output_format': None,
+      # subtitle
+      'writeautomaticsub': None,
+      'writesubtitles': None,
+      'subtitleslangs': None,
+      # cookie
+      'cookiefile': None,
+      # list
+      'listformats': None,
+      'listsubtitles': None,
+      # postprocessor
+      'postprocessors': [],
+      # others
+      'skip_download': None,
+      'quiet': None,
+      'overwrites': None
+    }
+    return self
+
+  # ========= fast setter function for the opts params =========
   # output
-  @property
-  def outputName (self) -> str:
-    if self.config.outputName == None:
-      raise Exception('outputName is not set')
-    if self.config.outputName == DefaultConfig.outputName.value:
-      return ''
-    return f'-o {self.config.outputName}.%(ext)s'
-  @property
-  def outputDir (self) -> str:
-    if self.config.outputDir == None:
-      raise Exception('outputDir is not set')
-    if self.config.outputDir == DefaultConfig.outputDir.value:
-      return ''
-    return f'-P {self.config.outputDir}'
-  @property
-  def outputFormat (self) -> str:
-    if self.config.outputFormat == None:
-      raise Exception('outputFormat is not set')
-    if self.config.outputFormat == DefaultConfig.outputFormat.value:
-      return ''
-    return f'-f {self.config.outputFormat}'
+  def outputName (self, val:str) -> Opts:
+    self.opts['outtmpl'] = val
+    return self
+  def outputDir (self,val:str) -> Opts:
+    self.opts['paths']['home'] = val
+    return self
   
-  # list info
-  @property
-  def listFormat (self) -> str:
-    if self.config.url == None:
-      raise Exception('url is not set')
-    if self.config.url == DefaultConfig.url.value:
-      return ''
-    return f'--list-formats {self.url}'
-  @property
-  def listSubs (self) -> str:
-    if self.config.url == None:
-      raise Exception('url is not set')
-    if self.config.url == DefaultConfig.url.value:
-      return ''
-    return f'--list-subs {self.url}'
+  # format
+  def format (self, val:str) -> Opts:
+    self.opts['format'] = val
+    return self
+  def mergeFormat (self, val:str) -> Opts:
+    self.opts['merge_output_format'] = val
+    return self
   
-  # meta data
-  @property
-  def getMetaData (self) -> str:
-    return '-J'
+  # subtitle
+  def writeAutomaticSub (self, val:bool = True) -> Opts:
+    self.opts['writeautomaticsub'] = val
+    return self
+  def writeSubtitles (self, val:bool = True) -> Opts:
+    self.opts['writesubtitles'] = val
+    return self
+  def subtitlesLang (self, val:str) -> Opts:
+    self.opts['subtitleslangs'] = [val]
+    return self
+  def embedSubtitle (self, val:bool = True) -> Opts:
+    KEY = 'FFmpegEmbedSubtitle'
+    if val:
+      self.opts['postprocessors'].append({'key': KEY})
+    else:
+      self.opts['postprocessors'] = list(
+        filter(lambda pp: pp['key'] != KEY, self.opts['postprocessors'])
+      )
+    return self
+  
+  # cookie
+  def cookieFile (self, val:str) -> Opts:
+    self.opts['cookiefile'] = val
+    return self
+  
+  # list
+  def listFormats (self, val:bool = True) -> Opts:
+    self.opts['listformats'] = val
+    return self
+  def listSubtitle (self, val:bool = True) -> Opts:
+    self.opts['listsubtitles'] = val
+    return self
 
-  # other
-  @property
-  def noLiveChat (self) -> str:
-    return '--compat-options no-live-chat'
-  @property
-  def skipDownload (self) -> str:
-    return '--skip-download'
+  # others
+  def skip_download (self, val:bool = True) -> Opts:
+    self.opts['skip_download'] = val
+    return self
+  def quiet (self, val:bool = True) -> Opts:
+    self.opts['quiet'] = val
+    return self
+  def overwrites (self, val:bool = True) -> Opts:
+    self.opts['overwrites'] = val
+    return self
+  # ========= END fast setter function for the opts params END =========

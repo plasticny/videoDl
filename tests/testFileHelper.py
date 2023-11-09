@@ -1,9 +1,11 @@
 from os import mkdir, listdir, remove
 from os.path import exists
 
+OUTPUT_FOLDER_PATH = 'tests/testFiles/output'
+
 def prepare_output_folder ():
-  if not exists('tests/testFiles/output'):
-    mkdir('tests/testFiles/output')
+  if not exists(OUTPUT_FOLDER_PATH):
+    mkdir(OUTPUT_FOLDER_PATH)
   
-  for file in listdir('tests/testFiles/output'):
+  for file in listdir(OUTPUT_FOLDER_PATH):
     remove(f'tests/testFiles/output/{file}')

@@ -1,46 +1,71 @@
-from dlConfig import dlConfig, DefaultConfig
+import service.packageChecker as packageChecker
+packageChecker.check()
 
+from section.Section import Section, HeaderType
 from section.UrlSection import UrlSection
 from section.LoginSection import LoginSection
 from section.ListSubtitleSection import ListSubtitleSection
 from section.ListFormatSection import ListFormatSection
-from section.SetUpDownloadSection import SetUpDownloadSection
 from section.DownloadSection import DownloadSection
+from section.SubTitleSection import SubTitleSection
+from section.FormatSection import FormatSection
+from section.OutputSection import OutputSection
 
-# main process
-def run (loop=True):
+from service.YtDlpHelper import Opts
+
+class Dl:
+  # main process
+  def run (self, loop=True):
     print("----------------- Download -----------------", end='\n\n')
 
     while True:
-        config = dlConfig()
-                
-        # ask url
-        config.url = UrlSection(title='Url').run()
-                        
-        # ask Login
-        config.cookieFile = LoginSection(title='Login').run()
-     
-        # list subtitle
-        ListSubtitleSection(title='List Subtitle', config=config).run()
+      opts = Opts()
 
-        # list format
-        ListFormatSection(title='List Format', config=config).run()
-        
-        # ask download configs
-        setupConfig = SetUpDownloadSection(
-            title='Set up download', config=config,
-            outputName=False
-        ).run()
-        config.overwriteConfigBy(setupConfig)
-                
-        # output name
-        config.outputName = DefaultConfig.outputName.value
-                
-        # do download
-        DownloadSection(title="Downloading", config=config).run()
+      # ask url
+      url = UrlSection(title='Url').run()
+                      
+      # ask Login
+      opts = LoginSection(title='Login').run(opts)
+  
+      # list subtitle
+      ListSubtitleSection(title='List Subtitle').run(url, opts)
+  
+      # list format
+      ListFormatSection(title='List Format').run(url, opts)
+      
+      # set up download
+      # subtitle, format, output dir
+      opts = Section(title='Set up download').run(self.setup, opts=opts)
+                                  
+      # do download
+      DownloadSection(title="Downloading").run(url=url, opts=opts)
 
-        if not loop:
-            break
+      if not loop:
+        break
+  
+  def setup(self, opts) -> Opts:
+    # subtitle
+    opts = SubTitleSection(
+      title='Subtitle',
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(opts)
+
+    # format
+    opts = FormatSection(
+      title='Format',
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(opts)
+
+    # output dir
+    opts = OutputSection(
+      title='Output',
+      doShowFooter=False,
+      headerType=HeaderType.SUB_HEADER
+    ).run(opts, askName=False)
+
+    return opts
 
 if __name__ == "__main__":
-    run()
+  Dl().run()

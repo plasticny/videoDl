@@ -2,37 +2,35 @@ from sys import path as sysPath
 sysPath.append('src')
 
 from unittest.mock import patch
-from pytest import raises as pytest_raises
 
-from tests.fakers import fake_CommandConverter
-
-from src.section.ListSubtitleSection import ListSubtitleSection
-from src.dlConfig import dlConfig
+from src.section.ListSubtitleSection import ListSubtitleSection, VALUE
+from src.service.YtDlpHelper import Opts
 
 @patch('builtins.input', return_value='Y')
-@patch('src.section.ListSubtitleSection.CommandConverter')
-@patch('src.section.ListSubtitleSection.runCommand')
-def test_list_format(runCommand_mock, mock_cc, mock_input):
-  section = ListSubtitleSection('', dlConfig())
+@patch('src.section.ListSubtitleSection.YoutubeDL')
+def test_list_format(youtubeDl_mock, input_mock):
+  ListSubtitleSection('').run('')
 
-  cc = fake_CommandConverter(None)
+  called_paramCommands = youtubeDl_mock.call_args.kwargs['params']
+  assert called_paramCommands['listsubtitles'] == True
 
-  mock_cc.return_value = cc
-  section.run()
-
-  called_paramCommands = runCommand_mock.call_args.kwargs['paramCommands']
-  assert called_paramCommands.count(cc.listSubs) == 1
-  assert called_paramCommands.count(cc.cookies) == 1
-
+@patch('src.section.ListSubtitleSection.YoutubeDL')
 @patch('builtins.input')
-# when not list format, the part with CommandConverter should not be called
-# mock it with an empty one, so a failure will be raised if it is called
-@patch('src.section.ListSubtitleSection.CommandConverter')
-def test_not_list_format(mock_cc, mock_input):
-  mock_cc.return_value = fake_CommandConverter(None)
+def test_not_list_format(input_mock, youtubeDl_mock):
+  section = ListSubtitleSection('')
 
-  mock_input.return_value = 'N'
-  ListSubtitleSection('', dlConfig()).run()
+  input_mock.return_value = VALUE.IN_NOT_LIST.value
+  section.run('')
 
-  mock_input.return_value = ''
-  ListSubtitleSection('', dlConfig()).run()
+  input_mock.return_value = VALUE.IN_EMPTY.value
+  section.run('')
+
+  assert youtubeDl_mock.call_count == 0
+
+@patch('builtins.input', return_value='Y')
+@patch('src.section.ListFormatSection.YoutubeDL.download')
+def test_not_change_param_opts(_, __):
+  opts = Opts()
+  backup_opts = opts.copy()
+  ListSubtitleSection().run('', opts)
+  assert opts == backup_opts

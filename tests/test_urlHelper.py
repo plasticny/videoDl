@@ -1,4 +1,5 @@
 from pytest import raises as pytest_raises
+from unittest.mock import patch, call
 
 from src.service.urlHelper import *
 
@@ -28,6 +29,11 @@ def test_getSource_youtube():
   source = getSource(url)
   assert source == UrlSource.YOUTUBE
 
+def test_getSource_youtube_short():
+  url = "https://youtu.be/dQw4w9WgXcQ"
+  source = getSource(url)
+  assert source == UrlSource.YOUTUBE
+
 def test_getSource_bilibili():
   url = "https://www.bilibili.com/video/BV1Kb411W75N"
   source = getSource(url)
@@ -54,7 +60,5 @@ def test_removeSurplusParam_bilibili():
 
 def test_removeSurplusParam_not_defined():
   url = "https://example.com"
-  with pytest_raises(NotImplementedError) as e_info:
-    removeSurplusParam(url)
-  assert e_info.type == NotImplementedError
+  assert removeSurplusParam(url) == url
 # ========== End removeSurplusParam ========== #

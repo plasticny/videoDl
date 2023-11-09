@@ -3,7 +3,7 @@ import sys
 import tkinter.filedialog as tkFileDialog
 
 from section.Section import Section
-from dlConfig import DefaultConfig
+from service.YtDlpHelper import Opts
 
 class Message(Enum):
   DIR_SECTION_TITLE = '-- Output directory'
@@ -15,32 +15,19 @@ class Message(Enum):
   ENTER_NAME = 'Enter the output file name: (auto) '
 
 class OutputSection (Section):
-  def __init__(
-      self, title, 
-      askDir:bool=True, askName:bool=True
-    ):
-    super().__init__(title)
-    self.askDir = askDir
-    self.askName = askName
-
-  # RETURN: (outputDir, outputName)
-  def run(self) -> (str, str):
-    return super().run(self.__main)
+  def run(self, opts:Opts=Opts(), askDir:bool=True, askName:bool=True) -> Opts:
+    return super().run(self.__main, opts=opts.copy(), askDir=askDir, askName=askName)
   
-  def __main(self) -> (str, str):
-    if self.askDir:
+  def __main(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
+    if askDir:
       print(Message.DIR_SECTION_TITLE.value)
-      outputDir = self.__askOutputDir() 
-    else:
-      outputDir = DefaultConfig.outputDir.value
+      opts.outputDir(self.__askOutputDir())
 
-    if self.askName:
+    if askName:
       print(Message.NAME_SECTION_TITLE.value)
-      outputName = self.__askOutputName()
-    else:
-      outputName = DefaultConfig.outputName.value
+      opts.outputName(self.__askOutputName())
 
-    return (outputDir, outputName)
+    return opts
 
   def __askOutputDir(self):
     outputDir = None
@@ -55,9 +42,7 @@ class OutputSection (Section):
 
     return outputDir
   
-  def __askOutputName(self):
+  def __askOutputName(self) -> str:
     sys.stdout.flush()
     outputName = input(Message.ENTER_NAME.value)
-    if outputName == '':
-      outputName = DefaultConfig.outputName.value
-    return outputName
+    return outputName if outputName != '' else None

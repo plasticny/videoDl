@@ -1,20 +1,18 @@
 from enum import Enum
 
 from section.Section import Section
-from service.urlHelper import isValid, removeSurplusParam
+from service.urlHelper import isValid, removeSurplusParam, getSource, UrlSource
 
 class Message(Enum):
   INPUT_URL = 'Enter the url: '
   EMPTY_URL = 'Url must not be empty'
+  URL_SOURCE_NOT_TESTED = 'Warning: download may fail because this url source is not tested'
 
-class UrlSection (Section):
-  def __init__ (self, title):
-    super().__init__(title)
-  
-  def run (self):
+class UrlSection (Section):  
+  def run (self) -> str:
     return super().run(self.__askUrl)
   
-  def __askUrl (self):
+  def __askUrl (self) -> str:
     while True:
       url = input(Message.INPUT_URL.value).strip()
 
@@ -30,6 +28,9 @@ class UrlSection (Section):
       else:
         break
 
-    url = removeSurplusParam(url)
+    if getSource(url) == UrlSource.NOT_DEFINED:
+      print(Message.URL_SOURCE_NOT_TESTED.value)
+    else:
+      url = removeSurplusParam(url)
 
     return url
