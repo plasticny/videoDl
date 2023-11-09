@@ -6,8 +6,6 @@ __pycache__
 /src/*.exe
 /src/draft.py
 
-/ffmpeg.exe
-
 build
 dist
 *.spec
