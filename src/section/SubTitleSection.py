@@ -11,7 +11,7 @@ class VALUE(Enum):
 class Message(Enum):
   ASK_DO_WRITE = f'Write the subtitle?({VALUE.DEFAULT_DO_WRITE_SUB.value}) '
   ASK_LANG = f'Enter the language of subtitle:({VALUE.DEFAULT_IN_LANG.value}) '
-  ASK_WRITE_AUTO_SUB = f'Wirte the auto subtitle?:({VALUE.DEFAULT_IN_WRITE_AUTO_SUB.value}) '
+  ASK_WRITE_AUTO_SUB = f'Wirte the auto-gen subtitle if no subtitle?({VALUE.DEFAULT_IN_WRITE_AUTO_SUB.value}) '
 
 class SubTitleSection (Section):
   def run(self, opts:Opts = Opts()) -> Opts:

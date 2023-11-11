@@ -1,15 +1,16 @@
 import service.packageChecker as packageChecker
 packageChecker.check()
 
-from service.merger import mergeVAS
 from service.urlHelper import getSource, UrlSource
 from service.MetaData import MetaData, VideoMetaData
 from service.YtDlpHelper import Opts
 from service.fileHelper import perpare_temp_folder, clear_temp_folder, TEMP_FOLDER_PATH
 
-from os import rename, remove
+from os import rename, remove, listdir
 from os.path import exists
 from uuid import uuid4
+from enum import Enum
+import ffmpeg
 
 from section.Section import Section, HeaderType
 from section.UrlSection import UrlSection
@@ -18,6 +19,9 @@ from section.ListSubtitleSection import ListSubtitleSection
 from section.LoginSection import LoginSection
 from section.SubTitleSection import SubTitleSection
 from section.OutputSection import OutputSection
+
+class Message (Enum):
+  MERGE_FAILED = 'Merge failed'
 
 class lazyYtDownload:
   def run (self, loop=True):
@@ -104,6 +108,23 @@ class lazyYtDownload:
     outputDir = opts()["paths"]["home"]
     opts = opts.copy().outputDir(TEMP_FOLDER_PATH)
 
+    # download subtitle
+    subtitleFileNms = []
+    if opts()["writesubtitles"]:
+      # skip download doesnt skip subtitle
+      s_opts = opts.copy().skip_download()
+
+      DownloadSection(
+        title="Downloading subtitle",
+        doShowFooter=False,
+        headerType=HeaderType.SUB_HEADER
+      ).run(url, s_opts, retry=2)
+
+      subtitleFileNms = listdir(TEMP_FOLDER_PATH)
+
+      # not download subtitle in the future downloading
+      opts.writeSubtitles(False).writeAutomaticSub(False).embedSubtitle(False)
+
     # download video
     opts.format("bv*[ext=mp4]").outputName(fileNm+'.mp4')
     DownloadSection(
@@ -114,7 +135,6 @@ class lazyYtDownload:
 
     # download audio
     opts.format("ba*[ext=m4a]").outputName(fileNm+'.m4a')
-    opts.writeAutomaticSub(False).writeSubtitles(False).embedSubtitle(False) # already embeded subtitle when download video
     DownloadSection(
       title="Downloading audio",
       doShowFooter=False,
@@ -126,20 +146,47 @@ class lazyYtDownload:
     audioFileNm = f'{fileNm}.m4a'
     mergeFileNm = f'{fileNm}_merge.mp4'
     Section(title="Merging").run(
-      bodyFunc=mergeVAS, 
+      bodyFunc=self.merge, 
       outputPath=f"{TEMP_FOLDER_PATH}/{mergeFileNm}",
       videoPath=f"{TEMP_FOLDER_PATH}/{videoFileNm}", 
       audioPath=f"{TEMP_FOLDER_PATH}/{audioFileNm}",
-      subtitlePath=f"{TEMP_FOLDER_PATH}/{videoFileNm}" # subtitle is embeded inside the download video
+      subtitlePath=[f"{TEMP_FOLDER_PATH}/{s}" for s in subtitleFileNms],
+      ffmpegLoaction=opts()["ffmpeg_location"]
     )
 
     # rename the output file
     self.renameFile(
-      f'{fileNm}_merge.mp4', f'{title}.mp4',
+      mergeFileNm, f'{title}.mp4',
       dirPath=TEMP_FOLDER_PATH, toDirPath=outputDir,
       overwrite=True
     )
         
+    return
+  
+  def merge(
+      self, outputPath:str,
+      videoPath:str, audioPath:str, subtitlePath:list[str],
+      ffmpegLoaction:str, quiet:bool=False
+    ):
+    """Merge video, audio and subtitles"""
+    streams_n_output = []
+    streams_n_output.append(ffmpeg.input(videoPath)['v'])
+    streams_n_output.append(ffmpeg.input(audioPath)['a'])
+    for subtitle in subtitlePath:
+      streams_n_output.append(ffmpeg.input(subtitle)['s'])
+    streams_n_output.append(outputPath)
+
+    ff : ffmpeg = ffmpeg.output(
+      *streams_n_output,
+      vcodec='libx264', acodec='aac', scodec='mov_text',
+      loglevel='quiet' if quiet else 'info'
+    )
+
+    try:
+      ff.run(cmd=f'{ffmpegLoaction}\\ffmpeg')
+    except ffmpeg.Error:
+      raise Exception(Message.MERGE_FAILED.value)
+
     return
   
   def renameFile(self, oldName, newName, dirPath, toDirPath=None, overwrite=False):
