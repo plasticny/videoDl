@@ -1,31 +1,33 @@
-""" NOTE: vm on git action already install ffmpeg """
-
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from pytest import raises as pytest_raises
 
 from os.path import exists
 from pymediainfo import MediaInfo
-from enum import Enum
+from ffmpeg import Error as ffmpegError
 
-from tests.testFileHelper import prepare_output_folder
-from tests.fakers import fake_CompletedProcess
+from tests.testFileHelper import prepare_output_folder, OUTPUT_FOLDER_PATH
 
-from src.service.merger import merge
+from src.service.merger import mergeVAS
 
-class TrackType(Enum):
-  VIDEO = 'Video'
-  AUDIO = 'Audio'
-  TEXT = 'Text'
+def test_mergeVAS_no_video_n_audio():
+  """
+    Test if the function can raise exception if video and audio are not provided
+  """
+  with pytest_raises(Exception):
+    mergeVAS(outputPath='', subtitlePath='', quiet=True)
 
-def get_track(mediaInfo : MediaInfo, trackType : TrackType):
-  for track in mediaInfo.tracks:
-    if track.track_type == trackType.value:
-      return track
-  return None
+def test_mergeVAS():
+  """
+    Perform a real merging with mergeVas
+  """
+  def get_track(mediaInfo : MediaInfo, trackType : str):
+    for track in mediaInfo.tracks:
+      if track.track_type == trackType:
+        return track
+    return None
 
-def test_merge():
   INPUT_FOLDER = 'tests/testFiles/test_merger'
-  OUTPUT_FOLDER = 'tests/testFiles/output'
+  OUTPUT_FOLDER = f'{OUTPUT_FOLDER_PATH}'
 
   INPUT_VIDEO_PATH = f'{INPUT_FOLDER}/test_video.mp4'
   INPUT_AUDIO_PATH = f'{INPUT_FOLDER}/test_audio.m4a'
@@ -33,10 +35,11 @@ def test_merge():
 
   prepare_output_folder()
 
-  merge(
+  mergeVAS(
+    outputPath=OUTPUT_VIDEO_PATH,
     videoPath=INPUT_VIDEO_PATH,
     audioPath=INPUT_AUDIO_PATH,
-    outputDir=OUTPUT_VIDEO_PATH,
+    subtitlePath=INPUT_VIDEO_PATH,
     quiet=True
   )
 
@@ -46,29 +49,15 @@ def test_merge():
   mediaInfo = MediaInfo.parse(OUTPUT_VIDEO_PATH)
 
   # check if the format of video track correct
-  videoTrack = get_track(mediaInfo, TrackType.VIDEO)
+  videoTrack = get_track(mediaInfo, 'Video')
   assert videoTrack is not None
   assert videoTrack.format == 'AVC'
 
   # check if the format of audio track correct
-  audioTrack = get_track(mediaInfo, TrackType.AUDIO)
+  audioTrack = get_track(mediaInfo, 'Audio')
   assert audioTrack is not None
   assert audioTrack.format == 'AAC'
 
   # check if the subtitle track exists
-  subtitleTrack = get_track(mediaInfo, TrackType.TEXT)
+  subtitleTrack = get_track(mediaInfo, 'Text')
   assert subtitleTrack is not None
-
-@patch('src.service.merger.runCommand')
-def test_merge_fail(run_mock):
-  run_mock.return_value = fake_CompletedProcess(1)
-
-  with pytest_raises(Exception) as excinfo:
-    merge(
-      videoPath='tests/testFiles/test_merger/test_video.mp4',
-      audioPath='tests/testFiles/test_merger/test_audio.m4a',
-      outputDir='tests/testFiles/output/test_video_out.mp4',
-      quiet=True
-    )
-
-  assert excinfo.type == Exception

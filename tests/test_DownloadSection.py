@@ -18,7 +18,7 @@ def test_with_fail_download(download_mock):
   with pytest_raises(Exception):
     DownloadSection().run('url', Opts(), retry=2)  
 
-  # check if runCommand is called 3 times
+  # check if download is called 3 times
   assert download_mock.call_count == 3
 
 def test_with_real_download_yt():

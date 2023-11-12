@@ -6,11 +6,12 @@ __pycache__
 /src/*.exe
 /src/draft.py
 
-/ffmpeg.exe
+/temp/*
 
 build
 dist
 *.spec
 
 .coverage
+/.pytest_cache/*
 tests/testFiles/output
