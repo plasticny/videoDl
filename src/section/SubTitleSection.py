@@ -7,11 +7,13 @@ class VALUE(Enum):
   DEFAULT_DO_WRITE_SUB = 'Y'
   DEFAULT_IN_LANG = 'en'
   DEFAULT_IN_WRITE_AUTO_SUB = 'N'
+  DEFAULT_EMBED_SUB = 'Y'
 
 class Message(Enum):
   ASK_DO_WRITE = f'Write the subtitle?({VALUE.DEFAULT_DO_WRITE_SUB.value}) '
   ASK_LANG = f'Enter the language of subtitle:({VALUE.DEFAULT_IN_LANG.value}) '
   ASK_WRITE_AUTO_SUB = f'Wirte the auto-gen subtitle if no subtitle?({VALUE.DEFAULT_IN_WRITE_AUTO_SUB.value}) '
+  ASK_DO_EMDED_SUB = f'Embed the subtitle to the video?({VALUE.DEFAULT_EMBED_SUB.value}) '
 
 class SubTitleSection (Section):
   def run(self, opts:Opts = Opts()) -> Opts:
@@ -30,12 +32,17 @@ class SubTitleSection (Section):
       # write auto subtitle
       doWriteAutoSub = input(Message.ASK_WRITE_AUTO_SUB.value).upper()
       doWriteAutoSub = doWriteAutoSub != VALUE.DEFAULT_IN_WRITE_AUTO_SUB.value
+
+      # embed subtitle
+      doEmbedSub = input(Message.ASK_DO_EMDED_SUB.value).upper()
+      doEmbedSub = doEmbedSub == VALUE.DEFAULT_EMBED_SUB.value or doEmbedSub == ''
     else:
       lang = None
       doWriteAutoSub = None
+      doEmbedSub = None
     
     opts.subtitlesLang = lang
     opts.writeSubtitles = doWriteSub
     opts.writeAutomaticSub = doWriteAutoSub
-    opts.embedSubtitle = doWriteSub
+    opts.embedSubtitle = doEmbedSub
     return opts

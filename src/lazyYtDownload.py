@@ -110,7 +110,7 @@ class lazyYtDownload:
     opts.outputDir = TEMP_FOLDER_PATH
 
     # download subtitle
-    subtitleFileNms = []
+    subtitleFileNm = None
     if opts.writeSubtitles:
       # skip download doesnt skip subtitle
       s_opts = opts.copy()
@@ -122,12 +122,11 @@ class lazyYtDownload:
         headerType=HeaderType.SUB_HEADER
       ).run(url, s_opts, retry=2)
 
-      subtitleFileNms = listdir(TEMP_FOLDER_PATH)
+      subtitleFileNm = listdir(TEMP_FOLDER_PATH)[0]
 
       # not download subtitle in the future downloading
       opts.writeSubtitles = False
       opts.writeAutomaticSub = False
-      opts.embedSubtitle = False
 
     # download video
     opts.format = "bv*[ext=mp4]"
@@ -152,12 +151,17 @@ class lazyYtDownload:
     audioFileNm = f'{fileNm}.m4a'
     mergeFileNm = f'{fileNm}_merge.mp4'
     Section(title="Merging").run(
-      bodyFunc=self.merge, 
+      bodyFunc=self.merge,
+      # output paths
       outputPath=f"{TEMP_FOLDER_PATH}/{mergeFileNm}",
+      # input paths
       videoPath=f"{TEMP_FOLDER_PATH}/{videoFileNm}", 
       audioPath=f"{TEMP_FOLDER_PATH}/{audioFileNm}",
-      subtitlePath=[f"{TEMP_FOLDER_PATH}/{s}" for s in subtitleFileNms],
-      ffmpegLoaction=opts.ffmpeg_location
+      subtitlePath=f"{TEMP_FOLDER_PATH}/{subtitleFileNm}",
+      # ffmpeg location
+      ffmpegLoaction=opts.ffmpeg_location,
+      # subtitle options
+      embedSubtitle=opts.embedSubtitle
     )
 
     # rename the output file
@@ -171,24 +175,30 @@ class lazyYtDownload:
   
   def merge(
       self, outputPath:str,
-      videoPath:str, audioPath:str, subtitlePath:list[str],
-      ffmpegLoaction:str, quiet:bool=False
+      videoPath:str, audioPath:str, subtitlePath:str,
+      ffmpegLoaction:str, 
+      embedSubtitle:bool=False, 
+      quiet:bool=False
     ):
     """Merge video, audio and subtitles"""
+    # stream and output
     streams_n_output = []
     streams_n_output.append(ffmpeg.input(videoPath)['v'])
     streams_n_output.append(ffmpeg.input(audioPath)['a'])
-    for subtitle in subtitlePath:
-      streams_n_output.append(ffmpeg.input(subtitle)['s'])
+    if subtitlePath is not None and embedSubtitle:
+      streams_n_output.append(ffmpeg.input(subtitlePath)['s'])
     streams_n_output.append(outputPath)
 
-    ff : ffmpeg = ffmpeg.output(
-      *streams_n_output,
-      vcodec='libx264', acodec='aac', scodec='mov_text',
-      loglevel='quiet' if quiet else 'info'
-    )
+    # kwargs
+    kwargs = {
+      'vcodec': 'libx264', 'acodec': 'aac',
+      'loglevel': 'quiet' if quiet else 'info'
+    }
+    if subtitlePath is not None and embedSubtitle:
+      kwargs['scodec'] = 'mov_text'
 
     try:
+      ff : ffmpeg = ffmpeg.output(*streams_n_output,**kwargs)
       ff.run(cmd=f'{ffmpegLoaction}\\ffmpeg')
     except ffmpeg.Error:
       raise Exception(Message.MERGE_FAILED.value)

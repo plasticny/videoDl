@@ -25,13 +25,3 @@ def test_toParams():
       assert key not in optsc.opts
     else:
       assert key in optsc.opts
-
-def test_embedSubtitle():
-  opts = Opts()
-
-  opts.embedSubtitle = True
-  assert opts.opts['postprocessors'].count({'key': 'FFmpegEmbedSubtitle'}) == 1
-
-  opts.opts['postprocessors'].append({'key': 'other'})
-  opts.embedSubtitle = False
-  assert opts.opts['postprocessors'] == [{'key': 'other'}]

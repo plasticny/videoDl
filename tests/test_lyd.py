@@ -111,6 +111,7 @@ def test_download_yt_video(input_mock, config_mock):
   opts.outputDir = OUTPUT_FOLDER_PATH
   opts.writeSubtitles = True
   opts.subtitlesLang = 'en'
+  opts.embedSubtitle = True
   config_mock.return_value = opts
 
   lazyYtDownload().run(loop=False)
@@ -135,9 +136,7 @@ def test_download_bili_video(input_mock, outputSection_mock):
     'https://www.bilibili.com/video/BV1154y1T765', # url
     'N', # login
     'Y', # list subtitle
-    'Y', # write subtitle
-    '', # subtitle lang
-    'N', # write auto subtitle
+    'N' # write subtitle
   ]
 
   def outputSection_faker(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:

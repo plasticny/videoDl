@@ -3,8 +3,8 @@ sysPath.append('src')
 
 from unittest.mock import patch
 from pytest import raises as pytest_raises
+from os import listdir
 from os.path import exists
-from pymediainfo import MediaInfo
 
 from tests.testFileHelper import prepare_output_folder, OUTPUT_FOLDER_PATH
 
@@ -30,18 +30,15 @@ def test_with_real_download_yt():
   opts.format = '269'
   opts.subtitlesLang = 'en'
   opts.writeSubtitles = True
-  opts.embedSubtitle = True
   DownloadSection().run(
     url='https://www.youtube.com/watch?v=JMu9kdGHU3A',
     opts=opts
   )
 
-  # check file exist
-  assert exists(f'{OUTPUT_FOLDER_PATH}/test.mp4')
-
-  # check subtitle is embeded
-  mediaInfo = MediaInfo.parse(f'{OUTPUT_FOLDER_PATH}/test.mp4')
-  assert any([track.track_type == 'Text' for track in mediaInfo.tracks])
+  fileNms = listdir(OUTPUT_FOLDER_PATH)
+  assert len(fileNms) == 2
+  assert 'test.mp4' in fileNms
+  assert 'test.en.vtt' in fileNms
 
 def test_with_real_download_bili():
   prepare_output_folder()
