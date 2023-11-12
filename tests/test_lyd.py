@@ -106,7 +106,12 @@ def test_download_yt_video(input_mock, config_mock):
   prepare_output_folder()
 
   input_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
-  config_mock.return_value = Opts().outputDir(OUTPUT_FOLDER_PATH).writeSubtitles(True).subtitlesLang('en')
+
+  opts = Opts()
+  opts.outputDir = OUTPUT_FOLDER_PATH
+  opts.writeSubtitles = True
+  opts.subtitlesLang = 'en'
+  config_mock.return_value = opts
 
   lazyYtDownload().run(loop=False)
 
@@ -136,7 +141,9 @@ def test_download_bili_video(input_mock, outputSection_mock):
   ]
 
   def outputSection_faker(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
-    return opts.copy().outputDir(OUTPUT_FOLDER_PATH)
+    opts = opts.copy()
+    opts.outputDir = OUTPUT_FOLDER_PATH
+    return opts
 
   with patch('src.lazyYtDownload.OutputSection.run', outputSection_faker):
     lazyYtDownload().run(loop=False)

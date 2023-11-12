@@ -22,6 +22,6 @@ class ListSubtitleSection (Section):
     if doList==VALUE.IN_NOT_LIST.value or doList==VALUE.IN_EMPTY.value:
       return
     
-    YoutubeDL(
-      params=opts.skip_download().listSubtitle()()
-    ).download([url])
+    opts.skip_download = True
+    opts.listSubtitle = True
+    YoutubeDL(params=opts.toParams()).download([url])

@@ -17,9 +17,9 @@ class MetaData:
   def fetchMetaData(url:str) -> VideoMetaData | PlaylistMetaData:
     # download metadata
     opts = Opts()
-    opts.quiet()
+    opts.quiet = True
     try:
-      metadata = YoutubeDL(opts()).extract_info(
+      metadata = YoutubeDL(opts.toParams()).extract_info(
         url = url,
         download = False
       )

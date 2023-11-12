@@ -8,8 +8,8 @@ from src.service.YtDlpHelper import Opts
 
 def test_all_not_ask():
   opts = OutputSection('').run(askDir=False, askName=False, opts=Opts())
-  assert opts()['paths'] == {}
-  assert opts()['outtmpl'] == None
+  assert opts.outputDir == None
+  assert opts.outputName == None
 
 @patch('tkinter.filedialog.askdirectory')
 @patch('builtins.print')
@@ -27,8 +27,8 @@ def test_askOutputDir(print_mock, askdirectory_mock):
   print_mock.mock_calls[2] == call(Message.INVALID_DIR.value)
   print_mock.mock_calls[3] == call(f"{Message.OUT_DIR.value} {valid_dir}")
   print_mock.mock_calls[4] == call(output_section.footer)
-  assert opts()['paths']['home'] == valid_dir
-  assert opts()['outtmpl'] == None
+  assert opts.outputDir == valid_dir
+  assert opts.outputName == None
 
 @patch('builtins.input')
 @patch('builtins.print')
@@ -41,8 +41,8 @@ def test_askOutputName(print_mock, input_mock):
   print_mock.mock_calls[0] == call(section.header)
   print_mock.mock_calls[1] == call(Message.ENTER_NAME.value)
   print_mock.mock_calls[2] == call(section.footer)
-  assert opts()['paths'] == {}
-  assert opts()['outtmpl'] == 'output_name.mp4'
+  assert opts.outputDir == None
+  assert opts.outputName == 'output_name.mp4'
 
 @patch('builtins.input', return_value='output_name.mp4')
 @patch('tkinter.filedialog.askdirectory', return_value='/path/to/output/dir')

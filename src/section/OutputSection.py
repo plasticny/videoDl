@@ -21,11 +21,11 @@ class OutputSection (Section):
   def __main(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
     if askDir:
       print(Message.DIR_SECTION_TITLE.value)
-      opts.outputDir(self.__askOutputDir())
+      opts.outputDir = self.__askOutputDir()
 
     if askName:
       print(Message.NAME_SECTION_TITLE.value)
-      opts.outputName(self.__askOutputName())
+      opts.outputName = self.__askOutputName()
 
     return opts
 

@@ -18,7 +18,7 @@ class FormatSection (Section):
   def __main(self, opts:Opts) -> Opts:
     fo = input(Message.ASK_FORMAT.value).lower()
     if fo == VALUE.IN_AUTO.value or fo == VALUE.IN_EMPTY.value:
-      opts.format(VALUE.OUT_DEFAULT.value)
+      opts.format = VALUE.OUT_DEFAULT.value
     else:
-      opts.format(fo)
+      opts.format = fo
     return opts

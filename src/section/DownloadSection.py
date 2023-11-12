@@ -17,12 +17,12 @@ class DownloadSection (Section) :
   
   # download video
   def __download (self, url:str, opts:Opts, retry:int):
-    opts = opts.copy().overwrites()
+    opts.overwrites = True
 
     tryCnt = 0
     while True:
       try:
-        YoutubeDL(opts()).download([url])
+        YoutubeDL(opts.toParams()).download([url])
         break
       except:
         tryCnt += 1

@@ -11,9 +11,9 @@ def test_noWriteSub(_):
   section = SubTitleSection('')
 
   opts = section.run(Opts())
-  assert opts()['writesubtitles'] == False
-  assert opts()['writeautomaticsub'] == None
-  assert opts()['subtitleslangs'] == [None]
+  assert opts.writeSubtitles == False
+  assert opts.writeAutomaticSub == None
+  assert opts.subtitlesLang == None
 
 @patch('builtins.input')
 def test_subLang(input_mock):
@@ -22,25 +22,25 @@ def test_subLang(input_mock):
   # Test with custom language
   input_mock.side_effect = ['Y','zh', 'N']
   opts = section.run(Opts())
-  assert opts()['writesubtitles'] == True
-  assert opts()['writeautomaticsub'] == False
-  assert opts()['subtitleslangs'] == ['zh']
+  assert opts.writeSubtitles == True
+  assert opts.writeAutomaticSub == False
+  assert opts.subtitlesLang == 'zh'
 
   # Test with default language
   input_mock.side_effect = ['Y','', 'N']
   opts = section.run(Opts())
-  assert opts()['writesubtitles'] == True
-  assert opts()['writeautomaticsub'] == False
-  assert opts()['subtitleslangs'] == [VALUE.DEFAULT_IN_LANG.value]
+  assert opts.writeSubtitles == True
+  assert opts.writeAutomaticSub == False
+  assert opts.subtitlesLang == VALUE.DEFAULT_IN_LANG.value
 
 @patch('builtins.input')
 def test_doWriteAutoSub(input_mock):
   # Test with custom language
   input_mock.side_effect = ['Y','zh', 'Y']
   opts = SubTitleSection('').run(Opts())
-  assert opts()['writesubtitles'] == True
-  assert opts()['writeautomaticsub'] == True
-  assert opts()['subtitleslangs'] == ['zh']
+  assert opts.writeSubtitles == True
+  assert opts.writeAutomaticSub == True
+  assert opts.subtitlesLang == 'zh'
 
 @patch('builtins.input')
 def test_not_change_param_opts(input_mock):

@@ -25,8 +25,12 @@ def test_with_real_download_yt():
   prepare_output_folder()
 
   opts = Opts()
-  opts.outputDir(f'{OUTPUT_FOLDER_PATH}').outputName('test.mp4').format('269')
-  opts.subtitlesLang('en').writeSubtitles().embedSubtitle()
+  opts.outputDir = OUTPUT_FOLDER_PATH
+  opts.outputName = 'test.mp4'
+  opts.format = '269'
+  opts.subtitlesLang = 'en'
+  opts.writeSubtitles = True
+  opts.embedSubtitle = True
   DownloadSection().run(
     url='https://www.youtube.com/watch?v=JMu9kdGHU3A',
     opts=opts
@@ -42,7 +46,8 @@ def test_with_real_download_yt():
 def test_with_real_download_bili():
   prepare_output_folder()
 
-  opts = Opts().outputDir(f'{OUTPUT_FOLDER_PATH}')
+  opts = Opts()
+  opts.outputDir = OUTPUT_FOLDER_PATH
   DownloadSection().run(
     url='https://www.bilibili.com/video/BV1154y1T765',
     opts=opts

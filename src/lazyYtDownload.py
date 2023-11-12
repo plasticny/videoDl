@@ -96,7 +96,7 @@ class lazyYtDownload:
 
   def download(self, opts:Opts, title, url):
     """
-      For lyd, download video and audio separately, then merge them.
+      Download video, audio and subtitles separately, then merge them.
 
       Args hint:
         `title` will be the title of the output video
@@ -105,14 +105,16 @@ class lazyYtDownload:
     # set a random output name
     fileNm = uuid4().__str__()
     # store the output dir path and replace it with temp folder
-    outputDir = opts()["paths"]["home"]
-    opts = opts.copy().outputDir(TEMP_FOLDER_PATH)
+    outputDir = opts.outputDir
+    opts = opts.copy()
+    opts.outputDir = TEMP_FOLDER_PATH
 
     # download subtitle
     subtitleFileNms = []
-    if opts()["writesubtitles"]:
+    if opts.writeSubtitles:
       # skip download doesnt skip subtitle
-      s_opts = opts.copy().skip_download()
+      s_opts = opts.copy()
+      s_opts.skip_download = True
 
       DownloadSection(
         title="Downloading subtitle",
@@ -123,10 +125,13 @@ class lazyYtDownload:
       subtitleFileNms = listdir(TEMP_FOLDER_PATH)
 
       # not download subtitle in the future downloading
-      opts.writeSubtitles(False).writeAutomaticSub(False).embedSubtitle(False)
+      opts.writeSubtitles = False
+      opts.writeAutomaticSub = False
+      opts.embedSubtitle = False
 
     # download video
-    opts.format("bv*[ext=mp4]").outputName(fileNm+'.mp4')
+    opts.format = "bv*[ext=mp4]"
+    opts.outputName = fileNm+'.mp4'
     DownloadSection(
       title="Downloading video",
       doShowFooter=False,
@@ -134,7 +139,8 @@ class lazyYtDownload:
     ).run(url, opts, retry=2)
 
     # download audio
-    opts.format("ba*[ext=m4a]").outputName(fileNm+'.m4a')
+    opts.format = "ba*[ext=m4a]"
+    opts.outputName = fileNm+'.m4a'
     DownloadSection(
       title="Downloading audio",
       doShowFooter=False,
@@ -151,7 +157,7 @@ class lazyYtDownload:
       videoPath=f"{TEMP_FOLDER_PATH}/{videoFileNm}", 
       audioPath=f"{TEMP_FOLDER_PATH}/{audioFileNm}",
       subtitlePath=[f"{TEMP_FOLDER_PATH}/{s}" for s in subtitleFileNms],
-      ffmpegLoaction=opts()["ffmpeg_location"]
+      ffmpegLoaction=opts.ffmpeg_location
     )
 
     # rename the output file
