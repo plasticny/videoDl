@@ -42,6 +42,39 @@ def test_download_call_count_bili_list(url_mock, _, download_mock):
   lazyYtDownload().run(loop=False)
   assert download_mock.call_count == 3
 
+@patch('src.lazyYtDownload.ffmpeg.output')
+@patch('src.lazyYtDownload.ffmpeg.input')
+def test_merge_subtitle(ffin_mock, ffout_mock):
+  """test subtitle feature of merge function"""
+  lyd = lazyYtDownload()
+
+  # fake returned ffmpeg object of ffout_mock
+  class FakeFfmpeg:
+    def run(*args, **kwargs):
+      pass
+  ffout_mock.return_value = FakeFfmpeg()
+
+  # test no subtitle
+  ffin_mock.side_effect = [{'v':''},{'a':''}]
+  lyd.merge('out.mp4', 'in.mp4', 'in.m4a', None, None)
+  kwargs = ffout_mock.call_args.kwargs
+  assert 'scodec' not in kwargs
+  assert 'vf' not in kwargs
+
+  # test embed subtitle
+  ffin_mock.side_effect = [{'v':''},{'a':''},{'s':''}]
+  lyd.merge('out.mp4', 'in.mp4', 'in.m4a', 'in.vtt', None, embedSubtitle=True)
+  kwargs = ffout_mock.call_args.kwargs
+  assert 'scodec' in kwargs
+  assert 'vf' not in kwargs
+
+  # test embed subtitle and burn subtitle
+  ffin_mock.side_effect = [{'v':''},{'a':''},{'s':''}]
+  lyd.merge('out.mp4', 'in.mp4', 'in.m4a', 'in.vtt', None, embedSubtitle=True, burnSubtitle=True)
+  kwargs = ffout_mock.call_args.kwargs
+  assert 'scodec' in kwargs
+  assert 'vf' in kwargs
+
 def test_renameFile_escape():
   """
     test renameFile function escape special char and rename file correctly
@@ -118,8 +151,10 @@ def test_download_yt_video(input_mock, config_mock):
 
   outputFile_path = f'{OUTPUT_FOLDER_PATH}/test video for videoDl.mp4'
 
+  # check output file exist
   assert exists(outputFile_path)
 
+  # check embed subtitle exist
   found_subtitle_track = False
   for track in MediaInfo.parse(outputFile_path).tracks:
     if track.track_type == 'Text':

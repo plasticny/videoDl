@@ -108,6 +108,7 @@ class lazyYtDownload:
     outputDir = opts.outputDir
     opts = opts.copy()
     opts.outputDir = TEMP_FOLDER_PATH
+    opts.outputName = fileNm
 
     # download subtitle
     subtitleFileNm = None
@@ -161,7 +162,8 @@ class lazyYtDownload:
       # ffmpeg location
       ffmpegLoaction=opts.ffmpeg_location,
       # subtitle options
-      embedSubtitle=opts.embedSubtitle
+      embedSubtitle=opts.embedSubtitle,
+      burnSubtitle=opts.burnSubtitle
     )
 
     # rename the output file
@@ -177,7 +179,7 @@ class lazyYtDownload:
       self, outputPath:str,
       videoPath:str, audioPath:str, subtitlePath:str,
       ffmpegLoaction:str, 
-      embedSubtitle:bool=False, 
+      embedSubtitle:bool=False, burnSubtitle:bool=False,
       quiet:bool=False
     ):
     """Merge video, audio and subtitles"""
@@ -191,11 +193,16 @@ class lazyYtDownload:
 
     # kwargs
     kwargs = {
+      # basic merge settings
       'vcodec': 'libx264', 'acodec': 'aac',
-      'loglevel': 'quiet' if quiet else 'info'
+      'loglevel': 'quiet' if quiet else 'info',
     }
+    # embed subtitle
     if subtitlePath is not None and embedSubtitle:
       kwargs['scodec'] = 'mov_text'
+    # burn subtitle
+    if subtitlePath is not None and burnSubtitle:
+      kwargs['vf'] = f"subtitles='{subtitlePath}':force_style='Fontsize=12'"
 
     try:
       ff : ffmpeg = ffmpeg.output(*streams_n_output,**kwargs)
