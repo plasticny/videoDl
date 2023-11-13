@@ -3,7 +3,7 @@ path.append('src')
 
 from unittest.mock import patch
 
-from src.section.SubTitleSection import SubTitleSection, VALUE
+from src.section.SubTitleSection import SubTitleSection
 from src.service.YtDlpHelper import Opts
 
 def check_opts(
@@ -27,51 +27,91 @@ def check_opts(
   assert opts.embedSubtitle == expected_embed
   assert opts.burnSubtitle == expected_burn
 
-@patch('builtins.input', return_value='N')
-def test_noWriteSub(_):
+@patch('src.section.SubTitleSection.inq_prompt')
+def test_noWriteSub(prompt_mock):
+  prompt_mock.return_value = {'choice': 'No'}
   opts = SubTitleSection('').run(Opts())
   check_opts(opts, False, None, None, None, None)
 
-@patch('builtins.input')
-def test_subLang(input_mock):
+@patch('src.section.SubTitleSection.inq_prompt')
+def test_subLang(prompt_mock):
   section = SubTitleSection('')
 
   # Test with custom language
-  input_mock.side_effect = ['Y','zh', 'N', 'N', 'N']
+  prompt_mock.side_effect = [
+    {'choice': 'Yes'},
+    {
+      'lang': 'zh',
+      'writeMode': [],
+      'writeAutoSub': 'No'
+    }
+  ]
   opts = section.run(Opts())
   check_opts(opts, True, False, 'zh', False, False)
 
   # Test with default language
-  input_mock.side_effect = ['Y','', 'N', 'N', 'N']
+  prompt_mock.side_effect = [
+    {'choice': 'Yes'},
+    {
+      'lang': '',
+      'writeMode': [],
+      'writeAutoSub': 'No'
+    }
+  ]
   opts = section.run(Opts())
-  check_opts(opts, True, False, VALUE.DEFAULT_IN_LANG.value, False, False)
+  check_opts(opts, True, False, 'en', False, False)
 
-@patch('builtins.input')
-def test_doWriteAutoSub(input_mock):
-  # Test with custom language
-  input_mock.side_effect = ['Y','zh', 'Y', 'N', 'N']
+@patch('src.section.SubTitleSection.inq_prompt')
+def test_doWriteAutoSub(prompt_mock):
+  prompt_mock.side_effect = [
+    {'choice': 'Yes'},
+    {
+      'lang': 'zh',
+      'writeMode': [],
+      'writeAutoSub': 'Yes'
+    }
+  ]
   opts = SubTitleSection('').run(Opts())
   check_opts(opts, True, True, 'zh', False, False)
 
-@patch('builtins.input')
-def test_embedSubtitle(input_mock):
-  # Test with custom language
-  input_mock.side_effect = ['Y','zh', 'Y', 'Y', 'N']
+@patch('src.section.SubTitleSection.inq_prompt')
+def test_embedSubtitle(prompt_mock):
+  prompt_mock.side_effect = [
+    {'choice': 'Yes'},
+    {
+      'lang': 'zh',
+      'writeMode': ['Embed'],
+      'writeAutoSub': 'Yes'
+    }
+  ]
   opts = SubTitleSection('').run(Opts())
   check_opts(opts, True, True, 'zh', True, False)
 
-@patch('builtins.input')
-def test_burnSubtitle(input_mock):
-  # Test with custom language
-  input_mock.side_effect = ['Y','zh', 'Y', 'Y', 'Y']
+@patch('src.section.SubTitleSection.inq_prompt')
+def test_burnSubtitle(prompt_mock):
+  prompt_mock.side_effect = [
+    {'choice': 'Yes'},
+    {
+      'lang': 'zh',
+      'writeMode': ['Embed', 'Burn'],
+      'writeAutoSub': 'Yes'
+    }
+  ]
   opts = SubTitleSection('').run(Opts())
   check_opts(opts, True, True, 'zh', True, True)
 
-@patch('builtins.input')
-def test_not_change_param_opts(input_mock):
+@patch('src.section.SubTitleSection.inq_prompt')
+def test_not_change_param_opts(prompt_mock):
   opts = Opts()
   backup_opts = opts.copy()
 
-  input_mock.side_effect = ['Y', 'zh', 'Y', 'Y', 'Y']
+  prompt_mock.side_effect = [
+    {'choice': 'Yes'},
+    {
+      'lang': 'zh',
+      'writeMode': ['Embed', 'Burn'],
+      'writeAutoSub': 'Yes'
+    }
+  ]
   SubTitleSection('').run(opts)
   assert opts == backup_opts

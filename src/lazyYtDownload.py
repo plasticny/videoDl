@@ -81,14 +81,12 @@ class lazyYtDownload:
     # subtitle
     opts = SubTitleSection(
       title='Subtitle',
-      doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
     ).run(opts)
 
     # output dir
     opts = OutputSection(
       title='Output',
-      doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
     ).run(opts, askName=False)
 

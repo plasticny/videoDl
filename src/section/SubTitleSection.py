@@ -1,56 +1,51 @@
 from enum import Enum
+from inquirer import prompt as inq_prompt, List as inq_List, Text as inq_Text, Checkbox as inq_Checkbox
 
 from section.Section import Section
 from service.YtDlpHelper import Opts
-
-class VALUE(Enum):
-  DEFAULT_DO_WRITE_SUB = 'Y'
-  DEFAULT_IN_LANG = 'en'
-  DEFAULT_IN_WRITE_AUTO_SUB = 'N'
-  DEFAULT_EMBED_SUB = 'Y'
-  DEFAULT_BURN_SUB = 'Y'
-
-class Message(Enum):
-  ASK_DO_WRITE = f'Write the subtitle?({VALUE.DEFAULT_DO_WRITE_SUB.value}) '
-  ASK_LANG = f'Enter the language of subtitle:({VALUE.DEFAULT_IN_LANG.value}) '
-  ASK_WRITE_AUTO_SUB = f'Wirte the auto-gen subtitle if no subtitle?({VALUE.DEFAULT_IN_WRITE_AUTO_SUB.value}) '
-  ASK_DO_EMDED_SUB = f'Embed the subtitle to the video?({VALUE.DEFAULT_EMBED_SUB.value}) '
-  ASK_DO_BURN_SUB = f'Burn the subtitle to the video?({VALUE.DEFAULT_BURN_SUB.value})'
 
 class SubTitleSection (Section):
   def run(self, opts:Opts = Opts()) -> Opts:
     return super().run(self.__main, opts=opts.copy())
   
   def __main(self, opts:Opts) -> Opts:
-    # do write subtitle
-    doWriteSub = input(Message.ASK_DO_WRITE.value).upper()
-    doWriteSub = doWriteSub == VALUE.DEFAULT_DO_WRITE_SUB.value or doWriteSub == ''
+    # ask if write subtitle
+    doWriteSub = inq_prompt([
+      inq_List(
+        'choice', message='Write the subtitle?', 
+        choices=['Yes','No'], default='Yes'
+      )
+    ])['choice']
+    doWriteSub = doWriteSub == 'Yes'
 
-    if doWriteSub:
-      # subtitle language
-      lang = input(Message.ASK_LANG.value)
-      lang = VALUE.DEFAULT_IN_LANG.value if lang == '' else lang
-      
-      # write auto subtitle
-      doWriteAutoSub = input(Message.ASK_WRITE_AUTO_SUB.value).upper()
-      doWriteAutoSub = doWriteAutoSub != VALUE.DEFAULT_IN_WRITE_AUTO_SUB.value
+    # not write subtitle
+    if not doWriteSub:
+      opts.writeSubtitles = False
+      return opts
 
-      # embed subtitle
-      doEmbedSub = input(Message.ASK_DO_EMDED_SUB.value).upper()
-      doEmbedSub = doEmbedSub == VALUE.DEFAULT_EMBED_SUB.value or doEmbedSub == ''
-
-      # burn subtitle
-      doBurnSub = input(Message.ASK_DO_BURN_SUB.value).upper()
-      doBurnSub = doBurnSub == VALUE.DEFAULT_BURN_SUB.value or doBurnSub == ''
-    else:
-      lang = None
-      doWriteAutoSub = None
-      doEmbedSub = None
-      doBurnSub = None
-    
-    opts.subtitlesLang = lang
+    # if write subtitle, ask details
+    ans = inq_prompt([
+      inq_Text(
+        'lang', message='Enter the language of subtitle', 
+        default='en'
+      ),
+      inq_Checkbox(
+        'writeMode', message='Choose the mode of writing subtitle (Space to select/deselect, Enter to confirm)',
+        choices=['Embed', 'Burn'], default=['Embed', 'Burn']
+      ),
+      inq_List(
+        'writeAutoSub', message='Wirte the auto-gen subtitle if could not find subtitle?', 
+        choices=['Yes','No'], default='No'
+      ),
+    ])    
     opts.writeSubtitles = doWriteSub
-    opts.writeAutomaticSub = doWriteAutoSub
-    opts.embedSubtitle = doEmbedSub
-    opts.burnSubtitle = doBurnSub
+    opts.subtitlesLang = ans['lang'] if len(ans['lang']) > 0 else 'en'
+    opts.embedSubtitle = 'Embed' in ans['writeMode']
+    opts.burnSubtitle = 'Burn' in ans['writeMode']
+    opts.writeAutomaticSub = ans['writeAutoSub'] == 'Yes'
+
+    # print warning if not doEmbedSub and not doBurnSub:
+    if not opts.embedSubtitle and not opts.burnSubtitle:
+      print('Warning: You choose not to embed or burn the subtitle to the video, so the subtitle will not be shown in the video.')
+
     return opts

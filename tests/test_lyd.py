@@ -162,23 +162,27 @@ def test_download_yt_video(input_mock, config_mock):
       break
   assert found_subtitle_track
 
-@patch('src.lazyYtDownload.OutputSection.run')
 @patch('builtins.input')
-def test_download_bili_video(input_mock, outputSection_mock):
+def test_download_bili_video(input_mock):
   prepare_output_folder()
 
   input_mock.side_effect = [
     'https://www.bilibili.com/video/BV1154y1T765', # url
     'N', # login
     'Y', # list subtitle
-    'N' # write subtitle
   ]
 
   def outputSection_faker(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
     opts = opts.copy()
     opts.outputDir = OUTPUT_FOLDER_PATH
     return opts
+  def subtitleSection_faker(self, opts:Opts) -> Opts:
+    opts = opts.copy()
+    opts.writeSubtitles = False
+    return opts
 
-  with patch('src.lazyYtDownload.OutputSection.run', outputSection_faker):
+  outputSection_mock = patch('src.lazyYtDownload.OutputSection.run', outputSection_faker)
+  subtitleSection_mock = patch('src.lazyYtDownload.SubTitleSection.run', subtitleSection_faker)
+  with outputSection_mock, subtitleSection_mock:
     lazyYtDownload().run(loop=False)
   assert exists(f'{OUTPUT_FOLDER_PATH}/小 僧 觉 得 很 痛.mp4')
