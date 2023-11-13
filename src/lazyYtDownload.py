@@ -87,6 +87,7 @@ class lazyYtDownload:
     # output dir
     opts = OutputSection(
       title='Output',
+      doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
     ).run(opts, askName=False)
 
@@ -117,7 +118,6 @@ class lazyYtDownload:
 
       DownloadSection(
         title="Downloading subtitle",
-        doShowFooter=False,
         headerType=HeaderType.SUB_HEADER
       ).run(url, s_opts, retry=2)
 
@@ -132,7 +132,6 @@ class lazyYtDownload:
     opts.outputName = fileNm+'.mp4'
     DownloadSection(
       title="Downloading video",
-      doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
     ).run(url, opts, retry=2)
 
@@ -141,7 +140,6 @@ class lazyYtDownload:
     opts.outputName = fileNm+'.m4a'
     DownloadSection(
       title="Downloading audio",
-      doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
     ).run(url, opts, retry=2)
 
@@ -199,8 +197,8 @@ class lazyYtDownload:
     if subtitlePath is not None and embedSubtitle:
       kwargs['scodec'] = 'mov_text'
     # burn subtitle
-    if subtitlePath is not None and burnSubtitle:
-      kwargs['vf'] = f"subtitles='{subtitlePath}':force_style='Fontsize=12'"
+    if subtitlePath is not None and burnSubtitle: 
+      kwargs['vf'] = f"subtitles='{subtitlePath}':'force_style=Fontsize=12\,MarginV=6'"
 
     try:
       ff : ffmpeg = ffmpeg.output(*streams_n_output,**kwargs)
