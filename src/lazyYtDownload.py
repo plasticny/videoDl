@@ -15,7 +15,6 @@ import ffmpeg
 from section.Section import Section, HeaderType
 from section.UrlSection import UrlSection
 from section.DownloadSection import DownloadSection
-from section.ListSubtitleSection import ListSubtitleSection
 from section.LoginSection import LoginSection
 from section.SubTitleSection import SubTitleSection
 from section.OutputSection import OutputSection
@@ -62,12 +61,9 @@ class lazyYtDownload:
     # ask login    
     opts = self.login(url, opts=opts)
 
-    # list subtitle
-    ListSubtitleSection(title='List Subtitle').run(url, opts)
-
     # set up download
     # subtitle, output dir
-    opts = Section(title='Set up download').run(self.setup, opts=opts)
+    opts = Section(title='Set up download').run(self.setup, url=url, opts=opts)
 
     return opts
   
@@ -77,12 +73,12 @@ class lazyYtDownload:
       return LoginSection(title='Login').run(opts)
     return opts
 
-  def setup(self, opts) -> Opts:
+  def setup(self, url, opts) -> Opts:
     # subtitle
     opts = SubTitleSection(
       title='Subtitle',
       headerType=HeaderType.SUB_HEADER
-    ).run(opts)
+    ).run(url, opts)
 
     # output dir
     opts = OutputSection(
