@@ -6,12 +6,12 @@ from json import loads as json_loads
 from yt_dlp.cookies import load_cookies
 from http.client import HTTPResponse
 
-from service.utils import Subtitle
+from service.structs import Subtitle
 from service.YtDlpHelper import Opts
 
 class BiliBiliFetcher:
   @staticmethod
-  def getSubtitles(bvid:str, opts:Opts) -> (list[Subtitle], list[Subtitle]):
+  def getSubtitles(bvid:str, opts:Opts=Opts()) -> (list[Subtitle], list[Subtitle]):
     """
       Get subtitles from bilibili
 
@@ -26,6 +26,11 @@ class BiliBiliFetcher:
     opener = build_opener(HTTPCookieProcessor(cookiejar))
     res : HTTPResponse = opener.open(f'https://api.bilibili.com/x/web-interface/view?bvid={bvid}')
     json = json_loads(res.read().decode('utf-8'))
+
+    # check if success
+    # 暫時未找到方法獲取pages的字幕
+    if json['code'] != 0:
+      return ([], [])
 
     sub : list[Subtitle] = []
     auto_sub : list[Subtitle] = []

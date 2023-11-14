@@ -9,7 +9,7 @@ from enum import Enum
 from service.YtDlpHelper import Opts
 from service.urlHelper import getSource, UrlSource
 from service.fetcher import BiliBiliFetcher
-from service.utils import Subtitle
+from service.structs import Subtitle
 
 class ErrMessage (Enum):
   NO_PARAM = 'should provide either config or url'
@@ -33,10 +33,10 @@ class MetaData:
       print(e)
       raise Exception(ErrMessage.GET_METADATA_FAILED.value)
     
-    try:
-      if metadata['_type'] == 'playlist':
-        return PlaylistMetaData(metadata)
-    except:
+    if '_type' in metadata and metadata['_type'] == 'playlist':
+      print('playlist')
+      return PlaylistMetaData(metadata, opts)
+    else:
       return VideoMetaData(metadata, opts)
 
   @property
@@ -59,11 +59,11 @@ class VideoMetaData (MetaData):
   """
     Video metadata
   """
-  def __init__(self, metadata, opts:Opts):
+  def __init__(self, metadata, opts:Opts=Opts()):
     super().__init__(metadata)
 
     # get subtitles
-    if getSource(self.url) == UrlSource.BILIBILI:
+    if getSource(self.url) is UrlSource.BILIBILI:
       # use customer fetcher since hard to get subtitles from bilibili with yt-dlp
       sub, auto_sub = BiliBiliFetcher.getSubtitles(self.id, opts)
     else:
@@ -101,11 +101,12 @@ class PlaylistMetaData (MetaData):
   def playlist_count(self):
     return self.metadata['playlist_count']
   
+  def __init__(self, metadata, opts:Opts=Opts()):
+    super().__init__(metadata)
+
+    self.videos : list[VideoMetaData] = [
+      VideoMetaData(videoMd, opts) for videoMd in self.metadata['entries']
+    ]
+  
   def isPlaylist(self) -> bool:
     return True
-
-  def getVideos(self) -> list[VideoMetaData]:
-    videos = []
-    for videoMd in self.metadata['entries']:
-      videos.append(VideoMetaData(videoMd))
-    return videos

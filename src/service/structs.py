@@ -1,8 +1,12 @@
+"""
+  Structs
+"""
+
 from colorama import Fore, Style
 
 class Subtitle:
   """
-    Subtitle structure
+    Structure of VideoMetaData subtitle
   """
   def __init__(self, code, name, isAuto=False):
     self.code = code
