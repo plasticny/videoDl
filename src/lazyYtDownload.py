@@ -194,7 +194,7 @@ class lazyYtDownload:
       kwargs['scodec'] = 'mov_text'
     # burn subtitle
     if subtitlePath is not None and burnSubtitle: 
-      kwargs['vf'] = f"subtitles='{subtitlePath}':'force_style=Fontsize=12\,MarginV=6'"
+      kwargs['vf'] = f"subtitles='{subtitlePath}':'force_style=Fontsize=12\,MarginV=3'"
 
     try:
       ff : ffmpeg = ffmpeg.output(*streams_n_output,**kwargs)
