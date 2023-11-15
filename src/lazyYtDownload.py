@@ -108,9 +108,8 @@ class lazyYtDownload:
     # download subtitle
     subtitleFileNm = None
     if opts.writeSubtitles:
-      # skip download doesnt skip subtitle
       s_opts = opts.copy()
-      s_opts.skip_download = True
+      s_opts.skip_download = True # skip download doesnt skip subtitle
 
       DownloadSection(
         title="Downloading subtitle",
@@ -119,7 +118,6 @@ class lazyYtDownload:
 
       subtitleFileNm = listdir(TEMP_FOLDER_PATH)[0]
 
-      # not download subtitle in the future downloading
       opts.writeSubtitles = False
       opts.writeAutomaticSub = False
 
