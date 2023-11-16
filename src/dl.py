@@ -4,7 +4,6 @@ packageChecker.check()
 from section.Section import Section, HeaderType
 from section.UrlSection import UrlSection
 from section.LoginSection import LoginSection
-from section.ListSubtitleSection import ListSubtitleSection
 from section.ListFormatSection import ListFormatSection
 from section.DownloadSection import DownloadSection
 from section.SubTitleSection import SubTitleSection
@@ -26,16 +25,13 @@ class Dl:
                       
       # ask Login
       opts = LoginSection(title='Login').run(opts)
-  
-      # list subtitle
-      ListSubtitleSection(title='List Subtitle').run(url, opts)
-  
+    
       # list format
       ListFormatSection(title='List Format').run(url, opts)
       
       # set up download
       # subtitle, format, output dir
-      opts = Section(title='Set up download').run(self.setup, opts=opts)
+      opts = Section(title='Set up download').run(self.setup, url=url, opts=opts)
                                   
       # do download
       DownloadSection(title="Downloading").run(url=url, opts=opts)
@@ -43,13 +39,13 @@ class Dl:
       if not loop:
         break
   
-  def setup(self, opts) -> Opts:
+  def setup(self, url, opts) -> Opts:
     # subtitle
     opts = SubTitleSection(
       title='Subtitle',
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(opts)
+    ).run(url, opts)
 
     # format
     opts = FormatSection(
