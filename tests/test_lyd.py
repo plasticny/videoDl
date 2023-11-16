@@ -1,7 +1,7 @@
 from sys import path
 path.append('src')
 
-from unittest.mock import patch
+from unittest.mock import patch, call, ANY
 from pytest import raises as pytest_raises
 
 from uuid import uuid4
@@ -41,6 +41,42 @@ def test_download_call_count_bili_list(url_mock, _, download_mock):
   url_mock.return_value = 'https://www.bilibili.com/video/BV1bN411s7VT'
   lazyYtDownload().run(loop=False)
   assert download_mock.call_count == 3
+
+@patch('src.lazyYtDownload.lazyYtDownload.renameFile')
+@patch('src.lazyYtDownload.Section')
+@patch('src.lazyYtDownload.DownloadSection')
+@patch('src.lazyYtDownload.listdir')
+def test_download_subtitle(listdir_mock, download_section_mock, section_mock, _):
+  """
+    test the download function will download subtitle 
+    if writeSubtitles or writeAutomaticSub is true
+  """
+  class fake_Section:
+    def __init__(self, *args, **kwargs):
+      pass
+    def run(*args, **kwargs):
+      pass
+
+  listdir_mock.return_value = ['filename.vtt']
+  download_section_mock.side_effect = fake_Section
+  section_mock.side_effect = fake_Section
+
+  # test both false
+  lazyYtDownload().download(Opts(), 'test', 'test')
+
+  # test writeSubtitles is true
+  opts = Opts()
+  opts.writeSubtitles = True
+  lazyYtDownload().download(opts, 'test', 'test')
+
+  # test writeAutoSub is true
+  opts = Opts()
+  opts.writeAutomaticSub = True
+  lazyYtDownload().download(opts, 'test', 'test')
+
+  assert download_section_mock.mock_calls.count(
+    call(title='Downloading subtitle', headerType=ANY)
+  ) == 2
 
 @patch('src.lazyYtDownload.ffmpeg.output')
 @patch('src.lazyYtDownload.ffmpeg.input')

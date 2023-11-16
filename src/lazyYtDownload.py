@@ -107,7 +107,7 @@ class lazyYtDownload:
 
     # download subtitle
     subtitleFileNm = None
-    if opts.writeSubtitles:
+    if opts.writeSubtitles or opts.writeAutomaticSub:
       s_opts = opts.copy()
       s_opts.skip_download = True # skip download doesnt skip subtitle
 
@@ -148,7 +148,7 @@ class lazyYtDownload:
       # input paths
       videoPath=f"{TEMP_FOLDER_PATH}/{videoFileNm}", 
       audioPath=f"{TEMP_FOLDER_PATH}/{audioFileNm}",
-      subtitlePath=f"{TEMP_FOLDER_PATH}/{subtitleFileNm}",
+      subtitlePath=f"{TEMP_FOLDER_PATH}/{subtitleFileNm}" if subtitleFileNm is not None else None,
       # ffmpeg location
       ffmpegLoaction=opts.ffmpeg_location,
       # subtitle options

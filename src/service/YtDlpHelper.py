@@ -3,7 +3,7 @@ import copy
 
 class Opts:
   def __init__(self) -> None:
-    self.opts = {}
+    self.opts = {} # see reset function for the keys
     self.reset()
 
   def __eq__(self, other: Opts) -> bool:
@@ -47,7 +47,7 @@ class Opts:
     del ret_opts['not_yt_dlp']
     return ret_opts
 
-  # ========= fast getter and setter function for the opts params =========
+  # ========= getter and setter for the opts params =========
   """ output """
   @property
   def outputName (self) -> str:
