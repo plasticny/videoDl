@@ -3,7 +3,8 @@ from colorama import Fore, Style
 
 from section.Section import Section
 from service.YtDlpHelper import Opts
-from service.MetaData import MetaData, VideoMetaData, Subtitle
+from service.MetaData import MetaData, VideoMetaData
+from service.structs import Subtitle
 
 class SubTitleSection (Section):
   def run(self, url, opts:Opts = Opts()) -> Opts:
@@ -16,6 +17,7 @@ class SubTitleSection (Section):
     if len(md.subtitles) == 0 and len(md.autoSubtitles) == 0:
       # if no subtitle, return
       print(f'{Fore.YELLOW}No subtitle available.{Style.RESET_ALL}')
+      opts.writeSubtitles = False
       return opts
     else:
       print(f'{Fore.GREEN}Subtitles found{Style.RESET_ALL}.', end='')
@@ -25,11 +27,9 @@ class SubTitleSection (Section):
     if not self.selectWriteSub():
       opts.writeSubtitles = False
       return opts
-
-    # if write subtitle, ask details
-    (lang, isAuto) = self.selectSubtitle(md)
-    (doEmbed, doBurn) = self.selectWriteMode()
     
+    # if write subtitle, ask details
+    (lang, isAuto, doEmbed, doBurn) = self.selectDetails(md)
     opts.subtitlesLang = lang
     opts.writeSubtitles = not isAuto
     opts.writeAutomaticSub = isAuto
@@ -39,7 +39,7 @@ class SubTitleSection (Section):
     # print warning if not doEmbedSub and not doBurnSub:
     if not opts.embedSubtitle and not opts.burnSubtitle:
       print(Fore.YELLOW)
-      print('Warning: You do not choose any mode to write the subtitle, so the subtitle will not be shown in the video.')
+      print('Warning: You did not choose any mode to write the subtitle, so the subtitle will not be shown in the video.')
       print(Style.RESET_ALL)
 
     return opts
@@ -56,31 +56,22 @@ class SubTitleSection (Section):
     ])['writeSub']
     return doWriteSub == 'Yes'
   
-  def selectSubtitle(self, md : VideoMetaData) -> (str, bool):
+  def selectDetails(self, md : VideoMetaData) -> (str, bool, bool, bool):
     """
-      Ask user to select subtitle from the list of subtitles
+      Select subtitle language and write mode
 
       Returns:
-        (str, bool): (Code of the subtitle, is auto-gen subtitle)
-    """
-    ans : Subtitle = inq_prompt([
-      inq_List('lang', message=f'Select a subtitle', choices=[*md.subtitles, *md.autoSubtitles])
-    ])['lang']
-
-    return (ans.code, ans.isAuto)
-  
-  def selectWriteMode(self) -> (bool, bool):
-    """
-      Ask user to select write mode
-
-      Returns:
-        (bool, bool): (doEmbedSub, doBurnSub)
+        (Code of the subtitle, is auto-gen subtitle, do embed sub, do burn sub)
     """
     ans = inq_prompt([
+      inq_List('lang', message=f'Select a subtitle', choices=[*md.subtitles, *md.autoSubtitles]),
       inq_Checkbox(
         'writeMode', message='Choose the mode of writing subtitle (Space to select/deselect, Enter to confirm)',
         choices=['Embed', 'Burn'], default=['Embed', 'Burn']
       )
-    ])['writeMode']
+    ])
 
-    return ('Embed' in ans, 'Burn' in ans)
+    sub : Subtitle = ans['lang']
+    mode : list[str] = ans['writeMode']
+
+    return (sub.code, sub.isAuto, 'Embed' in mode, 'Burn' in mode)
