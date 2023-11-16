@@ -39,7 +39,7 @@ class lazyYtDownload:
       md = MetaData.fetchMetaData(url)
       videos : list[VideoMetaData] = []
       if md.isPlaylist():
-        videos.extend(md.getVideos())
+        videos.extend(md.videos)
       else:
         videos.append(md)
 

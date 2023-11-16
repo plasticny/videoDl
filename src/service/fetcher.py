@@ -1,5 +1,5 @@
 """
-  Custom fetcher for getting info that is not provided or not easy to get from yt-dlp
+  Custom fetchers for getting info that is not provided or not easy to get from yt-dlp
 """
 from urllib.request import build_opener, HTTPCookieProcessor
 from json import loads as json_loads
