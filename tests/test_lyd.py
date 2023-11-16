@@ -164,23 +164,21 @@ def test_download_yt_video(input_mock, config_mock):
 
 @patch('builtins.input')
 def test_download_bili_video(input_mock):
+  def outputSection_faker(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
+    opts = opts.copy()
+    opts.outputDir = OUTPUT_FOLDER_PATH
+    return opts
+  def subtitleSection_faker(self, url, opts:Opts) -> Opts:
+    opts = opts.copy()
+    opts.writeSubtitles = False
+    return opts
+  
   prepare_output_folder()
 
   input_mock.side_effect = [
     'https://www.bilibili.com/video/BV1154y1T765', # url
     'N', # login
-    'Y', # list subtitle
   ]
-
-  def outputSection_faker(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
-    opts = opts.copy()
-    opts.outputDir = OUTPUT_FOLDER_PATH
-    return opts
-  def subtitleSection_faker(self, opts:Opts) -> Opts:
-    opts = opts.copy()
-    opts.writeSubtitles = False
-    return opts
-
   outputSection_mock = patch('src.lazyYtDownload.OutputSection.run', outputSection_faker)
   subtitleSection_mock = patch('src.lazyYtDownload.SubTitleSection.run', subtitleSection_faker)
   with outputSection_mock, subtitleSection_mock:
