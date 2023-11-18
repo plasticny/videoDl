@@ -32,11 +32,18 @@ class lazyYtDownload:
       opts = Opts()
 
       url = UrlSection(title='Url').run()
+      # ask login    
+      opts = self.login(url, opts=opts)
 
-      opts = self.configDownload(url, opts)
+      # fetch metadata
+      print('Getting download information...\n')
+      md = MetaData.fetchMetaData(url, opts=opts)
+
+      # set up download
+      # subtitle, output dir
+      opts = Section(title='Set up download').run(self.setup, md=md, opts=opts)
 
       # check the number of video need to download
-      md = MetaData.fetchMetaData(url)
       videos : list[VideoMetaData] = []
       if md.isPlaylist():
         videos.extend(md.videos)
@@ -56,16 +63,6 @@ class lazyYtDownload:
       if not loop:
         break
     return
-
-  def configDownload(self, url, opts) -> Opts:
-    # ask login    
-    opts = self.login(url, opts=opts)
-
-    # set up download
-    # subtitle, output dir
-    opts = Section(title='Set up download').run(self.setup, url=url, opts=opts)
-
-    return opts
   
   def login(self, url:str, opts:Opts) -> Opts:
     # ask login if bilibili
@@ -73,12 +70,12 @@ class lazyYtDownload:
       return LoginSection(title='Login').run(opts)
     return opts
 
-  def setup(self, url, opts) -> Opts:
+  def setup(self, md:MetaData, opts) -> Opts:
     # subtitle
     opts = SubTitleSection(
       title='Subtitle',
       headerType=HeaderType.SUB_HEADER
-    ).run(url, opts)
+    ).run(md, opts)
 
     # output dir
     opts = OutputSection(

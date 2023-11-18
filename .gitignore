@@ -6,6 +6,7 @@ __pycache__
 /src/*.exe
 /src/draft.py
 
+/info_reference/*
 /temp/*
 
 build

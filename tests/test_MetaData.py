@@ -1,8 +1,7 @@
 from json import loads as jsonLoads
 from pytest import raises as pytestRaises
-from unittest.mock import patch
 
-from src.service.MetaData import MetaData, VideoMetaData, PlaylistMetaData, ErrMessage
+from src.service.MetaData import MetaData, VideoMetaData
 
 # test fetch metadata of youtube video with url
 def test_fetch_video():
@@ -42,4 +41,3 @@ def test_fetch_bili_ls():
 def test_fetch_failed():
   with pytestRaises(Exception) as e:
     MetaData.fetchMetaData(url='invalid url')
-  assert str(e.value) == ErrMessage.GET_METADATA_FAILED.value

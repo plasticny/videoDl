@@ -33,6 +33,7 @@ class Opts:
       'quiet': None,
       'overwrites': None,
       'ffmpeg_location': 'ffmpeg',
+      'extract_flat': None,
 
       # some params that not belong to yt_dlp
       'not_yt_dlp': {
@@ -163,4 +164,11 @@ class Opts:
   @ffmpeg_location.setter
   def ffmpeg_location (self, val:str) -> None:
     self.opts['ffmpeg_location'] = val
+
+  @property
+  def extract_flat (self) -> bool:
+    return self.opts['extract_flat']
+  @extract_flat.setter
+  def extract_flat (self, val:bool = True) -> None:
+    self.opts['extract_flat'] = val
   # ========= END fast getter and setter function for the opts params END =========

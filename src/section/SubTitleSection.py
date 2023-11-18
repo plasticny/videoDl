@@ -7,12 +7,15 @@ from service.MetaData import MetaData, VideoMetaData
 from service.structs import Subtitle
 
 class SubTitleSection (Section):
-  def run(self, url, opts:Opts = Opts()) -> Opts:
-    return super().run(self.__main, url=url, opts=opts.copy())
+  def run(self, md:MetaData, opts:Opts = Opts()) -> Opts:
+    return super().run(self.__main, md=md, opts=opts.copy())
   
-  def __main(self, url, opts:Opts) -> Opts:
-    print('Finding subtitles...')
-    md : VideoMetaData = MetaData.fetchMetaData(url, opts)
+  def __main(self, md:MetaData, opts:Opts) -> Opts:
+    if md.isPlaylist():
+      print(f'{Fore.YELLOW}Write subtitle into playlist video is not supported currently.{Style.RESET_ALL}')
+      opts.writeSubtitles = False
+      return opts
+    assert isinstance(md, VideoMetaData)
 
     if len(md.subtitles) == 0 and len(md.autoSubtitles) == 0:
       # if no subtitle, return
