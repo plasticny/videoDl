@@ -11,6 +11,7 @@ from section.FormatSection import FormatSection
 from section.OutputSection import OutputSection
 
 from service.YtDlpHelper import Opts
+from service.MetaData import fetchMetaData, MetaData
 
 class Dl:
   # main process
@@ -25,13 +26,16 @@ class Dl:
                       
       # ask Login
       opts = LoginSection(title='Login').run(opts)
+
+      print('Getting download informaton...', end='\n\n')
+      md = fetchMetaData(url, opts)
     
       # list format
       ListFormatSection(title='List Format').run(url, opts)
       
       # set up download
       # subtitle, format, output dir
-      opts = Section(title='Set up download').run(self.setup, url=url, opts=opts)
+      opts = Section(title='Set up download').run(self.setup, md=md, opts=opts)
                                   
       # do download
       DownloadSection(title="Downloading").run(url=url, opts=opts)
@@ -39,13 +43,13 @@ class Dl:
       if not loop:
         break
   
-  def setup(self, url, opts) -> Opts:
+  def setup(self, md:MetaData, opts:Opts) -> Opts:
     # subtitle
     opts = SubTitleSection(
       title='Subtitle',
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(url, opts)
+    ).run(md, opts)
 
     # format
     opts = FormatSection(
