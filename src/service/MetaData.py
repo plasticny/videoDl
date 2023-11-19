@@ -16,34 +16,35 @@ from service.urlHelper import getSource, UrlSource
 from service.fetcher import BiliBiliFetcher
 from service.structs import Subtitle
 
+# ========================== Abstract MetaData ========================= #
+def fetchMetaData(url:str, opts:Opts=Opts()) -> VideoMetaData | PlaylistMetaData:
+  """Fetch metadata of the video or playlist to be downloaded"""
+  urlSource = getSource(url)
+
+  opts = opts.copy()
+  opts.quiet = True
+  opts.extract_flat = True
+  # use custom fetcher to get bilibili subtitles
+  opts.listSubtitle = not (urlSource is UrlSource.BILIBILI)
+  try:
+    # quiet=True also print subtitle, redirect stdout to hide it
+    with redirect_stdout(StringIO()), YoutubeDL(opts.toParams()) as ydl:
+      # download basic metadata using yt-dlp
+      metadata = ydl.extract_info(url, download = False)
+      metadata = ydl.sanitize_info(metadata)
+  except Exception as e:
+    print(e)
+    raise Exception('Get metadata failed')
+  
+  if metadata['_type'] == 'playlist':
+    return create_playListMd(metadata, urlSource, opts)
+  else:
+    return create_videoMd(metadata, urlSource, opts)
+  
 class MetaData:
   """
     The abstract class of video metadata and playlist metadata
   """
-  @staticmethod
-  def fetchMetaData(url:str, opts:Opts=Opts()) -> VideoMetaData | PlaylistMetaData:
-    urlSource = getSource(url)
-
-    opts = opts.copy()
-    opts.quiet = True
-    opts.extract_flat = True
-    # use custom fetcher to get bilibili subtitles
-    opts.listSubtitle = not (urlSource is UrlSource.BILIBILI)
-    try:
-      # quiet=True also print subtitle, redirect stdout to hide it
-      with redirect_stdout(StringIO()), YoutubeDL(opts.toParams()) as ydl:
-        # download basic metadata using yt-dlp
-        metadata = ydl.extract_info(url, download = False)
-        metadata = ydl.sanitize_info(metadata)
-    except Exception as e:
-      print(e)
-      raise Exception('Get metadata failed')
-    
-    if metadata['_type'] == 'playlist':
-      return PlaylistMetaData.createMetaData(metadata, urlSource, opts)
-    else:
-      return VideoMetaData.createMetaData(metadata, urlSource, opts)
-
   @property
   def title(self):
     return self.metadata['title']
@@ -59,24 +60,24 @@ class MetaData:
 
   def isPlaylist(self) -> bool:
     raise NotImplementedError
+# ========================== End Abstract MetaData ========================= #
 
 # ========================== Playlist ========================= #
+def create_playListMd(metadata, urlSource:UrlSource, opts:Opts=Opts()) -> PlaylistMetaData:
+  """
+    Depends on the source, return different type of playlist metadata\n
+    For external use, better use fetchMetaData instead
+
+    Args:
+      metadata: the metadata dict fetched in fetchMetaData
+  """
+  if urlSource is UrlSource.BILIBILI:
+    return BiliBiliPlaylistMetaData(metadata, opts)
+  else:
+    return PlaylistMetaData(metadata)
+
 class PlaylistMetaData (MetaData):
   """Playlist metadata"""
-  @staticmethod
-  def createMetaData(metadata, urlSource:UrlSource, opts:Opts=Opts()) -> PlaylistMetaData:
-    """
-      Depends on the source, return different type of playlist metadata
-      Suppose use by fetchMetaData only
-
-      Args:
-        metadata: the metadata dict fetched in fetchMetaData
-    """
-    if urlSource is UrlSource.BILIBILI:
-      return BiliBiliPlaylistMetaData(metadata, opts)
-    else:
-      return PlaylistMetaData(metadata)
-
   @property
   def playlist_count(self) -> int:
     return self.metadata['playlist_count']
@@ -94,7 +95,7 @@ class PlaylistMetaData (MetaData):
   def fetchVideoMd(self) -> list[VideoMetaData]:
     res = []
     for entryMd in self.metadata['entries']:
-      videoMd = MetaData.fetchMetaData(entryMd['url'])
+      videoMd = fetchMetaData(entryMd['url'])
       assert not videoMd.isPlaylist()
       res.append(videoMd)
     return res
@@ -110,7 +111,7 @@ class BiliBiliPlaylistMetaData (PlaylistMetaData):
 
     res = []
     for idx, entryMd in enumerate(self.metadata['entries']):
-      videoMd = MetaData.fetchMetaData(entryMd['url'], self.opts)
+      videoMd = fetchMetaData(entryMd['url'], self.opts)
       assert isinstance(videoMd, BiliBiliVideoMetaData)
       videoMd.cid = cids[idx]
       res.append(videoMd)
@@ -118,22 +119,21 @@ class BiliBiliPlaylistMetaData (PlaylistMetaData):
 # ========================== End Playlist ========================= #
 
 # ========================== Video ========================= #
+def create_videoMd(metadata, urlSource:UrlSource, opts:Opts=Opts()) -> VideoMetaData:
+  """
+    Depends on the source, return different type of video metadata\n
+    For external use, better use fetchMetaData instead
+
+    Args:
+      metadata: the metadata dict fetched in fetchMetaData
+  """
+  if urlSource is UrlSource.BILIBILI:
+    return BiliBiliVideoMetaData(metadata, opts)
+  else:
+    return VideoMetaData(metadata)
+
 class VideoMetaData (MetaData):
   """Video metadata"""
-  @staticmethod
-  def createMetaData(metadata, urlSource:UrlSource, opts:Opts=Opts()) -> VideoMetaData:
-    """
-      Depends on the source, return different type of video metadata
-      Suppose use by fetchMetaData only
-
-      Args:
-        metadata: the metadata dict fetched in fetchMetaData
-    """
-    if urlSource is UrlSource.BILIBILI:
-      return BiliBiliVideoMetaData(metadata, opts)
-    else:
-      return VideoMetaData(metadata)
-
   @property
   def subtitles(self) -> list[Subtitle]:
     if self._sub is None:
@@ -159,10 +159,14 @@ class VideoMetaData (MetaData):
     def restruct_sub_info(sub_info:dict, isAuto:bool=False):
       res = []
       for code, subs in sub_info.items():
+        # find name
         for sub in subs:
           if 'name' in sub:
             res.append(Subtitle(code, sub['name'], isAuto))
             break
+        else:
+          # if name not found, use code as name
+          res.append(Subtitle(code, code, isAuto))
       return res
     
     self._sub = restruct_sub_info(self.metadata['subtitles'])

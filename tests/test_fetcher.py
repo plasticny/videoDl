@@ -2,9 +2,14 @@ from sys import path as sysPath
 sysPath.append('src')
 
 from unittest.mock import patch
-from uuid import uuid4
 
 from src.service.fetcher import *
+
+def test_get_bili_page_cids():
+  cids = BiliBiliFetcher.get_page_cids('BV1mj411E7eB')
+
+  expected_cids = [1331616732, 1331635717, 1331635546, 1331635521]
+  assert cids == expected_cids
 
 def test_fetch_bili_subtitle():
   sub, auto_sub = BiliBiliFetcher.getSubtitles('BV1XV4y1P7Bm')
@@ -18,34 +23,15 @@ def test_fetch_bili_subtitle():
   # (and cookie is not provided in case of privacy)
   assert len(auto_sub) == 0
 
-@patch('src.service.fetcher.json_loads')
-@patch('src.service.fetcher.build_opener')
-@patch('src.service.fetcher.load_cookies')
-def test_bili_subtitle_buffer(_, build_opener_mock, json_loads_mock):
-  """Test the code will load buffer when the same subtitle is requested twice"""
+def test_fetch_bili_page_subtitle():
+  sub, auto_sub = BiliBiliFetcher.getSubtitles('BV1mj411E7eB', cid=1331635717)
 
-  def fake_build_opener(*args, **kwargs):
-    class FakeResponse:
-      def read(*args, **kwargs):
-        return b'{}'
-    class FakeOpener:
-      def open(*args, **kwargs):
-        return FakeResponse()
-    return FakeOpener()
-  
-  build_opener_mock.side_effect = fake_build_opener
-  json_loads_mock.return_value = {
-    'code': 0,
-    'data': {'subtitle': {'list': []}}
-  }
+  assert len(sub) == 2
+  sub_codes = [s.code for s in sub]
+  assert 'zh-CN' in sub_codes
+  assert 'ja' in sub_codes
 
-  nm1 = str(uuid4())
-  nm2 = str(uuid4())
-  BiliBiliFetcher.getSubtitles(f'{nm1}_p1')
-  BiliBiliFetcher.getSubtitles(f'{nm1}_p2')
-  BiliBiliFetcher.getSubtitles(nm2)
-
-  assert build_opener_mock.call_count == 2
+  assert len(auto_sub) == 0
 
 @patch('src.service.fetcher.json_loads')
 @patch('src.service.fetcher.build_opener')

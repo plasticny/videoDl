@@ -20,3 +20,4 @@ def test_subtitle():
   assert sub1 == sub3
   assert sub1 != sub4
   assert sub1 != 'not a subtitle'
+  assert sub1 != None

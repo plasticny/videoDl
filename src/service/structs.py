@@ -16,7 +16,7 @@ class Subtitle:
   def __str__(self):
     return f'{self.name} {Fore.LIGHTBLACK_EX}{"(Auto gen)" if self.isAuto else ""}{Style.RESET_ALL}'
   def __eq__(self, __value) -> bool:
-    if not isinstance(__value, Subtitle):
+    if not hasattr(__value, 'code') or not hasattr(__value, 'isAuto'):
       return False
     __value:Subtitle = __value
     return self.code == __value.code and self.isAuto == __value.isAuto

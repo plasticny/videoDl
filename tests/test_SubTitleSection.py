@@ -6,6 +6,7 @@ from unittest.mock import patch
 from src.section.SubTitleSection import SubTitleSection
 from src.service.YtDlpHelper import Opts
 from src.service.structs import Subtitle
+from src.service.MetaData import VideoMetaData, PlaylistMetaData
 
 def check_opts(
     opts:Opts,
@@ -28,43 +29,46 @@ def check_opts(
   assert opts.embedSubtitle == expected_embed
   assert opts.burnSubtitle == expected_burn
 
-@patch('src.section.SubTitleSection.SubTitleSection.selectWriteSub')
-@patch('src.section.SubTitleSection.MetaData.fetchMetaData')
-def test_noSubFound(fetch_mock, selectWriteSub_mock):
-  class fake_VideoMetaData:
+def test_playlist():
+  class fake_PlaylistMetaData(PlaylistMetaData):
     def __init__(self):
-      self.subtitles = []
-      self.autoSubtitles = []
+      pass
 
-  fetch_mock.return_value = fake_VideoMetaData()
-  selectWriteSub_mock.return_value = False
-  opts = SubTitleSection('').run('',Opts())
+  opts = SubTitleSection('').run(fake_PlaylistMetaData())
   check_opts(opts, False, None, None, None, None)
 
 @patch('src.section.SubTitleSection.SubTitleSection.selectWriteSub')
-@patch('src.section.SubTitleSection.MetaData.fetchMetaData')
-def test_notWriteSub(fetch_mock, selectWriteSub_mock):
-  class fake_VideoMetaData:
+def test_noSubFound(selectWriteSub_mock):
+  class fake_VideoMetaData(VideoMetaData):
     def __init__(self):
-      self.subtitles = []
-      self.autoSubtitles = [Subtitle('en', 'English')]
+      self._sub = []
+      self._auto_sub = []
 
-  fetch_mock.return_value = fake_VideoMetaData()
   selectWriteSub_mock.return_value = False
-  opts = SubTitleSection('').run('',Opts())
+  opts = SubTitleSection('').run(fake_VideoMetaData())
   check_opts(opts, False, None, None, None, None)
 
-@patch('src.section.SubTitleSection.MetaData.fetchMetaData')
+@patch('src.section.SubTitleSection.SubTitleSection.selectWriteSub')
+def test_notWriteSub(selectWriteSub_mock):
+  class fake_VideoMetaData(VideoMetaData):
+    def __init__(self):
+      self._sub = []
+      self._auto_sub = [Subtitle('en', 'English')]
+
+  selectWriteSub_mock.return_value = False
+  opts = SubTitleSection('').run(fake_VideoMetaData())
+  check_opts(opts, False, None, None, None, None)
+
 @patch('src.section.SubTitleSection.inq_prompt')
-def test_full_run(prompt_mock, fetch_mock):
+def test_full_run(prompt_mock):
   """
     Test with a full run
     and check if the passed opts is not changed
   """
-  class fake_VideoMetaData:
+  class fake_VideoMetaData(VideoMetaData):
     def __init__(self):
-      self.subtitles = []
-      self.autoSubtitles = [Subtitle('en', 'English', True)]
+      self._sub = []
+      self._auto_sub = [Subtitle('en', 'English', True)]
 
   opts = Opts()
   backup_opts = opts.copy()
@@ -77,8 +81,7 @@ def test_full_run(prompt_mock, fetch_mock):
       'writeAutoSub': 'Yes'
     }
   ]
-  fetch_mock.return_value = fake_VideoMetaData()
-  ret_opts = SubTitleSection('').run('',opts)
+  ret_opts = SubTitleSection('').run(fake_VideoMetaData(),opts)
 
   # passed opts should not be changed
   assert opts == backup_opts

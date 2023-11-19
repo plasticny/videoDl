@@ -2,7 +2,7 @@ import service.packageChecker as packageChecker
 packageChecker.check()
 
 from service.urlHelper import getSource, UrlSource
-from service.MetaData import MetaData, VideoMetaData
+from service.MetaData import MetaData, VideoMetaData, fetchMetaData
 from service.YtDlpHelper import Opts
 from service.fileHelper import perpare_temp_folder, clear_temp_folder, TEMP_FOLDER_PATH
 
@@ -37,7 +37,7 @@ class lazyYtDownload:
 
       # fetch metadata
       print('Getting download information...\n')
-      md = MetaData.fetchMetaData(url, opts=opts)
+      md = fetchMetaData(url, opts=opts)
 
       # set up download
       # subtitle, output dir

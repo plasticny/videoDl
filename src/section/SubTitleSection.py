@@ -15,7 +15,6 @@ class SubTitleSection (Section):
       print(f'{Fore.YELLOW}Write subtitle into playlist video is not supported currently.{Style.RESET_ALL}')
       opts.writeSubtitles = False
       return opts
-    assert isinstance(md, VideoMetaData)
 
     if len(md.subtitles) == 0 and len(md.autoSubtitles) == 0:
       # if no subtitle, return

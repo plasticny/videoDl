@@ -12,6 +12,7 @@ from tests.testFileHelper import prepare_output_folder, OUTPUT_FOLDER_PATH
 
 from src.lazyYtDownload import lazyYtDownload
 from src.service.YtDlpHelper import Opts
+from src.service.MetaData import VideoMetaData, PlaylistMetaData
 
 # test login function
 @patch('src.lazyYtDownload.LoginSection.run')
@@ -27,18 +28,42 @@ def test_login(login_mock):
   login_mock.assert_called_once()
 
 @patch('src.lazyYtDownload.lazyYtDownload.download')
-@patch('src.lazyYtDownload.lazyYtDownload.configDownload')
+@patch('src.lazyYtDownload.lazyYtDownload.setup')
+@patch('src.lazyYtDownload.fetchMetaData')
 @patch('src.lazyYtDownload.UrlSection.run')
-def test_download_call_count_yt_video(url_mock, _, download_mock):
+def test_download_call_count(url_mock, fetch_mock, _, download_mock):
+  class fake_videoMd(VideoMetaData):
+    @property
+    def title(self):
+      return None
+    @property
+    def url(self):
+      return None
+    def __init__(self, *args, **kwargs):
+      pass
+  class fake_playlistMd(PlaylistMetaData):
+    @property
+    def title(self):
+      return None
+    @property
+    def url(self):
+      return None
+    @property
+    def videos(self):
+      return [fake_videoMd() for _ in range(3)]
+    def __init__(self, *args, **kwargs):
+      pass
+
   url_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
+
+  # test video
+  fetch_mock.return_value = fake_videoMd()
   lazyYtDownload().run(loop=False)
   assert download_mock.call_count == 1
 
-@patch('src.lazyYtDownload.lazyYtDownload.download')
-@patch('src.lazyYtDownload.lazyYtDownload.configDownload')
-@patch('src.lazyYtDownload.UrlSection.run')
-def test_download_call_count_bili_list(url_mock, _, download_mock):
-  url_mock.return_value = 'https://www.bilibili.com/video/BV1bN411s7VT'
+  # test playlist
+  download_mock.reset_mock()
+  fetch_mock.return_value = fake_playlistMd()
   lazyYtDownload().run(loop=False)
   assert download_mock.call_count == 3
 
@@ -169,9 +194,9 @@ def test_renameFile_overwrite():
   with open(f'{OUTPUT_FOLDER_PATH}\\{new_title}', 'r') as f:
     assert f.read() == 'old'
 
-@patch('src.lazyYtDownload.lazyYtDownload.configDownload')
+@patch('src.lazyYtDownload.lazyYtDownload.setup')
 @patch('builtins.input')
-def test_download_yt_video(input_mock, config_mock):
+def test_download_yt_video(input_mock, setup_mock):
   prepare_output_folder()
 
   input_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
@@ -181,7 +206,7 @@ def test_download_yt_video(input_mock, config_mock):
   opts.writeSubtitles = True
   opts.subtitlesLang = 'en'
   opts.embedSubtitle = True
-  config_mock.return_value = opts
+  setup_mock.return_value = opts
 
   lazyYtDownload().run(loop=False)
 
