@@ -156,6 +156,10 @@ class VideoMetaData (MetaData):
     return False
     
   def getSubtitles(self) -> None:
+    """
+      For assign value to `self._sub` and `self._auto_sub`\n
+      `self._sub` and `self._auto_sub` should not be None after this function is called
+    """
     def restruct_sub_info(sub_info:dict, isAuto:bool=False):
       res = []
       for code, subs in sub_info.items():
@@ -172,6 +176,8 @@ class VideoMetaData (MetaData):
     self._sub = restruct_sub_info(self.metadata['subtitles'])
     if 'automatic_captions' in self.metadata.keys():
       self._auto_sub = restruct_sub_info(self.metadata['automatic_captions'], True)
+    else:
+      self._auto_sub = []
 
 class BiliBiliVideoMetaData (VideoMetaData):
   """

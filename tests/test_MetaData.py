@@ -74,7 +74,7 @@ def test_videoMd_getSubtitles():
   # test only subtitle
   md = VideoMetaData({'subtitles': subtitle_md})
   assert md.subtitles == expected_sub
-  assert md.autoSubtitles == None
+  assert md.autoSubtitles == []
 
   # test subtitle and auto subtitle
   md = VideoMetaData({
