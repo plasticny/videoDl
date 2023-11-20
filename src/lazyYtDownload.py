@@ -172,7 +172,7 @@ class lazyYtDownload:
     """Merge video, audio and subtitles"""
     # stream and output
     streams_n_output = []
-    streams_n_output.append(ffmpeg.input(videoPath)['v'])
+    streams_n_output.append(ffmpeg.input(videoPath, hwaccel='auto')['v'])
     streams_n_output.append(ffmpeg.input(audioPath)['a'])
     if subtitlePath is not None and embedSubtitle:
       streams_n_output.append(ffmpeg.input(subtitlePath)['s'])
@@ -182,6 +182,7 @@ class lazyYtDownload:
     kwargs = {
       # basic merge settings
       'vcodec': 'libx264', 'acodec': 'aac',
+      'fps_mode': 'passthrough',
       'loglevel': 'quiet' if quiet else 'info',
     }
     # embed subtitle
