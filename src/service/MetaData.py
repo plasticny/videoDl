@@ -64,13 +64,7 @@ class MetaData:
 
 # ========================== Playlist ========================= #
 def create_playListMd(metadata, urlSource:UrlSource, opts:Opts=Opts()) -> PlaylistMetaData:
-  """
-    Depends on the source, return different type of playlist metadata\n
-    For external use, better use fetchMetaData instead
-
-    Args:
-      metadata: the metadata dict fetched in fetchMetaData
-  """
+  """For external use, better use fetchMetaData instead"""
   if urlSource is UrlSource.BILIBILI:
     return BiliBiliPlaylistMetaData(metadata, opts)
   else:
@@ -120,13 +114,7 @@ class BiliBiliPlaylistMetaData (PlaylistMetaData):
 
 # ========================== Video ========================= #
 def create_videoMd(metadata, urlSource:UrlSource, opts:Opts=Opts()) -> VideoMetaData:
-  """
-    Depends on the source, return different type of video metadata\n
-    For external use, better use fetchMetaData instead
-
-    Args:
-      metadata: the metadata dict fetched in fetchMetaData
-  """
+  """For external use, better use fetchMetaData instead"""
   if urlSource is UrlSource.BILIBILI:
     return BiliBiliVideoMetaData(metadata, opts)
   else:
@@ -157,7 +145,7 @@ class VideoMetaData (MetaData):
     
   def getSubtitles(self) -> None:
     """
-      For assign value to `self._sub` and `self._auto_sub`\n
+      Used to assign value to `self._sub` and `self._auto_sub`\n
       `self._sub` and `self._auto_sub` should not be None after this function is called
     """
     def restruct_sub_info(sub_info:dict, isAuto:bool=False):
@@ -183,7 +171,7 @@ class BiliBiliVideoMetaData (VideoMetaData):
   """
     Video metadata of bilibili
 
-    properties:
+    properties hint:
       `cid`: useful when the video is a page in playlist, set in BiliBiliPlaylistMetaData.fetchVideoMd
   """
   def __init__(self, metadata, opts: Opts = Opts()):

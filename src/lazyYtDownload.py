@@ -29,33 +29,30 @@ class lazyYtDownload:
     perpare_temp_folder()
 
     while True:
-      opts = Opts()
-
       url = UrlSection(title='Url').run()
       # ask login    
-      opts = self.login(url, opts=opts)
+      temp_opts : Opts = self.login(url)
 
       # fetch metadata
       print('Getting download information...\n')
-      md = fetchMetaData(url, opts=opts)
+      md = fetchMetaData(url, temp_opts)
+
+      # get video metadata list
+      videos_md : list[VideoMetaData] = md.videos if md.isPlaylist() else [md]
+      # prepare opts list
+      opts_ls : list[Opts] = [temp_opts.copy() for _ in range(len(videos_md))]
 
       # set up download
       # subtitle, output dir
-      opts = Section(title='Set up download').run(self.setup, md=md, opts=opts)
-
-      # check the number of video need to download
-      videos : list[VideoMetaData] = []
-      if md.isPlaylist():
-        videos.extend(md.videos)
-      else:
-        videos.append(md)
+      opts_ls:list[Opts] = Section(title='Set up download').run(self.setup, md=md, opts_ls=opts_ls)
 
       # download
-      for idx, v in enumerate(videos):
+      assert len(videos_md) == len(opts_ls)
+      for idx, (md, opts) in enumerate(zip(videos_md, opts_ls)):
         try:
-          Section(title=f'Video {idx+1} of {len(videos)}').run(
+          Section(title=f'Video {idx+1} of {len(videos_md)}').run(
             self.download, opts=opts,
-            title=v.title, url=v.url
+            title=md.title, url=md.url
           )
         finally:
           clear_temp_folder()
@@ -70,21 +67,21 @@ class lazyYtDownload:
       return LoginSection(title='Login').run(opts)
     return opts
 
-  def setup(self, md:MetaData, opts) -> Opts:
+  def setup(self, md:MetaData, opts_ls:list[Opts]) -> list[Opts]:
     # subtitle
-    opts = SubTitleSection(
+    opts_ls = SubTitleSection(
       title='Subtitle',
       headerType=HeaderType.SUB_HEADER
-    ).run(md, opts)
+    ).run(md, opts_ls)
 
     # output dir
-    opts = OutputSection(
+    opts_ls = OutputSection(
       title='Output',
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(opts, askName=False)
+    ).run(opts_ls, askName=False)
 
-    return opts
+    return opts_ls
 
   def download(self, opts:Opts, title, url):
     """
@@ -104,15 +101,17 @@ class lazyYtDownload:
 
     # download subtitle
     subtitleFileNm = None
-    if opts.writeSubtitles or opts.writeAutomaticSub:
+    if opts.writeSubtitles or opts.writeAutomaticSub:        
       s_opts = opts.copy()
       s_opts.skip_download = True # skip download doesnt skip subtitle
 
       DownloadSection(
         title="Downloading subtitle",
         headerType=HeaderType.SUB_HEADER
+      # ).run(url, s_opts, retry=2, info_path='C:\\Users\\22203\\Documents\\desktop\\script\\videoDl\\src\\test.json')
       ).run(url, s_opts, retry=2)
 
+      assert len(listdir(TEMP_FOLDER_PATH)) == 1
       subtitleFileNm = listdir(TEMP_FOLDER_PATH)[0]
 
       opts.writeSubtitles = False

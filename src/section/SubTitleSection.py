@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from inquirer import prompt as inq_prompt, List as inq_List, Checkbox as inq_Checkbox
 from colorama import Fore, Style
+from collections.abc import Iterable
 
 from section.Section import Section
 from service.YtDlpHelper import Opts
@@ -7,73 +10,227 @@ from service.MetaData import MetaData, VideoMetaData
 from service.structs import Subtitle
 
 class SubTitleSection (Section):
-  def run(self, md:MetaData, opts:Opts = Opts()) -> Opts:
-    return super().run(self.__main, md=md, opts=opts.copy())
+  def run(self, md:MetaData, opts_ls:list[Opts]) -> list[Opts]:
+    for idx in range(len(opts_ls)):
+      opts_ls[idx] = opts_ls[idx].copy()
+    return super().run(self.__main, md=md, opts_ls=opts_ls)
   
-  def __main(self, md:MetaData, opts:Opts) -> Opts:
-    if md.isPlaylist():
-      print(f'{Fore.YELLOW}Write subtitle into playlist video is not supported currently.{Style.RESET_ALL}')
-      opts.writeSubtitles = False
-      return opts
+  def __main(self, md:MetaData, opts_ls:list[Opts]) -> list[Opts]:
+    # get list of video meta data from md
+    video_mds:list[VideoMetaData] = md.videos if md.isPlaylist() else [md]
+    assert len(video_mds) == len(opts_ls)
 
-    if len(md.subtitles) == 0 and len(md.autoSubtitles) == 0:
-      # if no subtitle, return
+    # set all opts to not write subtitle first
+    for opts in opts_ls:
+      opts.subtitlesLang = None
+      opts.writeSubtitles = False
+      opts.writeAutomaticSub = False
+
+    # mapping subtitle to position in opts_ls/video_mds, for selection usage
+    sub_pos_map:dict[Subtitle, list[int]] = self.map_subs(video_mds)
+
+    # if no subtitle available, return
+    if len(sub_pos_map.keys()) == 0:
       print(f'{Fore.YELLOW}No subtitle available.{Style.RESET_ALL}')
-      opts.writeSubtitles = False
-      return opts
-    else:
-      print(f'{Fore.GREEN}Subtitles found{Style.RESET_ALL}.', end='')
-      print(f'{Fore.YELLOW}{len(md.subtitles)}{Style.RESET_ALL} subtitle(s) and {Fore.YELLOW}{len(md.autoSubtitles)}{Style.RESET_ALL} auto-gen subtitle(s).')
-
-    # not write subtitle
-    if not self.selectWriteSub():
-      opts.writeSubtitles = False
-      return opts
+      return opts_ls
     
-    # if write subtitle, ask details
-    (lang, isAuto, doEmbed, doBurn) = self.selectDetails(md)
-    opts.subtitlesLang = lang
-    opts.writeSubtitles = not isAuto
-    opts.writeAutomaticSub = isAuto
-    opts.embedSubtitle = doEmbed
-    opts.burnSubtitle = doBurn
+    # select to write subtitle or not
+    if not self.ask_write_sub():
+      return opts_ls
 
+    if len(video_mds) == 1:
+      # if only one video, select subtitle one by one
+      opts_ls = self.one_by_one_select(video_mds, opts_ls)
+    else:
+      # if multiple videos, select batch or one by one
+      if self.ask_selection_mode() == 0:
+        opts_ls = self.batch_select(sub_pos_map, opts_ls)
+      else:
+        opts_ls = self.one_by_one_select(video_mds, opts_ls)
+
+    # show selection result
+    # if self.ask_show_summary():
+    #   self.show_selection_result(video_mds, opts_ls)
+
+    # select write mode
+    doEmbed, doBurn = self.select_write_mode()
     # print warning if not doEmbedSub and not doBurnSub:
-    if not opts.embedSubtitle and not opts.burnSubtitle:
+    if not doEmbed and not doBurn:
       print(Fore.YELLOW)
       print('Warning: You did not choose any mode to write the subtitle, so the subtitle will not be shown in the video.')
       print(Style.RESET_ALL)
+    else:
+      for opts in opts_ls:
+        opts.embedSubtitle = doEmbed
+        opts.burnSubtitle = doBurn
 
-    return opts
+    return opts_ls
   
-  def selectWriteSub(self) -> bool:
+  def one_by_one_select(self, video_mds:list[VideoMetaData], opts_ls:list[Opts]) -> list[Opts]:
+    for idx, (md, opts) in enumerate(zip(video_mds, opts_ls)):
+      # if no subtitle, skip
+      if len(md.subtitles) == 0 and len(md.autoSubtitles) == 0:
+        print(f'{Fore.YELLOW}No subtitle available for {md.title}.{Style.RESET_ALL}')
+        continue
+
+      # select subtitle
+      print(f'{Fore.GREEN}Video {idx+1}/{len(video_mds)}{Style.RESET_ALL}')
+      print(md.title)
+      sub = self.select_sub(
+        [*sorted(md.subtitles), *sorted(md.autoSubtitles)],
+        can_skip=True, skip_msg='Skip this video'
+      )
+      if sub is None:
+        continue
+
+      # assign subtitle to opts
+      opts.subtitlesLang = sub.code
+      opts.writeSubtitles = not sub.isAuto
+      opts.writeAutomaticSub = sub.isAuto
+
+    return opts_ls
+
+  def batch_select(self, sub_pos_map:dict[Subtitle, list[int]], opts_ls:list[Opts]) -> list[Opts]:
+    # the number of video that does not have subtitle
+    no_sub_cnt:int = len(opts_ls)
+
+    while True:
+      sub:Subtitle = self.select_sub(sorted(sub_pos_map.keys()), can_skip=True, skip_msg='End selection')
+
+      # if choose to end the selection, break
+      if sub is None:
+        break
+
+      # assign subtitle to the corresponding opts
+      for idx in sub_pos_map[sub]:
+        opts_ls[idx].subtitlesLang = sub.code
+        opts_ls[idx].writeSubtitles = not sub.isAuto
+        opts_ls[idx].writeAutomaticSub = sub.isAuto
+        no_sub_cnt -= 1
+
+      print(f'{Fore.GREEN}The subtitle is applied to {len(sub_pos_map[sub])} video(s){Style.RESET_ALL}')
+      print(f'{Fore.YELLOW}{no_sub_cnt}{Style.RESET_ALL} video(s) left.')
+
+      # remove subtitle from map
+      del sub_pos_map[sub]
+      
+      # if no more subtitle or no more video without subtitle, break
+      if len(sub_pos_map) == 0 or no_sub_cnt == 0:
+        break
+
+      # update subtitle map
+      empty_keys = []
+      for s, pos_ls in sub_pos_map.items():
+        for idx in range(len(pos_ls)-1, -1, -1):
+          opts_idx = pos_ls[idx]
+          if opts_ls[opts_idx].subtitlesLang is None:
+            break
+          pos_ls.pop()
+        if len(pos_ls) == 0:
+          empty_keys.append(s)
+      for k in empty_keys:
+        del sub_pos_map[k]
+
+    return opts_ls
+
+  def map_subs(self, video_mds:list[VideoMetaData]) -> dict[Subtitle, list[int]]:
+    sub_pos_map:dict[Subtitle, list[int]] = dict()
+
+    for idx, md in enumerate(video_mds):
+      def store_sub(sub:Subtitle):
+        # store to map
+        if sub not in sub_pos_map:
+          sub_pos_map[sub] = []
+        sub_pos_map[sub].append(idx)
+
+      for sub in md.subtitles:
+        store_sub(sub)
+      for sub in md.autoSubtitles:
+        store_sub(sub)
+
+    return sub_pos_map
+
+  def show_selection_result(self, video_mds:list[VideoMetaData], opts_ls:list[Opts]) -> None:
+    for idx in range(len(video_mds)):
+      print(f'{video_mds[idx].title}')
+      print(f'{opts_ls[idx].subtitlesLang} {opts_ls[idx].writeSubtitles} {opts_ls[idx].writeAutomaticSub}')
+    print()
+
+  # ==================== Inquiry functions ==================== #
+
+  def ask_write_sub(self) -> bool:
     """
       Ask user to select whether to write subtitle
     """
     doWriteSub = inq_prompt([
       inq_List(
-        'writeSub', message='Write the subtitle?', 
+        'writeSub', message=f'{Fore.GREEN}Found subtitle(s). {Fore.CYAN}Write subtitle?{Style.RESET_ALL}', 
         choices=['Yes','No'], default='Yes'
       )
     ])['writeSub']
     return doWriteSub == 'Yes'
-  
-  def selectDetails(self, md : VideoMetaData) -> (str, bool, bool, bool):
+
+  def ask_selection_mode(self) -> int:
     """
-      Select subtitle language and write mode
+      Ask user to select the mode of selecting subtitle
 
       Returns:
-        (Code of the subtitle, is auto-gen subtitle, do embed sub, do burn sub)
+        0: batch select
+        1: select one by one
+    """
+    batch_select_msg = 'Batch select (Select a perferred subtitle, and apply to videos that support it)'
+    one_by_one_select_msg = 'Select one by one (Select a subtitle for each video)'
+    ans = inq_prompt([
+      inq_List(
+        'selectMode', message=f'{Fore.CYAN}There are multiple videos. Choose the mode of selecting subtitle{Style.RESET_ALL}', 
+        choices=[batch_select_msg, one_by_one_select_msg], 
+        default=batch_select_msg
+      )
+    ])['selectMode']
+    return 0 if ans == batch_select_msg else 1
+  
+  def select_sub(self, subs:Iterable[Subtitle], can_skip:bool=False, skip_msg:str='') -> Subtitle:
+    """
+      Ask user to select a subtitle
+
+      Returns:
+        The selected subtitle. None if skipped.
+    """
+    if can_skip:
+      skip_msg = f'{Fore.RED}{skip_msg}{Style.RESET_ALL}'
+      choices = [skip_msg]
+    choices.extend(subs)
+
+    ans = inq_prompt([
+      inq_List('sub', message=f'{Fore.CYAN}Select a subtitle{Style.RESET_ALL}', choices=choices),
+    ])['sub']
+    return None if ans == skip_msg else ans
+  
+  def ask_show_summary(self) -> bool:
+    """
+      Ask user to select whether to show the summary of selection
+    """
+    showSummary = inq_prompt([
+      inq_List(
+        'showSummary', message=f'{Fore.CYAN}Show the summary of selection?{Style.RESET_ALL}', 
+        choices=['Yes','No'], default='Yes'
+      )
+    ])['showSummary']
+    return showSummary == 'Yes'
+
+  def select_write_mode(self) -> tuple[bool, bool]:
+    """
+      Ask user to select the mode of writing subtitle
+
+      Returns:
+        (do embed sub, do burn sub)
     """
     ans = inq_prompt([
-      inq_List('lang', message=f'Select a subtitle', choices=[*md.subtitles, *md.autoSubtitles]),
       inq_Checkbox(
-        'writeMode', message='Choose the mode of writing subtitle (Space to select/deselect, Enter to confirm)',
+        'writeMode', message=f'{Fore.CYAN}Choose the mode of writing subtitle (Space to select/deselect, Enter to confirm){Style.RESET_ALL}',
         choices=['Embed', 'Burn'], default=['Embed', 'Burn']
       )
-    ])
-
-    sub : Subtitle = ans['lang']
-    mode : list[str] = ans['writeMode']
-
-    return (sub.code, sub.isAuto, 'Embed' in mode, 'Burn' in mode)
+    ])['writeMode']
+    return ('Embed' in ans, 'Burn' in ans)
+  
+  # ==================== End Inquiry functions ==================== #

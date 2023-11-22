@@ -7,7 +7,7 @@ from yt_dlp.cookies import load_cookies
 from http.client import HTTPResponse
 from colorama import Fore, Style
 
-from service.structs import Subtitle
+from service.structs import Subtitle, BiliBiliSubtitle
 from service.YtDlpHelper import Opts
 
 class BiliBiliFetcher:
@@ -69,9 +69,10 @@ class BiliBiliFetcher:
     sub : list[Subtitle] = []
     auto_sub : list[Subtitle] = []
     for s in json['data']['subtitle']['list']:
+      sub_obj = BiliBiliSubtitle(code=s['lan'], name=s['lan_doc'], ai_status=s['ai_status'])
       if s['ai_status'] == 0:
-        sub.append(Subtitle(code=s['lan'], name=s['lan_doc'], isAuto=False))
+        sub.append(sub_obj)
       else:
-        auto_sub.append(Subtitle(code=s['lan'], name=s['lan_doc'], isAuto=True))
+        auto_sub.append(sub_obj)
 
     return (sub, auto_sub)
