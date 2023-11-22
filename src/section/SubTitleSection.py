@@ -3,17 +3,21 @@ from __future__ import annotations
 from inquirer import prompt as inq_prompt, List as inq_List, Checkbox as inq_Checkbox
 from colorama import Fore, Style
 from collections.abc import Iterable
+from enum import Enum
 
 from section.Section import Section
 from service.YtDlpHelper import Opts
 from service.MetaData import MetaData, VideoMetaData
 from service.structs import Subtitle
 
+class SelectionMode(Enum):
+  BATCH = 0
+  ONE_BY_ONE = 1  
+
 class SubTitleSection (Section):
   def run(self, md:MetaData, opts_ls:list[Opts]) -> list[Opts]:
-    for idx in range(len(opts_ls)):
-      opts_ls[idx] = opts_ls[idx].copy()
-    return super().run(self.__main, md=md, opts_ls=opts_ls)
+    cp_opts_ls = [opts.copy() for opts in opts_ls]
+    return super().run(self.__main, md=md, opts_ls=cp_opts_ls)
   
   def __main(self, md:MetaData, opts_ls:list[Opts]) -> list[Opts]:
     # get list of video meta data from md
@@ -43,7 +47,7 @@ class SubTitleSection (Section):
       opts_ls = self.one_by_one_select(video_mds, opts_ls)
     else:
       # if multiple videos, select batch or one by one
-      if self.ask_selection_mode() == 0:
+      if self.ask_selection_mode() == SelectionMode.BATCH.value:
         opts_ls = self.batch_select(sub_pos_map, opts_ls)
       else:
         opts_ls = self.one_by_one_select(video_mds, opts_ls)
@@ -187,7 +191,7 @@ class SubTitleSection (Section):
         default=batch_select_msg
       )
     ])['selectMode']
-    return 0 if ans == batch_select_msg else 1
+    return SelectionMode.BATCH.value if ans == batch_select_msg else SelectionMode.ONE_BY_ONE.value
   
   def select_sub(self, subs:Iterable[Subtitle], can_skip:bool=False, skip_msg:str='') -> Subtitle:
     """
