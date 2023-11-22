@@ -31,7 +31,7 @@ class lazyYtDownload:
     while True:
       url = UrlSection(title='Url').run()
       # ask login    
-      temp_opts : Opts = self.login(url)
+      temp_opts : Opts = self.login(url, opts=Opts())
 
       # fetch metadata
       print('Getting download information...\n')

@@ -16,9 +16,8 @@ class Message(Enum):
 
 class OutputSection (Section):
   def run(self, opts_ls:list[Opts], askDir:bool=True, askName:bool=True) -> list[Opts]:
-    for opts in opts_ls:
-      opts = opts.copy()
-    return super().run(self.__main, opts_ls=opts_ls, askDir=askDir, askName=askName)
+    cp_opts_ls = [opts.copy() for opts in opts_ls]
+    return super().run(self.__main, opts_ls=cp_opts_ls, askDir=askDir, askName=askName)
   
   def __main(self, opts_ls:list[Opts], askDir:bool=True, askName:bool=True) -> list[Opts]:
     if askDir:
