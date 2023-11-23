@@ -31,7 +31,7 @@ def test_login(login_mock):
 @patch('src.lazyYtDownload.lazyYtDownload.setup')
 @patch('src.lazyYtDownload.fetchMetaData')
 @patch('src.lazyYtDownload.UrlSection.run')
-def test_download_call_count(url_mock, fetch_mock, _, download_mock):
+def test_download_call_count(url_mock, fetch_mock, setup_mock, download_mock):
   class fake_videoMd(VideoMetaData):
     @property
     def title(self):
@@ -53,8 +53,11 @@ def test_download_call_count(url_mock, fetch_mock, _, download_mock):
       return [fake_videoMd() for _ in range(3)]
     def __init__(self, *args, **kwargs):
       pass
+  def fake_setup(md, opts_ls):
+    return opts_ls
 
   url_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
+  setup_mock.side_effect = fake_setup
 
   # test video
   fetch_mock.return_value = fake_videoMd()
@@ -206,7 +209,7 @@ def test_download_yt_video(input_mock, setup_mock):
   opts.writeSubtitles = True
   opts.subtitlesLang = 'en'
   opts.embedSubtitle = True
-  setup_mock.return_value = opts
+  setup_mock.return_value = [opts]
 
   lazyYtDownload().run(loop=False)
 
@@ -225,14 +228,20 @@ def test_download_yt_video(input_mock, setup_mock):
 
 @patch('builtins.input')
 def test_download_bili_video(input_mock):
-  def outputSection_faker(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
-    opts = opts.copy()
-    opts.outputDir = OUTPUT_FOLDER_PATH
-    return opts
-  def subtitleSection_faker(self, url, opts:Opts) -> Opts:
-    opts = opts.copy()
-    opts.writeSubtitles = False
-    return opts
+  def outputSection_faker(self, opts_ls:list[Opts], askDir:bool=True, askName:bool=True) -> Opts:
+    ret = []
+    for opts in opts_ls:
+      opts = opts.copy()
+      opts.outputDir = OUTPUT_FOLDER_PATH
+      ret.append(opts)
+    return ret
+  def subtitleSection_faker(self, url, opts_ls:list[Opts]) -> Opts:
+    ret = []
+    for opts in opts_ls:
+      opts = opts.copy()
+      opts.writeSubtitles = False
+      ret.append(opts)
+    return [opts]
   
   prepare_output_folder()
 

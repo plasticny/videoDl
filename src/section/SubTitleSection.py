@@ -80,11 +80,12 @@ class SubTitleSection (Section):
       # select subtitle
       print(f'{Fore.GREEN}Video {idx+1}/{len(video_mds)}{Style.RESET_ALL}')
       print(md.title)
-      sub = self.select_sub(
+      sub : Subtitle = self.select_sub(
         [*sorted(md.subtitles), *sorted(md.autoSubtitles)],
         can_skip=True, skip_msg='Skip this video'
       )
       if sub is None:
+        # if choose to skip
         continue
 
       # assign subtitle to opts
@@ -95,6 +96,9 @@ class SubTitleSection (Section):
     return opts_ls
 
   def batch_select(self, sub_pos_map:dict[Subtitle, list[int]], opts_ls:list[Opts]) -> list[Opts]:
+    """This function assumes that sub_pos_map is not empty"""
+    assert len(sub_pos_map) > 0
+
     # the number of video that does not have subtitle
     no_sub_cnt:int = len(opts_ls)
 
@@ -118,10 +122,6 @@ class SubTitleSection (Section):
       # remove subtitle from map
       del sub_pos_map[sub]
       
-      # if no more subtitle or no more video without subtitle, break
-      if len(sub_pos_map) == 0 or no_sub_cnt == 0:
-        break
-
       # update subtitle map
       empty_keys = []
       for s, pos_ls in sub_pos_map.items():
@@ -134,6 +134,10 @@ class SubTitleSection (Section):
           empty_keys.append(s)
       for k in empty_keys:
         del sub_pos_map[k]
+
+      # if no more subtitle or no more video without subtitle, break
+      if len(sub_pos_map) == 0 or no_sub_cnt == 0:
+        break
 
     return opts_ls
 

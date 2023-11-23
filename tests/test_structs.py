@@ -21,3 +21,15 @@ def test_subtitle():
   assert sub1 != sub4
   assert sub1 != 'not a subtitle'
   assert sub1 != None
+
+def test_bilibili_subtitle():
+  """Test bilibili subtitle structure"""
+  # Test __eq__
+  sub1 = BiliBiliSubtitle('en', 'English', 0)
+  sub2 = BiliBiliSubtitle('en', 'Engllsh', 1)
+  sub3 = BiliBiliSubtitle('en', 'English', 2)
+
+  assert sub1 == sub1
+  assert sub1 != sub2
+  assert sub1 != sub3
+  assert sub2 == sub3

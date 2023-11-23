@@ -21,6 +21,22 @@ def test_with_fail_download(download_mock):
   # check if download is called 3 times
   assert download_mock.call_count == 3
 
+@patch('src.section.DownloadSection.YoutubeDL.download_with_info_file')
+@patch('src.section.DownloadSection.YoutubeDL.download')
+def test_use_info_file(download_mock, download_w_file_mock):
+  """Test if info file is used when info_path is not None"""
+  # test info_path is not None
+  DownloadSection().run('url', Opts(), info_path='info_path')
+  assert download_w_file_mock.call_count == 1
+  assert download_mock.call_count == 0
+
+  # test info_path is None
+  download_mock.reset_mock()
+  download_w_file_mock.reset_mock()
+  DownloadSection().run('url', Opts(), info_path=None)
+  assert download_w_file_mock.call_count == 0
+  assert download_mock.call_count == 1
+
 def test_with_real_download_yt():
   prepare_output_folder()
 
