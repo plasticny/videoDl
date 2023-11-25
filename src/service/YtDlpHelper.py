@@ -1,6 +1,8 @@
 from __future__ import annotations
 import copy
 
+from service.structs import Subtitle
+
 class Opts:
   def __init__(self) -> None:
     self.opts = {} # see reset function for the keys
@@ -41,6 +43,7 @@ class Opts:
         'burnSubtitle': None
       }
     }
+    self.subtitle = None
     return self
 
   def toParams(self) -> dict:
@@ -75,29 +78,30 @@ class Opts:
     self.opts['format'] = val
 
   """ subtitle """
+  def setSubtitle (self, sub:Subtitle) -> None:
+    self.opts['subtitleslangs'] = [sub.code]
+    self.opts['writeautomaticsub'] = sub.isAuto
+    self.opts['writesubtitles'] = not sub.isAuto
+  def removeSubtitle (self) -> None:
+    self.opts['subtitleslangs'] = None
+    self.opts['writeautomaticsub'] = False
+    self.opts['writesubtitles'] = False
+  def hasSubtitle (self) -> bool:
+    return self.opts['subtitleslangs'] is not None
+
+  # use setSubtitle / removeSubtitle to modify these properties
   @property
   def writeAutomaticSub (self) -> bool:
-    return self.opts['writeautomaticsub']
-  @writeAutomaticSub.setter
-  def writeAutomaticSub (self, val:bool = True) -> None:
-    self.opts['writeautomaticsub'] = val
-  
+    return self.opts['writeautomaticsub']  
   @property
   def writeSubtitles (self) -> bool:
-    return self.opts['writesubtitles']
-  @writeSubtitles.setter
-  def writeSubtitles (self, val:bool = True) -> None:
-    self.opts['writesubtitles'] = val
-  
+    return self.opts['writesubtitles']  
   @property
   def subtitlesLang (self) -> str:
     sl = self.opts['subtitleslangs']
     if sl is None or len(sl) == 0:
       return None
     return sl[0]
-  @subtitlesLang.setter
-  def subtitlesLang (self, val:str) -> None:
-    self.opts['subtitleslangs'] = [val]
   
   @property
   def embedSubtitle (self) -> bool:

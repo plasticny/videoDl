@@ -148,16 +148,17 @@ def test_batch_select(select_sub_mock):
   sub2 = Subtitle('sub2', 'sub2', True)
   sub3 = Subtitle('sub3', 'sub3', True)
 
+  select_sub_mock.side_effect = fake_select_sub
+
   # ==== test 1: select subtitle for 2 video and then skip the remaining video ==== #
   opts_ls = [Opts(), Opts(), Opts(), Opts()]
   sub_pos_map = {
-    sub1: [0, 2],
+    sub1: [2, 0], # use a unsorted list for testing
     sub2: [1],
     sub3: [2]
   }
   # assign sub3 to 2 > assign sub1 to 0 > end selection
   selector_obj = selector([2,0,None])
-  select_sub_mock.side_effect = fake_select_sub
   res_opts_ls = SubTitleSection('').batch_select(sub_pos_map, opts_ls)
 
   assert len(res_opts_ls) == 4
@@ -176,7 +177,6 @@ def test_batch_select(select_sub_mock):
   # select sub 1
   select_sub_mock.reset_mock()
   selector_obj = selector([0])
-  select_sub_mock.side_effect = fake_select_sub
   res_opts_ls = SubTitleSection('').batch_select(sub_pos_map, opts_ls)
 
   assert len(res_opts_ls) == 4
@@ -194,7 +194,6 @@ def test_batch_select(select_sub_mock):
   # select sub 1
   select_sub_mock.reset_mock()
   selector_obj = selector([0])
-  select_sub_mock.side_effect = fake_select_sub
   res_opts_ls = SubTitleSection('').batch_select(sub_pos_map, opts_ls)
 
   assert len(res_opts_ls) == 4

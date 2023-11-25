@@ -13,6 +13,7 @@ from tests.testFileHelper import prepare_output_folder, OUTPUT_FOLDER_PATH
 from src.lazyYtDownload import lazyYtDownload
 from src.service.YtDlpHelper import Opts
 from src.service.MetaData import VideoMetaData, PlaylistMetaData
+from src.service.structs import Subtitle
 
 # test login function
 @patch('src.lazyYtDownload.LoginSection.run')
@@ -94,12 +95,12 @@ def test_download_subtitle(listdir_mock, download_section_mock, section_mock, _)
 
   # test writeSubtitles is true
   opts = Opts()
-  opts.writeSubtitles = True
+  opts.setSubtitle(Subtitle('en', 'en', False))
   lazyYtDownload().download(opts, 'test', 'test')
 
   # test writeAutoSub is true
   opts = Opts()
-  opts.writeAutomaticSub = True
+  opts.setSubtitle(Subtitle('en', 'en', True))
   lazyYtDownload().download(opts, 'test', 'test')
 
   assert download_section_mock.mock_calls.count(
@@ -206,8 +207,7 @@ def test_download_yt_video(input_mock, setup_mock):
 
   opts = Opts()
   opts.outputDir = OUTPUT_FOLDER_PATH
-  opts.writeSubtitles = True
-  opts.subtitlesLang = 'en'
+  opts.setSubtitle(Subtitle('en', 'en', False))
   opts.embedSubtitle = True
   setup_mock.return_value = [opts]
 
@@ -239,7 +239,6 @@ def test_download_bili_video(input_mock):
     ret = []
     for opts in opts_ls:
       opts = opts.copy()
-      opts.writeSubtitles = False
       ret.append(opts)
     return [opts]
   

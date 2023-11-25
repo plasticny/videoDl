@@ -114,8 +114,8 @@ class lazyYtDownload:
       assert len(listdir(TEMP_FOLDER_PATH)) == 1
       subtitleFileNm = listdir(TEMP_FOLDER_PATH)[0]
 
-      opts.writeSubtitles = False
-      opts.writeAutomaticSub = False
+      # not download subtitle anymore
+      opts.removeSubtitle()
 
     # download video
     opts.format = "bv*[ext=mp4]"
@@ -181,6 +181,11 @@ class lazyYtDownload:
     kwargs = {
       # basic merge settings
       'vcodec': 'libx264', 'acodec': 'aac',
+      # 'vcodec': 'h264_vaapi', 'acodec': 'aac',
+      # 'vcodec': 'h264_qsv', 'acodec': 'aac',
+      # 'vcodec': 'h264_amf', 'acodec': 'aac',
+      # 'vcodec': 'h264_nvenc', 'acodec': 'aac',
+      # 'vcodec': 'hevc_nvenc', 'acodec': 'aac',
       'fps_mode': 'passthrough',
       'loglevel': 'quiet' if quiet else 'info',
     }

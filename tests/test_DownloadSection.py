@@ -10,6 +10,7 @@ from tests.testFileHelper import prepare_output_folder, OUTPUT_FOLDER_PATH
 
 from src.section.DownloadSection import DownloadSection
 from src.service.YtDlpHelper import Opts
+from src.service.structs import Subtitle
 
 @patch('src.section.DownloadSection.YoutubeDL.download')
 def test_with_fail_download(download_mock):
@@ -44,8 +45,7 @@ def test_with_real_download_yt():
   opts.outputDir = OUTPUT_FOLDER_PATH
   opts.outputName = 'test.mp4'
   opts.format = '269'
-  opts.subtitlesLang = 'en'
-  opts.writeSubtitles = True
+  opts.setSubtitle(Subtitle('en', 'en', False))
   DownloadSection().run(
     url='https://www.youtube.com/watch?v=JMu9kdGHU3A',
     opts=opts

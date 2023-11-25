@@ -24,11 +24,9 @@ class SubTitleSection (Section):
     video_mds:list[VideoMetaData] = md.videos if md.isPlaylist() else [md]
     assert len(video_mds) == len(opts_ls)
 
-    # set all opts to not write subtitle first
+    # set clear subtitle of all opts first
     for opts in opts_ls:
-      opts.subtitlesLang = None
-      opts.writeSubtitles = False
-      opts.writeAutomaticSub = False
+      opts.removeSubtitle()
 
     # mapping subtitle to position in opts_ls/video_mds, for selection usage
     sub_pos_map:dict[Subtitle, list[int]] = self.map_subs(video_mds)
@@ -89,20 +87,35 @@ class SubTitleSection (Section):
         continue
 
       # assign subtitle to opts
-      opts.subtitlesLang = sub.code
-      opts.writeSubtitles = not sub.isAuto
-      opts.writeAutomaticSub = sub.isAuto
+      opts.setSubtitle(sub)
 
     return opts_ls
 
   def batch_select(self, sub_pos_map:dict[Subtitle, list[int]], opts_ls:list[Opts]) -> list[Opts]:
-    """This function assumes that sub_pos_map is not empty"""
-    assert len(sub_pos_map) > 0
+    """
+      Procedure:
+        List union of all video's subtitle.\n
+        For each round, select a subtitle, and assign to all video that support it.\n
+        After assigning, remove the subtitles that are no longer owned by any video.\n
+        Repeat until no more subtitle (map empty) / no more video without subtitle / choose to end selection.\n
 
+      More about sub_pos_map:
+        `key`: subtitle; `value`: list of position in opts_ls/video_mds that support the subtitle.\n
+        The value of sub_pos_map are treated as stacks.\n
+        After assign a subtitle, pop every stack until reach the video of the idx does not have subtitle, or stack empty.\n
+        If the stack is empty, remove the subtitle from map.
+    """
     # the number of video that does not have subtitle
     no_sub_cnt:int = len(opts_ls)
+    # copy sub_pos_map to prevent changing the original one
+    sub_pos_map = sub_pos_map.copy()
 
     while True:
+      assert len(sub_pos_map) >= 0
+      # if no more subtitle or no more video without subtitle, break
+      if len(sub_pos_map) == 0 or no_sub_cnt == 0:
+        break
+
       sub:Subtitle = self.select_sub(sorted(sub_pos_map.keys()), can_skip=True, skip_msg='End selection')
 
       # if choose to end the selection, break
@@ -111,9 +124,9 @@ class SubTitleSection (Section):
 
       # assign subtitle to the corresponding opts
       for idx in sub_pos_map[sub]:
-        opts_ls[idx].subtitlesLang = sub.code
-        opts_ls[idx].writeSubtitles = not sub.isAuto
-        opts_ls[idx].writeAutomaticSub = sub.isAuto
+        if opts_ls[idx].hasSubtitle():
+          continue
+        opts_ls[idx].setSubtitle(sub)
         no_sub_cnt -= 1
 
       print(f'{Fore.GREEN}The subtitle is applied to {len(sub_pos_map[sub])} video(s){Style.RESET_ALL}')
@@ -122,22 +135,18 @@ class SubTitleSection (Section):
       # remove subtitle from map
       del sub_pos_map[sub]
       
-      # update subtitle map
+      # update stacks in the map
       empty_keys = []
       for s, pos_ls in sub_pos_map.items():
         for idx in range(len(pos_ls)-1, -1, -1):
-          opts_idx = pos_ls[idx]
-          if opts_ls[opts_idx].subtitlesLang is None:
+          if not opts_ls[pos_ls[idx]].hasSubtitle():
             break
           pos_ls.pop()
         if len(pos_ls) == 0:
           empty_keys.append(s)
+      # remove subtitle if stack is empty
       for k in empty_keys:
         del sub_pos_map[k]
-
-      # if no more subtitle or no more video without subtitle, break
-      if len(sub_pos_map) == 0 or no_sub_cnt == 0:
-        break
 
     return opts_ls
 

@@ -1,8 +1,12 @@
+from sys import path
+path.append('src')
+
 from src.service.YtDlpHelper import Opts
+from src.service.structs import Subtitle
 
 def test_opts_eq():
   opts = Opts()
-  opts.subtitlesLang = 'a'
+  opts.setSubtitle(Subtitle('a', 'a', False))
 
   # test same
   assert opts == opts
