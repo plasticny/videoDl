@@ -40,6 +40,7 @@ class SubTitleSection (Section):
     if not self.ask_write_sub():
       return opts_ls
 
+    # choose selection mode
     if len(video_mds) == 1:
       # if only one video, select subtitle one by one
       opts_ls = self.one_by_one_select(video_mds, opts_ls)
@@ -50,9 +51,14 @@ class SubTitleSection (Section):
       else:
         opts_ls = self.one_by_one_select(video_mds, opts_ls)
 
+    # check if user select subtitle for any video
+    if not self.assigned_any_subtitle(opts_ls):
+      print(f'{Fore.YELLOW}No subtitle selected.{Style.RESET_ALL}')
+      return opts_ls
+
     # show selection result
-    # if self.ask_show_summary():
-    #   self.show_selection_result(video_mds, opts_ls)
+    if self.ask_show_summary():
+      self.show_selection_result(video_mds, opts_ls)
 
     # select write mode
     doEmbed, doBurn = self.select_write_mode()
@@ -124,15 +130,18 @@ class SubTitleSection (Section):
         break
 
       # assign subtitle to the corresponding opts
+      assigned_cnt:int = 0
       for idx in sub_pos_map[sub]:
         if opts_ls[idx].hasSubtitle():
           continue
         opts_ls[idx].setSubtitle(sub)
-        no_sub_cnt -= 1
+        assigned_cnt += 1
+      no_sub_cnt -= assigned_cnt
       assert no_sub_cnt >= 0
 
-      print(f'{Fore.GREEN}The subtitle is applied to {len(sub_pos_map[sub])} video(s){Style.RESET_ALL}')
+      print(f'{Fore.GREEN}The subtitle is applied to {assigned_cnt} video(s){Style.RESET_ALL}')
       print(f'{Fore.YELLOW}{no_sub_cnt}{Style.RESET_ALL} video(s) left.')
+      print()
 
       # remove subtitle from map
       del sub_pos_map[sub]
@@ -168,10 +177,18 @@ class SubTitleSection (Section):
 
     return sub_pos_map
 
+  def assigned_any_subtitle(self, opts_ls:list[Opts]) -> bool:
+    for opts in opts_ls:
+      if opts.hasSubtitle():
+        return True
+    return False
+
   def show_selection_result(self, video_mds:list[VideoMetaData], opts_ls:list[Opts]) -> None:
-    for idx in range(len(video_mds)):
-      print(f'{video_mds[idx].title}')
-      print(f'{opts_ls[idx].subtitlesLang} {opts_ls[idx].writeSubtitles} {opts_ls[idx].writeAutomaticSub}')
+    for idx, md in enumerate(video_mds):
+      print(f'{Fore.GREEN}Video {idx+1}/{len(video_mds)}{Style.RESET_ALL}')
+      print(md.title)
+      print(opts_ls[idx].subtitle)
+      print()
     print()
 
   # ==================== Inquiry functions ==================== #

@@ -56,13 +56,14 @@ def test_notWriteSub(map_subs_mock, ask_write_sub_mock):
   assert len(opts_ls) == 1
   check_opts(opts_ls[0], False, False, None, None, None)
 
+@patch('src.section.SubTitleSection.SubTitleSection.ask_show_summary', return_value=False)
 @patch('src.section.SubTitleSection.SubTitleSection.select_write_mode')
 @patch('src.section.SubTitleSection.SubTitleSection.one_by_one_select')
 @patch('src.section.SubTitleSection.SubTitleSection.ask_write_sub')
 @patch('src.section.SubTitleSection.SubTitleSection.map_subs')
 def test_single_video_selection_mode(
     map_subs_mock, ask_write_sub_mock, 
-    one_by_one_select_mock, select_write_mode_mock
+    one_by_one_select_mock, select_write_mode_mock, _
   ):
   """
     test if one by one selection mode is used
@@ -81,6 +82,7 @@ def test_single_video_selection_mode(
   SubTitleSection('').run(fake_PlayListMetaData(videos=[fake_VideoMetaData()]), opts_ls=[Opts()])
   assert one_by_one_select_mock.called
 
+@patch('src.section.SubTitleSection.SubTitleSection.ask_show_summary', return_value=False)
 @patch('src.section.SubTitleSection.SubTitleSection.select_write_mode')
 @patch('src.section.SubTitleSection.SubTitleSection.batch_select')
 @patch('src.section.SubTitleSection.SubTitleSection.one_by_one_select')
@@ -90,7 +92,7 @@ def test_single_video_selection_mode(
 def test_playlist_selection_mode(
     map_subs_mock, ask_write_sub_mock, ask_selection_mode_mock,
     one_by_one_select_mock, batch_select_mock,
-    select_write_mode_mock
+    select_write_mode_mock, _
   ):
   map_subs_mock.return_value = {Subtitle('en', 'English', True): [0]}
   ask_write_sub_mock.return_value = True
@@ -223,17 +225,22 @@ def test_map_subs():
   assert sub_pos_map[sub2] == [0, 2]
   assert sub_pos_map[sub3] == [1]
 
+@patch('src.section.SubTitleSection.SubTitleSection.ask_show_summary', return_value=False)
 @patch('src.section.SubTitleSection.SubTitleSection.select_write_mode')
 @patch('src.section.SubTitleSection.SubTitleSection.one_by_one_select')
 @patch('src.section.SubTitleSection.SubTitleSection.ask_write_sub')
 @patch('src.section.SubTitleSection.SubTitleSection.map_subs')
 def test_not_change_param_opts(
     map_subs_mock, ask_write_sub_mock, 
-    one_by_one_select_mock, select_write_mode_mock
+    one_by_one_select_mock, select_write_mode_mock, _
   ):
   map_subs_mock.return_value = {Subtitle('en', 'English', True): [0]}
   ask_write_sub_mock.return_value = True
-  one_by_one_select_mock.return_value = [Opts()]
+  
+  opts = Opts()
+  opts.setSubtitle(Subtitle('en', 'English', True))
+  one_by_one_select_mock.return_value = [opts]
+
   select_write_mode_mock.return_value = (True, True)
 
   opts_ls = [Opts()]

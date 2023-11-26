@@ -6,6 +6,7 @@ from service.structs import Subtitle
 class Opts:
   def __init__(self) -> None:
     self.opts = {} # see reset function for the keys
+    self.__sub = None
     self.reset()
 
   def __eq__(self, other: Opts) -> bool:
@@ -43,7 +44,7 @@ class Opts:
         'burnSubtitle': None
       }
     }
-    self.subtitle = None
+    self.__sub = None
     return self
 
   def toParams(self) -> dict:
@@ -79,17 +80,23 @@ class Opts:
 
   """ subtitle """
   def setSubtitle (self, sub:Subtitle) -> None:
+    self.__sub = sub
     self.opts['subtitleslangs'] = [sub.code]
     self.opts['writeautomaticsub'] = sub.isAuto
     self.opts['writesubtitles'] = not sub.isAuto
   def removeSubtitle (self) -> None:
+    self.__sub = None
     self.opts['subtitleslangs'] = None
     self.opts['writeautomaticsub'] = False
     self.opts['writesubtitles'] = False
   def hasSubtitle (self) -> bool:
-    return self.opts['subtitleslangs'] is not None
+    return self.__sub is not None
 
   # use setSubtitle / removeSubtitle to modify these properties
+  @property
+  def subtitle (self) -> Subtitle:
+    """return the subtitle instance"""
+    return self.__sub
   @property
   def writeAutomaticSub (self) -> bool:
     return self.opts['writeautomaticsub']  
