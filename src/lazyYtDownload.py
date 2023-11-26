@@ -181,9 +181,6 @@ class lazyYtDownload:
     kwargs = {
       # basic merge settings
       'vcodec': 'libx264', 'acodec': 'aac',
-      # 'vcodec': 'h264_vaapi', 'acodec': 'aac',
-      # 'vcodec': 'h264_qsv', 'acodec': 'aac',
-      # 'vcodec': 'h264_amf', 'acodec': 'aac',
       # 'vcodec': 'h264_nvenc', 'acodec': 'aac',
       # 'vcodec': 'hevc_nvenc', 'acodec': 'aac',
       'fps_mode': 'passthrough',
