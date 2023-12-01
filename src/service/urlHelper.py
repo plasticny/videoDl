@@ -84,7 +84,7 @@ def removeSurplusParam (url : str) -> str:
     return keepQuery(url, ['v'])
   # bilibili
   elif urlSource == UrlSource.BILIBILI:
-    return keepQuery(url, [])
+    return keepQuery(url, ['p'])
   elif urlSource == UrlSource.PORNHUB:
     return keepQuery(url, ['viewkey'])
   
