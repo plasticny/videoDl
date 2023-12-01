@@ -15,19 +15,24 @@ class Message(Enum):
   ENTER_NAME = 'Enter the output file name: (auto) '
 
 class OutputSection (Section):
-  def run(self, opts:Opts=Opts(), askDir:bool=True, askName:bool=True) -> Opts:
-    return super().run(self.__main, opts=opts.copy(), askDir=askDir, askName=askName)
+  def run(self, opts_ls:list[Opts], askDir:bool=True, askName:bool=True) -> list[Opts]:
+    cp_opts_ls = [opts.copy() for opts in opts_ls]
+    return super().run(self.__main, opts_ls=cp_opts_ls, askDir=askDir, askName=askName)
   
-  def __main(self, opts:Opts, askDir:bool=True, askName:bool=True) -> Opts:
+  def __main(self, opts_ls:list[Opts], askDir:bool=True, askName:bool=True) -> list[Opts]:
     if askDir:
       print(Message.DIR_SECTION_TITLE.value)
-      opts.outputDir(self.__askOutputDir())
+      outputDir = self.__askOutputDir()
+      for opts in opts_ls:
+        opts.outputDir = outputDir
 
     if askName:
       print(Message.NAME_SECTION_TITLE.value)
-      opts.outputName(self.__askOutputName())
+      outputName = self.__askOutputName()
+      for opts in opts_ls:
+        opts.outputName = outputName
 
-    return opts
+    return opts_ls
 
   def __askOutputDir(self):
     outputDir = None

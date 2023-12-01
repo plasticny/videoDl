@@ -12,7 +12,7 @@ def test_not_login(print_mock,_):
   opts:Opts = LoginSection(
     '', doShowFooter=False, doShowHeader=False
   ).run(Opts())
-  assert opts()["cookiefile"] == None
+  assert opts.cookieFile == None
   assert print_mock.mock_calls[0] == call(Message.NOT_LOGIN.value)
 
 @patch('builtins.input', return_value='Y')
@@ -22,7 +22,7 @@ def test_login(print_mock,_,__):
   opts:Opts = LoginSection(
     "", doShowFooter=False, doShowHeader=False
   ).run(Opts())
-  assert opts()["cookiefile"] == 'cookie.txt'
+  assert opts.cookieFile == 'cookie.txt'
   assert print_mock.mock_calls.count(call(Message.LOGIN.value.format('cookie.txt'))) == 1
 
 @patch('builtins.input', return_value='Y')
@@ -32,7 +32,7 @@ def test_login_canceled(print_mock,_,__):
   opts:Opts = LoginSection(
     "", doShowFooter=False, doShowHeader=False
   ).run(Opts())
-  assert opts()["cookiefile"] == None
+  assert opts.cookieFile == None
   assert print_mock.mock_calls.count(call(Message.NOT_LOGIN.value)) == 1
 
 @patch('tkinter.filedialog.askopenfilename', return_value='cookie.txt')

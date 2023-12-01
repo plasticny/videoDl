@@ -1,51 +1,16 @@
 from __future__ import annotations
 import copy
 
+from service.structs import Subtitle
+
 class Opts:
   def __init__(self) -> None:
-    self.opts = {}
+    self.opts = {} # see reset function for the keys
+    self.__sub = None
     self.reset()
 
-  def __call__(self) -> dict:
-    return self.opts
   def __eq__(self, other: Opts) -> bool:
     return self.opts == other.opts
-
-    # === codes for deep comparison, useless now ===
-    # def sameItem(a, b) -> bool:
-    #   if a is None and b is None:
-    #     return True
-    #   if (a is None) != (b is None):
-    #     return False
-    #   if isinstance(a, dict) and not sameDict(a, b):
-    #     return False
-    #   if isinstance(a, list) and not sameList(a, b):
-    #     return False
-    #   if a != b:
-    #     return False
-    #   return True
-
-    # def sameDict(a:dict, b:dict) -> bool:
-    #   if len(a) != len(b):
-    #     return False
-    #   for key in a.keys():
-    #     if not(key in b) or not sameItem(a[key], b[key]):
-    #       return False
-    #   return True
-            
-    # def sameList(a:list, b:list) -> bool:
-    #   if len(a) != len(b):
-    #     return False
-    #   for a_v, b_v in zip(a, b):
-    #     if not sameItem(a_v, b_v):
-    #       return False
-    #   return True
-    
-    # for key in self.opts:
-    #   # suppose self and other must have the same keys
-    #   if not sameItem(self.opts[key], other.opts[key]):
-    #     return False
-    # return True
 
   def copy(self) -> Opts:
     return copy.deepcopy(self)
@@ -66,77 +31,155 @@ class Opts:
       # list
       'listformats': None,
       'listsubtitles': None,
-      # postprocessor
-      'postprocessors': [],
       # others
       'skip_download': None,
       'quiet': None,
       'overwrites': None,
-      'ffmpeg_location': 'ffmpeg'
+      'ffmpeg_location': 'ffmpeg',
+      'extract_flat': None,
+
+      # some params that not belong to yt_dlp
+      'not_yt_dlp': {
+        'embedSubtitle': None,
+        'burnSubtitle': None
+      }
     }
+    self.__sub = None
     return self
 
-  # ========= fast setter function for the opts params =========
-  # output
-  def outputName (self, val:str) -> Opts:
+  def toParams(self) -> dict:
+    ret_opts = self.opts.copy()
+    del ret_opts['not_yt_dlp']
+    return ret_opts
+
+  # ========= getter and setter for the opts params =========
+  """ output """
+  @property
+  def outputName (self) -> str:
+    return self.opts['outtmpl']
+  @outputName.setter
+  def outputName (self, val:str) -> None:
     self.opts['outtmpl'] = val
-    return self
-  def outputDir (self,val:str) -> Opts:
+  
+  @property
+  def outputDir (self) -> str:
+    if 'home' not in self.opts['paths']:
+      return None
+    return self.opts['paths']['home']
+  @outputDir.setter
+  def outputDir (self,val:str) -> None:
     self.opts['paths']['home'] = val
-    return self
   
-  # format
-  def format (self, val:str) -> Opts:
+  """ format """
+  @property
+  def format (self) -> str:
+    return self.opts['format']
+  @format.setter
+  def format (self, val:str) -> None:
     self.opts['format'] = val
-    return self
-  def mergeFormat (self, val:str) -> Opts:
-    self.opts['merge_output_format'] = val
-    return self
-  
-  # subtitle
-  def writeAutomaticSub (self, val:bool = True) -> Opts:
-    self.opts['writeautomaticsub'] = val
-    return self
-  def writeSubtitles (self, val:bool = True) -> Opts:
-    self.opts['writesubtitles'] = val
-    return self
-  def subtitlesLang (self, val:str) -> Opts:
-    self.opts['subtitleslangs'] = [val]
-    return self
-  def embedSubtitle (self, val:bool = True) -> Opts:
-    KEY = 'FFmpegEmbedSubtitle'
-    if val:
-      self.opts['postprocessors'].append({'key': KEY})
-    else:
-      self.opts['postprocessors'] = list(
-        filter(lambda pp: pp['key'] != KEY, self.opts['postprocessors'])
-      )
-    return self
-  
-  # cookie
-  def cookieFile (self, val:str) -> Opts:
-    self.opts['cookiefile'] = val
-    return self
-  
-  # list
-  def listFormats (self, val:bool = True) -> Opts:
-    self.opts['listformats'] = val
-    return self
-  def listSubtitle (self, val:bool = True) -> Opts:
-    self.opts['listsubtitles'] = val
-    return self
 
-  # others
-  def skip_download (self, val:bool = True) -> Opts:
+  """ subtitle """
+  def setSubtitle (self, sub:Subtitle) -> None:
+    self.__sub = sub
+    self.opts['subtitleslangs'] = [sub.code]
+    self.opts['writeautomaticsub'] = sub.isAuto
+    self.opts['writesubtitles'] = not sub.isAuto
+  def removeSubtitle (self) -> None:
+    self.__sub = None
+    self.opts['subtitleslangs'] = None
+    self.opts['writeautomaticsub'] = False
+    self.opts['writesubtitles'] = False
+  def hasSubtitle (self) -> bool:
+    return self.__sub is not None
+
+  # use setSubtitle / removeSubtitle to modify these properties
+  @property
+  def subtitle (self) -> Subtitle:
+    """return the subtitle instance"""
+    return self.__sub
+  @property
+  def writeAutomaticSub (self) -> bool:
+    return self.opts['writeautomaticsub']  
+  @property
+  def writeSubtitles (self) -> bool:
+    return self.opts['writesubtitles']  
+  @property
+  def subtitlesLang (self) -> str:
+    sl = self.opts['subtitleslangs']
+    if sl is None or len(sl) == 0:
+      return None
+    return sl[0]
+  
+  @property
+  def embedSubtitle (self) -> bool:
+    return self.opts['not_yt_dlp']['embedSubtitle']
+  @embedSubtitle.setter
+  def embedSubtitle (self, val:bool = True) -> None:
+    self.opts['not_yt_dlp']['embedSubtitle'] = val
+  
+  @property
+  def burnSubtitle (self) -> bool:
+    return self.opts['not_yt_dlp']['burnSubtitle']
+  @burnSubtitle.setter
+  def burnSubtitle (self, val:bool = True) -> None:
+    self.opts['not_yt_dlp']['burnSubtitle'] = val
+  
+  """ cookie """
+  @property
+  def cookieFile (self) -> str:
+    return self.opts['cookiefile']
+  @cookieFile.setter
+  def cookieFile (self, val:str) -> None:
+    self.opts['cookiefile'] = val
+  
+  """ list info """
+  @property
+  def listFormats (self) -> bool:
+    return self.opts['listformats']
+  @listFormats.setter
+  def listFormats (self, val:bool = True) -> None:
+    self.opts['listformats'] = val
+  
+  @property
+  def listSubtitle (self) -> bool:
+    return self.opts['listsubtitles']
+  @listSubtitle.setter
+  def listSubtitle (self, val:bool = True) -> None:
+    self.opts['listsubtitles'] = val
+
+  """ others """
+  @property
+  def skip_download (self) -> bool:
+    return self.opts['skip_download']
+  @skip_download.setter
+  def skip_download (self, val:bool = True) -> None:
     self.opts['skip_download'] = val
-    return self
-  def quiet (self, val:bool = True) -> Opts:
+  
+  @property
+  def quiet (self) -> bool:
+    return self.opts['quiet']
+  @quiet.setter
+  def quiet (self, val:bool = True) -> None:
     self.opts['quiet'] = val
-    return self
-  def overwrites (self, val:bool = True) -> Opts:
+  
+  @property
+  def overwrites (self) -> bool:
+    return self.opts['overwrites']
+  @overwrites.setter
+  def overwrites (self, val:bool = True) -> None:
     self.opts['overwrites'] = val
-    return self
-  def ffmpeg_location (self, val:str) -> Opts:
+  
+  @property
+  def ffmpeg_location (self) -> str:
+    return self.opts['ffmpeg_location']
+  @ffmpeg_location.setter
+  def ffmpeg_location (self, val:str) -> None:
     self.opts['ffmpeg_location'] = val
-    return self
-  # ========= END fast setter function for the opts params END =========
+
+  @property
+  def extract_flat (self) -> bool:
+    return self.opts['extract_flat']
+  @extract_flat.setter
+  def extract_flat (self, val:bool = True) -> None:
+    self.opts['extract_flat'] = val
+  # ========= END fast getter and setter function for the opts params END =========

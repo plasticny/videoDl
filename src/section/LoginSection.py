@@ -30,7 +30,7 @@ class LoginSection(Section):
     print(Message.SELECT_COOKIE_FILE.value)
     cookieFile = tkFileDialog.askopenfilename(title=Message.SELECT_COOKIE_FILE.value)
     if len(cookieFile) != 0:
-      opts.cookieFile(cookieFile)
+      opts.cookieFile = cookieFile
       print(Message.LOGIN.value.format(cookieFile))
     else:
       print(Message.NOT_LOGIN.value)

@@ -3,13 +3,14 @@ sysPath.append('src')
 
 from unittest.mock import patch
 from pytest import raises as pytest_raises
+from os import listdir
 from os.path import exists
-from pymediainfo import MediaInfo
 
 from tests.testFileHelper import prepare_output_folder, OUTPUT_FOLDER_PATH
 
 from src.section.DownloadSection import DownloadSection
 from src.service.YtDlpHelper import Opts
+from src.service.structs import Subtitle
 
 @patch('src.section.DownloadSection.YoutubeDL.download')
 def test_with_fail_download(download_mock):
@@ -21,28 +22,45 @@ def test_with_fail_download(download_mock):
   # check if download is called 3 times
   assert download_mock.call_count == 3
 
+@patch('src.section.DownloadSection.YoutubeDL.download_with_info_file')
+@patch('src.section.DownloadSection.YoutubeDL.download')
+def test_use_info_file(download_mock, download_w_file_mock):
+  """Test if info file is used when info_path is not None"""
+  # test info_path is not None
+  DownloadSection().run('url', Opts(), info_path='info_path')
+  assert download_w_file_mock.call_count == 1
+  assert download_mock.call_count == 0
+
+  # test info_path is None
+  download_mock.reset_mock()
+  download_w_file_mock.reset_mock()
+  DownloadSection().run('url', Opts(), info_path=None)
+  assert download_w_file_mock.call_count == 0
+  assert download_mock.call_count == 1
+
 def test_with_real_download_yt():
   prepare_output_folder()
 
   opts = Opts()
-  opts.outputDir(f'{OUTPUT_FOLDER_PATH}').outputName('test.mp4').format('269')
-  opts.subtitlesLang('en').writeSubtitles().embedSubtitle()
+  opts.outputDir = OUTPUT_FOLDER_PATH
+  opts.outputName = 'test.mp4'
+  opts.format = '269'
+  opts.setSubtitle(Subtitle('en', 'en', False))
   DownloadSection().run(
     url='https://www.youtube.com/watch?v=JMu9kdGHU3A',
     opts=opts
   )
 
-  # check file exist
-  assert exists(f'{OUTPUT_FOLDER_PATH}/test.mp4')
-
-  # check subtitle is embeded
-  mediaInfo = MediaInfo.parse(f'{OUTPUT_FOLDER_PATH}/test.mp4')
-  assert any([track.track_type == 'Text' for track in mediaInfo.tracks])
+  fileNms = listdir(OUTPUT_FOLDER_PATH)
+  assert len(fileNms) == 2
+  assert 'test.mp4' in fileNms
+  assert 'test.en.vtt' in fileNms
 
 def test_with_real_download_bili():
   prepare_output_folder()
 
-  opts = Opts().outputDir(f'{OUTPUT_FOLDER_PATH}')
+  opts = Opts()
+  opts.outputDir = OUTPUT_FOLDER_PATH
   DownloadSection().run(
     url='https://www.bilibili.com/video/BV1154y1T765',
     opts=opts
