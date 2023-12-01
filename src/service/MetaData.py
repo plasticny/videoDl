@@ -132,13 +132,36 @@ class VideoMetaData (MetaData):
     if self._auto_sub is None:
       self.getSubtitles()
     return self._auto_sub
+  @property
+  def formats(self) -> list[dict]:
+    if self._format is not None:
+      return self._format
 
+    format_dict = {} 
+    for format in self.metadata['formats']:
+      if format['audio_ext'] == 'none' and format['video_ext'] == 'none':
+        continue
+      key = hash((format['audio_ext'], format['video_ext']))
+      if key not in format_dict:
+        format_dict[key] = {"audio": format["audio_ext"], "video": format["video_ext"]} 
+    
+    self._format = list(format_dict.values())
+    return self._format
+  
+  @property
+  def audio_formats(self) -> list[dict]:
+    return [f['audio'] for f in self.formats if f['audio'] != 'none']
+  @property
+  def video_formats(self) -> list[dict]:
+    return [f['video'] for f in self.formats if f['video'] != 'none']
+  
   def __init__(self, metadata):
     super().__init__(metadata)
 
     # will be initialized in getSubtitles when property is called
     self._sub : list[Subtitle] = None
     self._auto_sub : list[Subtitle] = None
+    self._format : list[dict] = None
 
   def isPlaylist(self) -> bool:
     return False

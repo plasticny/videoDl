@@ -84,6 +84,22 @@ def test_videoMd_getSubtitles():
   assert md.subtitles == expected_sub
   assert md.autoSubtitles == expected_auto_sub
 
+def test_videoMd_formats():
+  md : VideoMetaData = VideoMetaData({'formats': [
+    {'audio_ext': 'm4a',  'video_ext': 'mp4'},
+    {'audio_ext': 'none', 'video_ext': 'avi'},
+    {'audio_ext': 'mp3',  'video_ext': 'none'},
+    {'audio_ext': 'none',  'video_ext': 'none'}
+  ]})
+  
+  assert md.formats == [
+    {'audio': 'm4a', 'video': 'mp4'},
+    {'audio': 'none', 'video': 'avi'},
+    {'audio': 'mp3', 'video': 'none'}
+  ]
+  assert md.video_formats == ['mp4', 'avi']
+  assert md.audio_formats == ['m4a', 'mp3']
+    
 def test_fetch_yt_video():
   """test fetch metadata of a real youtube video with url"""
   md = fetchMetaData(url='https://www.youtube.com/watch?v=zKAxWU4odvE')

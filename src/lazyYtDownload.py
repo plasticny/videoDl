@@ -51,8 +51,7 @@ class lazyYtDownload:
       for idx, (md, opts) in enumerate(zip(videos_md, opts_ls)):
         try:
           Section(title=f'Video {idx+1} of {len(videos_md)}').run(
-            self.download, opts=opts,
-            title=md.title, url=md.url
+            self.download, opts=opts, md=md
           )
         finally:
           clear_temp_folder()
@@ -83,7 +82,7 @@ class lazyYtDownload:
 
     return opts_ls
 
-  def download(self, opts:Opts, title, url):
+  def download(self, opts:Opts, md:VideoMetaData):
     """
       Download video, audio and subtitles separately, then merge them.
 
@@ -92,12 +91,14 @@ class lazyYtDownload:
     """
 
     # set a random output name
-    fileNm = uuid4().__str__()
-    # store the output dir path and replace it with temp folder
+    temp_nm = uuid4().__str__()
+    # store the output dir path
     outputDir = opts.outputDir
+    
     opts = opts.copy()
+    # use temp folder and temp name
     opts.outputDir = TEMP_FOLDER_PATH
-    opts.outputName = fileNm
+    opts.outputName = temp_nm
 
     # download subtitle
     subtitleFileNm = None
@@ -109,7 +110,7 @@ class lazyYtDownload:
         title="Downloading subtitle",
         headerType=HeaderType.SUB_HEADER
       # ).run(url, s_opts, retry=2, info_path='C:\\Users\\22203\\Documents\\desktop\\script\\videoDl\\src\\test.json')
-      ).run(url, s_opts, retry=2)
+      ).run(md.url, s_opts, retry=2)
 
       assert len(listdir(TEMP_FOLDER_PATH)) == 1
       subtitleFileNm = listdir(TEMP_FOLDER_PATH)[0]
@@ -117,26 +118,39 @@ class lazyYtDownload:
       # not download subtitle anymore
       opts.removeSubtitle()
 
-    # download video
+    print(md.audio_formats)
+    if 'm4a' in md.audio_formats:
+      self.download_separatly(opts, md, temp_nm, outputDir, subtitleFileNm)
+    else:
+      self.download_mp4(opts, md, temp_nm, outputDir)
+        
+    return
+  
+  def download_separatly(
+      self, opts:Opts, md:VideoMetaData,
+      temp_nm:str, outputDir:str, subtitleFileNm:str
+    ):
+    """Download video and audio separately, then merge video, audio & subtitle. For better quality"""
+    # video
     opts.format = "bv*[ext=mp4]"
-    opts.outputName = fileNm+'.mp4'
+    opts.outputName = temp_nm+'.mp4'
     DownloadSection(
       title="Downloading video",
       headerType=HeaderType.SUB_HEADER
-    ).run(url, opts, retry=2)
+    ).run(md.url, opts, retry=2)
 
-    # download audio
+    # audio
     opts.format = "ba*[ext=m4a]"
-    opts.outputName = fileNm+'.m4a'
+    opts.outputName = temp_nm+'.m4a'
     DownloadSection(
       title="Downloading audio",
       headerType=HeaderType.SUB_HEADER
-    ).run(url, opts, retry=2)
+    ).run(md.url, opts, retry=2)
 
     # merge
-    videoFileNm = f'{fileNm}.mp4'
-    audioFileNm = f'{fileNm}.m4a'
-    mergeFileNm = f'{fileNm}_merge.mp4'
+    videoFileNm = f'{temp_nm}.mp4'
+    audioFileNm = f'{temp_nm}.m4a'
+    mergeFileNm = f'{temp_nm}_merge.mp4'
     Section(title="Merging").run(
       bodyFunc=self.merge,
       # output paths
@@ -154,12 +168,31 @@ class lazyYtDownload:
 
     # rename the output file
     self.renameFile(
-      mergeFileNm, f'{title}.mp4',
+      mergeFileNm, f'{md.title}.mp4',
       dirPath=TEMP_FOLDER_PATH, toDirPath=outputDir,
       overwrite=True
     )
-        
-    return
+  
+  def download_mp4(
+    self, opts:Opts, md:VideoMetaData,
+    temp_nm:str, outputDir:str
+  ):
+    """Let yt-dlp download a mp4 file directly"""
+    # not specify download format
+    outputName = temp_nm+'.mp4'
+    
+    opts.format = None
+    opts.outputName = outputName
+    DownloadSection(
+      title="Downloading",
+      headerType=HeaderType.SUB_HEADER
+    ).run(md.url, opts, retry=2)
+    
+    self.renameFile(
+      outputName, f'{md.title}.mp4',
+      dirPath=TEMP_FOLDER_PATH, toDirPath=outputDir,
+      overwrite=True
+    )
   
   def merge(
       self, outputPath:str,
@@ -180,9 +213,9 @@ class lazyYtDownload:
     # kwargs
     kwargs = {
       # basic merge settings
-      'vcodec': 'libx264', 'acodec': 'aac',
+      # 'vcodec': 'libx264', 'acodec': 'aac',
       # 'vcodec': 'h264_nvenc', 'acodec': 'aac',
-      # 'vcodec': 'hevc_nvenc', 'acodec': 'aac',
+      'vcodec': 'hevc_nvenc', 'acodec': 'aac',
       'fps_mode': 'passthrough',
       'loglevel': 'quiet' if quiet else 'info',
     }
@@ -210,7 +243,7 @@ class lazyYtDownload:
         If `toDirPath` is provided, the file will also move to the given dir\n
         If `overwrite` is True, the file will overwrite the file with the same name in the target dir
     """
-    ESCAPE_CHAR = {'"', '*', ':', '<', '>', '?', '|'}
+    ESCAPE_CHAR = {'"', '*', ':', '<', '>', '?', '|', '/'}
     
     escaped_newName = ''
     for c in newName:

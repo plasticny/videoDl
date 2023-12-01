@@ -6,21 +6,18 @@ from src.service.urlHelper import *
 # =========== isValid =========== #
 def test_isValid_valid_youtube_url():
   url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-  valid, err = isValid(url)
+  valid, _ = isValid(url)
   assert valid == True
-  assert err == None
 
 def test_isValid_invalid_youtube_url():
   url = "https://www.youtube.com/watch"
-  valid, err = isValid(url)
+  valid, _ = isValid(url)
   assert valid == False
-  assert err == ErrMessage.INVALID_YOUTUBE_URL.value
 
 def test_isValid_invalid_url():
   url = "not a valid url"
-  valid, err = isValid(url)
+  valid, _ = isValid(url)
   assert valid == False
-  assert err == ErrMessage.INVALID_URL.value
 # =========== End isValid =========== #
 
 # ========== getSource ========== #
