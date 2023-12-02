@@ -2,9 +2,9 @@ import service.packageChecker as packageChecker
 packageChecker.check()
 
 from service.urlHelper import getSource, UrlSource
-from service.MetaData import MetaData, VideoMetaData, fetchMetaData
+from service.MetaData import MetaData, VideoMetaData
 from service.YtDlpHelper import Opts
-from service.fileHelper import perpare_temp_folder, clear_temp_folder, TEMP_FOLDER_PATH
+from service.fileHelper import TEMP_FOLDER_PATH
 
 from os import rename, remove, listdir
 from os.path import exists
@@ -13,60 +13,29 @@ from enum import Enum
 import ffmpeg
 
 from section.Section import Section, HeaderType
-from section.UrlSection import UrlSection
 from section.DownloadSection import DownloadSection
 from section.LoginSection import LoginSection
 from section.SubTitleSection import SubTitleSection
 from section.OutputSection import OutputSection
 
+from dl import Dl
+
 class Message (Enum):
   MERGE_FAILED = 'Merge failed'
 
-class lazyYtDownload:
-  def run (self, loop=True):
-    print("----------------- Downlaod -----------------", end='\n\n')
-
-    perpare_temp_folder()
-
-    while True:
-      url = UrlSection(title='Url').run()
-      # ask login    
-      temp_opts : Opts = self.login(url, opts=Opts())
-
-      # fetch metadata
-      print('Getting download information...\n')
-      md = fetchMetaData(url, temp_opts)
-
-      # get video metadata list
-      videos_md : list[VideoMetaData] = md.videos if md.isPlaylist() else [md]
-      # prepare opts list
-      opts_ls : list[Opts] = [temp_opts.copy() for _ in range(len(videos_md))]
-
-      # set up download
-      # subtitle, output dir
-      opts_ls:list[Opts] = Section(title='Set up download').run(self.setup, md=md, opts_ls=opts_ls)
-
-      # download
-      assert len(videos_md) == len(opts_ls)
-      for idx, (md, opts) in enumerate(zip(videos_md, opts_ls)):
-        try:
-          Section(title=f'Video {idx+1} of {len(videos_md)}').run(
-            self.download, opts=opts, md=md
-          )
-        finally:
-          clear_temp_folder()
-
-      if not loop:
-        break
-    return
+class lazyYtDownload(Dl):
+  def __init__(self):
+    self.title = 'LYD'
   
   def login(self, url:str, opts:Opts) -> Opts:
-    # ask login if bilibili
+    """Overwirte Dl.login"""
     if getSource(url) == UrlSource.BILIBILI:
+      # ask login if bilibili
       return LoginSection(title='Login').run(opts)
     return opts
 
   def setup(self, md:MetaData, opts_ls:list[Opts]) -> list[Opts]:
+    """Overwirte Dl.setup"""
     # subtitle
     opts_ls = SubTitleSection(
       title='Subtitle',
@@ -84,6 +53,7 @@ class lazyYtDownload:
 
   def download(self, opts:Opts, md:VideoMetaData):
     """
+      Overwirte Dl.download
       Download video, audio and subtitles separately, then merge them.
 
       Args hint:
@@ -118,7 +88,6 @@ class lazyYtDownload:
       # not download subtitle anymore
       opts.removeSubtitle()
 
-    print(md.audio_formats)
     if 'm4a' in md.audio_formats:
       self.download_separatly(opts, md, temp_nm, outputDir, subtitleFileNm)
     else:
@@ -215,8 +184,9 @@ class lazyYtDownload:
       # basic merge settings
       'vcodec': 'libx264', 'acodec': 'aac',
       # 'vcodec': 'h264_nvenc', 'acodec': 'aac',
-      # 'vcodec': 'hevc_nvenc', 'acodec': 'aac',
       'fps_mode': 'passthrough',
+      # 'preset': 'p7',
+      # 'tune': 'hq',
       'loglevel': 'quiet' if quiet else 'info',
     }
     # embed subtitle

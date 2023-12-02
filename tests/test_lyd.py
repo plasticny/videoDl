@@ -28,49 +28,6 @@ def test_login(login_mock):
   lyd.login('www.bilibili.com/video/BV1QK4y1d7dQ', Opts())
   login_mock.assert_called_once()
 
-@patch('src.lazyYtDownload.lazyYtDownload.download')
-@patch('src.lazyYtDownload.lazyYtDownload.setup')
-@patch('src.lazyYtDownload.fetchMetaData')
-@patch('src.lazyYtDownload.UrlSection.run')
-def test_download_call_count(url_mock, fetch_mock, setup_mock, download_mock):
-  class fake_videoMd(VideoMetaData):
-    @property
-    def title(self):
-      return None
-    @property
-    def url(self):
-      return None
-    def __init__(self, *args, **kwargs):
-      pass
-  class fake_playlistMd(PlaylistMetaData):
-    @property
-    def title(self):
-      return None
-    @property
-    def url(self):
-      return None
-    @property
-    def videos(self):
-      return [fake_videoMd() for _ in range(3)]
-    def __init__(self, *args, **kwargs):
-      pass
-  def fake_setup(md, opts_ls):
-    return opts_ls
-
-  url_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
-  setup_mock.side_effect = fake_setup
-
-  # test video
-  fetch_mock.return_value = fake_videoMd()
-  lazyYtDownload().run(loop=False)
-  assert download_mock.call_count == 1
-
-  # test playlist
-  download_mock.reset_mock()
-  fetch_mock.return_value = fake_playlistMd()
-  lazyYtDownload().run(loop=False)
-  assert download_mock.call_count == 3
-
 @patch('src.lazyYtDownload.lazyYtDownload.renameFile')
 @patch('src.lazyYtDownload.Section')
 @patch('src.lazyYtDownload.DownloadSection')
