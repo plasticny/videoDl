@@ -5,11 +5,13 @@ from enum import Enum
 class UrlSource (Enum):
   NOT_DEFINED = -1
   YOUTUBE = 0
-  BILIBILI = 1
-  PORNHUB = 2
+  YOUTU_BE = 1
+  BILIBILI = 2
+  PORNHUB = 3
 
 class SourcePrefix (Enum):
-  YOUTUBE = ['www.youtube.com', 'youtu.be']
+  YOUTUBE = ['www.youtube.com']
+  YOUTU_BE = ['youtu.be']
   BILIBILI = ['www.bilibili.com/video/']
   PORNHUB = ['pornhub.com/view_video.php']
 
@@ -29,12 +31,13 @@ def getSource (url : str) -> UrlSource:
   # 'youtube' url
   if __check(url, SourcePrefix.YOUTUBE):
     return UrlSource.YOUTUBE
-  
+  # 'youtu.be' url
+  elif __check(url, SourcePrefix.YOUTU_BE):
+    return UrlSource.YOUTU_BE
   # 'www.bilibili.com/video' url
-  if __check(url, SourcePrefix.BILIBILI):
+  elif __check(url, SourcePrefix.BILIBILI):
     return UrlSource.BILIBILI
-  
-  if __check(url, SourcePrefix.PORNHUB):
+  elif __check(url, SourcePrefix.PORNHUB):
     return UrlSource.PORNHUB
   
   return UrlSource.NOT_DEFINED

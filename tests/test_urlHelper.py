@@ -13,6 +13,11 @@ def test_isValid_invalid_youtube_url():
   url = "https://www.youtube.com/watch"
   valid, _ = isValid(url)
   assert valid == False
+  
+def test_isValid_valid_youtu_be_url():
+  url = "https://youtu.be/dQw4w9WgXcQ"
+  valid, _ = isValid(url)
+  assert valid == True
 
 def test_isValid_invalid_url():
   url = "not a valid url"
@@ -29,7 +34,7 @@ def test_getSource_youtube():
 def test_getSource_youtube_short():
   url = "https://youtu.be/dQw4w9WgXcQ"
   source = getSource(url)
-  assert source == UrlSource.YOUTUBE
+  assert source == UrlSource.YOUTU_BE
 
 def test_getSource_bilibili():
   url = "https://www.bilibili.com/video/BV1Kb411W75N"
