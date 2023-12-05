@@ -183,3 +183,5 @@ class Opts:
   def extract_flat (self, val:bool = True) -> None:
     self.opts['extract_flat'] = val
   # ========= END fast getter and setter function for the opts params END =========
+
+# ========= END Opts class END =========

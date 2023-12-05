@@ -5,33 +5,20 @@ from enum import Enum
 class UrlSource (Enum):
   NOT_DEFINED = -1
   YOUTUBE = 0
-  BILIBILI = 1
+  YOUTU_BE = 1
+  BILIBILI = 2
+  PORNHUB = 3
 
 class SourcePrefix (Enum):
-  YOUTUBE = ['www.youtube.com', 'youtu.be']
+  YOUTUBE = ['www.youtube.com']
+  YOUTU_BE = ['youtu.be']
   BILIBILI = ['www.bilibili.com/video/']
+  PORNHUB = ['pornhub.com/view_video.php']
 
 # error message
 class ErrMessage (Enum):
   INVALID_URL = 'Invalid url: Not url'
-  INVALID_YOUTUBE_URL = 'Invalid url: www.youtube.com url should have the query v'
-
-# checking if the url is valid
-# return: valid (bool), err (str/None)
-def isValid (url : str) -> (bool, str):
-  parsedUrl = urlparse(url)
-
-  # check if it is url
-  if not(all([parsedUrl.scheme, parsedUrl.netloc, parsedUrl.path])):
-    return False, ErrMessage.INVALID_URL.value
-           
-  # for 'www.youtube.com' url, check if it contain query 'v'
-  if url.count('www.youtube.com') != 0:
-    if 'v' not in parse_qs(urlparse(url).query):
-      return False, ErrMessage.INVALID_YOUTUBE_URL.value
-
-  # valid checked
-  return True, None
+  MISSING_PARAM = 'Invalid url: Missing param {}'
 
 # get the source of the url
 def getSource (url : str) -> UrlSource:
@@ -44,12 +31,37 @@ def getSource (url : str) -> UrlSource:
   # 'youtube' url
   if __check(url, SourcePrefix.YOUTUBE):
     return UrlSource.YOUTUBE
-  
+  # 'youtu.be' url
+  elif __check(url, SourcePrefix.YOUTU_BE):
+    return UrlSource.YOUTU_BE
   # 'www.bilibili.com/video' url
-  if __check(url, SourcePrefix.BILIBILI):
+  elif __check(url, SourcePrefix.BILIBILI):
     return UrlSource.BILIBILI
+  elif __check(url, SourcePrefix.PORNHUB):
+    return UrlSource.PORNHUB
   
   return UrlSource.NOT_DEFINED
+
+# checking if the url is valid
+# return: valid (bool), err (str/None)
+def isValid (url : str) -> (bool, str):
+  parsedUrl = urlparse(url)
+
+  # check if it is url
+  if not(all([parsedUrl.scheme, parsedUrl.netloc, parsedUrl.path])):
+    return False, ErrMessage.INVALID_URL.value
+           
+  source = getSource(url)
+  # for 'www.youtube.com' url, check if it contain query 'v'
+  if source is UrlSource.YOUTUBE:
+    if 'v' not in parse_qs(urlparse(url).query):
+      return False, ErrMessage.MISSING_PARAM.value.format('v')
+  elif source is UrlSource.PORNHUB:
+    if 'viewkey' not in parse_qs(urlparse(url).query):
+      return False, ErrMessage.MISSING_PARAM.value.format('viewkey')
+
+  # valid checked
+  return True, None
 
 # remove surplus url param that cause download error
 # return a url string without those params
@@ -74,7 +86,9 @@ def removeSurplusParam (url : str) -> str:
   if urlSource == UrlSource.YOUTUBE:
     return keepQuery(url, ['v'])
   # bilibili
-  if urlSource == UrlSource.BILIBILI:
-    return keepQuery(url, [])
+  elif urlSource == UrlSource.BILIBILI:
+    return keepQuery(url, ['p'])
+  elif urlSource == UrlSource.PORNHUB:
+    return keepQuery(url, ['viewkey'])
   
   return url

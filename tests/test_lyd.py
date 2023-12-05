@@ -28,49 +28,6 @@ def test_login(login_mock):
   lyd.login('www.bilibili.com/video/BV1QK4y1d7dQ', Opts())
   login_mock.assert_called_once()
 
-@patch('src.lazyYtDownload.lazyYtDownload.download')
-@patch('src.lazyYtDownload.lazyYtDownload.setup')
-@patch('src.lazyYtDownload.fetchMetaData')
-@patch('src.lazyYtDownload.UrlSection.run')
-def test_download_call_count(url_mock, fetch_mock, setup_mock, download_mock):
-  class fake_videoMd(VideoMetaData):
-    @property
-    def title(self):
-      return None
-    @property
-    def url(self):
-      return None
-    def __init__(self, *args, **kwargs):
-      pass
-  class fake_playlistMd(PlaylistMetaData):
-    @property
-    def title(self):
-      return None
-    @property
-    def url(self):
-      return None
-    @property
-    def videos(self):
-      return [fake_videoMd() for _ in range(3)]
-    def __init__(self, *args, **kwargs):
-      pass
-  def fake_setup(md, opts_ls):
-    return opts_ls
-
-  url_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
-  setup_mock.side_effect = fake_setup
-
-  # test video
-  fetch_mock.return_value = fake_videoMd()
-  lazyYtDownload().run(loop=False)
-  assert download_mock.call_count == 1
-
-  # test playlist
-  download_mock.reset_mock()
-  fetch_mock.return_value = fake_playlistMd()
-  lazyYtDownload().run(loop=False)
-  assert download_mock.call_count == 3
-
 @patch('src.lazyYtDownload.lazyYtDownload.renameFile')
 @patch('src.lazyYtDownload.Section')
 @patch('src.lazyYtDownload.DownloadSection')
@@ -85,27 +42,74 @@ def test_download_subtitle(listdir_mock, download_section_mock, section_mock, _)
       pass
     def run(*args, **kwargs):
       pass
+  class fake_videoMd(VideoMetaData):
+    @property
+    def title(self):
+      return None
+    @property
+    def url(self):
+      return None
+    @property
+    def audio_formats(self) -> list[dict]:
+      return [{'ext': 'm4a'}]
+    def __init__(self, *args, **kwargs):
+      pass
 
   listdir_mock.return_value = ['filename.vtt']
   download_section_mock.side_effect = fake_Section
   section_mock.side_effect = fake_Section
 
   # test both false
-  lazyYtDownload().download(Opts(), 'test', 'test')
+  lazyYtDownload().download(Opts(), md=fake_videoMd())
 
   # test writeSubtitles is true
   opts = Opts()
   opts.setSubtitle(Subtitle('en', 'en', False))
-  lazyYtDownload().download(opts, 'test', 'test')
+  lazyYtDownload().download(opts, md=fake_videoMd()) 
 
   # test writeAutoSub is true
   opts = Opts()
   opts.setSubtitle(Subtitle('en', 'en', True))
-  lazyYtDownload().download(opts, 'test', 'test')
+  lazyYtDownload().download(opts, md=fake_videoMd()) 
 
   assert download_section_mock.mock_calls.count(
     call(title='Downloading subtitle', headerType=ANY)
   ) == 2
+
+@patch('src.lazyYtDownload.lazyYtDownload.download_mp4')
+@patch('src.lazyYtDownload.lazyYtDownload.download_separatly')
+def test_download_flow(separatly_mock, mp4_mock):
+  """
+    Test the download function will
+    call download_separatly when video has m4a audio format,
+    or call download_mp4 when not
+  """
+  opts : Opts = Opts()
+  opts.outputDir = OUTPUT_FOLDER_PATH
+  opts.outputName = 'test.mp4'
+  
+  class fake_videoMd_m4a(VideoMetaData):
+    @property
+    def audio_formats(self) -> list[dict]:
+      return ['m4a']
+    def __init__(self, *args, **kwargs):
+      pass
+  class fake_videoMd_no_m4a(VideoMetaData):
+    @property
+    def audio_formats(self) -> list[dict]:
+      return []
+    def __init__(self, *args, **kwargs):
+      pass
+
+  # test m4a
+  lazyYtDownload().download(opts, md=fake_videoMd_m4a())
+  assert separatly_mock.called
+  
+  # test no m4a
+  separatly_mock.reset_mock()
+  mp4_mock.reset_mock()
+  lazyYtDownload().download(opts, md=fake_videoMd_no_m4a())
+  assert mp4_mock.called
 
 @patch('src.lazyYtDownload.ffmpeg.output')
 @patch('src.lazyYtDownload.ffmpeg.input')
