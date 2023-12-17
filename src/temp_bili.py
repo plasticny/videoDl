@@ -9,7 +9,7 @@ url = UrlSection('Url').run()
 opts = LoginSection('Login').run()
 opts = OutputSection('Output').run([opts], askName=False)[0]
 
-bvid = url[-13:-1]
+bvid = url.split('/')[4]
 aid = BiliBiliFetcher.bvid_2_aid(bvid)
 cids = BiliBiliFetcher.get_page_cids(bvid)
 for idx, cid in enumerate(cids):
