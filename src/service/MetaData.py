@@ -13,54 +13,66 @@ from io import StringIO
 
 from service.YtDlpHelper import Opts
 from service.urlHelper import getSource, UrlSource
-from service.fetcher import BiliBiliFetcher
+from service.bilibili import get_bili_subs, get_bili_page_cids, bvid_2_aid
 from service.structs import Subtitle
 
-# ========================== Abstract MetaData ========================= #
+# ========================= funcitons for get the metadata ========================= #
 def fetchMetaData(url:str, opts:Opts=Opts()) -> VideoMetaData | PlaylistMetaData:
   """Fetch metadata of the video or playlist to be downloaded"""
   urlSource = getSource(url)
 
+  metadata = __get_basic_metadata(url, urlSource, opts)
+  if metadata['_type'] == 'playlist':
+    return create_playListMd(metadata, urlSource, opts)
+  else:
+    return create_videoMd(metadata, urlSource, opts)
+  
+def fetch_bili_video_metadata (url:str, opts:Opts=Opts()) -> BiliBiliVideoMetaData:
+  """
+    Fetch metadata function that ensure the video is a bilibili video
+  """
+# ========================= funcitons for get the metadata ========================= #
+
+
+# ========================== Abstract MetaData ========================= #
+def __get_basic_metadata (url:str, url_source:UrlSource, opts:Opts=Opts()) -> dict:
   opts = opts.copy()
   opts.quiet = True
   opts.extract_flat = True
   # use custom fetcher to get bilibili subtitles
-  opts.listSubtitle = not (urlSource is UrlSource.BILIBILI)
+  opts.listSubtitle = not (url_source is UrlSource.BILIBILI)
   try:
     # quiet=True also print subtitle, redirect stdout to hide it
     with redirect_stdout(StringIO()), YoutubeDL(opts.toParams()) as ydl:
       # download basic metadata using yt-dlp
       metadata = ydl.extract_info(url, download = False)
-      metadata = ydl.sanitize_info(metadata)
+      metadata : dict = ydl.sanitize_info(metadata)
+    return metadata
   except Exception as e:
     print(e)
     raise Exception('Get metadata failed')
-  
-  if metadata['_type'] == 'playlist':
-    return create_playListMd(metadata, urlSource, opts)
-  else:
-    return create_videoMd(metadata, urlSource, opts)
   
 class MetaData:
   """
     The abstract class of video metadata and playlist metadata
   """
   @property
-  def title(self):
+  def title(self) -> str:
     return self.metadata['title']
   @property
-  def url(self):
+  def url(self) -> str:
     return self.metadata['original_url']
   @property
-  def id(self):
+  def id(self) -> str:
     return self.metadata['id']
   
   def __init__ (self, metadata):
-    self.metadata = metadata
+    self.metadata : dict = metadata
 
   def isPlaylist(self) -> bool:
     raise NotImplementedError
 # ========================== End Abstract MetaData ========================= #
+
 
 # ========================== Playlist ========================= #
 def create_playListMd(metadata, urlSource:UrlSource, opts:Opts=Opts()) -> PlaylistMetaData:
@@ -99,24 +111,27 @@ class BiliBiliPlaylistMetaData (PlaylistMetaData):
   def __init__(self, metadata, opts:Opts=Opts()):
     self.opts = opts.copy()
     super().__init__(metadata)
+    # specify the type of prop videos
+    self.videos : list[BiliBiliVideoMetaData] = self.videos
 
   def fetchVideoMd(self) -> list[BiliBiliVideoMetaData]:
-    cids = BiliBiliFetcher.get_page_cids(self.id, self.opts)
+    cids = get_bili_page_cids(self.id, self.opts)
 
     res = []
-    for idx, entryMd in enumerate(self.metadata['entries']):
+    for entryMd, cid in zip(self.metadata['entries'], cids):
       videoMd = fetchMetaData(entryMd['url'], self.opts)
       assert isinstance(videoMd, BiliBiliVideoMetaData)
-      videoMd.cid = cids[idx]
+      videoMd.cid = cid
       res.append(videoMd)
     return res
 # ========================== End Playlist ========================= #
+
 
 # ========================== Video ========================= #
 def create_videoMd(metadata, urlSource:UrlSource, opts:Opts=Opts()) -> VideoMetaData:
   """For external use, better use fetchMetaData instead"""
   if urlSource is UrlSource.BILIBILI:
-    return BiliBiliVideoMetaData(metadata, opts)
+    return BiliBiliVideoMetaData(metadata, opts = opts)
   else:
     return VideoMetaData(metadata)
 
@@ -193,17 +208,18 @@ class VideoMetaData (MetaData):
 class BiliBiliVideoMetaData (VideoMetaData):
   """
     Video metadata of bilibili
-
-    properties hint:
-      `cid`: useful when the video is a page in playlist, set in BiliBiliPlaylistMetaData.fetchVideoMd
   """
   def __init__(self, metadata, opts: Opts = Opts()):
     self.opts = opts.copy()
-    self.cid = None
     super().__init__(metadata)
+    
+    self.bvid : str = self.id.split('_')[0]
+    self.cid : str = None # set in BiliBiliPlaylistMetaData.fetchVideoMd if it is a page in playlist
+    self.aid : str = bvid_2_aid(self.bvid)
 
   def getSubtitles(self) -> None:
-    sub, auto_sub =  BiliBiliFetcher.getSubtitles(self.id, self.opts, self.cid)
+    sub, auto_sub = get_bili_subs(self.bvid, self.opts, self.cid)
     self._sub = sub
     self._auto_sub = auto_sub
+    self.opts = None # opts is not needed anymore, release memory
 # ========================== End Video ========================= #

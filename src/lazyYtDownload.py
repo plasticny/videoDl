@@ -184,9 +184,14 @@ class lazyYtDownload(Dl):
       # basic merge settings
       'vcodec': 'libx264', 'acodec': 'aac',
       # 'vcodec': 'h264_nvenc', 'acodec': 'aac',
-      'fps_mode': 'passthrough',
+      # 'vcodec': 'hevc_nvenc', 'acodec': 'aac',
+      # 'pix_fmt': 'p010le', # 10bit
       # 'preset': 'p7',
       # 'tune': 'hq',
+      # 'level': '6.2',
+      # 'profile': 'rext',
+      # 'tier': 'high',
+      'fps_mode': 'passthrough',
       'loglevel': 'quiet' if quiet else 'info',
     }
     # embed subtitle
