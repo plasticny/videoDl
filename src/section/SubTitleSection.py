@@ -1,64 +1,64 @@
 from __future__ import annotations
-
 from inquirer import prompt as inq_prompt, List as inq_List, Checkbox as inq_Checkbox
 from colorama import Fore, Style
 from collections.abc import Iterable
 from enum import Enum
+from typing import TypedDict
 
-from section.Section import Section
-from service.YtDlpHelper import Opts
-from service.MetaData import MetaData, VideoMetaData
-from service.structs import Subtitle
+from src.section.Section import Section
+from src.service.MetaData import VideoMetaData
+
+from src.structs.video_info import Subtitle
+
+
+class TSubtitleSectionRet (TypedDict):
+  do_write_subtitle : bool
+  do_embed : bool
+  do_burn : bool
+  subtitle_ls : list[Subtitle]
+
 
 class SelectionMode(Enum):
   BATCH = 0
   ONE_BY_ONE = 1  
 
+
 class SubTitleSection (Section):
-  def run(self, md:MetaData, opts_ls:list[Opts]) -> list[Opts]:
-    cp_opts_ls = [opts.copy() for opts in opts_ls]
-    return super().run(self.__main, md=md, opts_ls=cp_opts_ls)
+  def run(self, md_ls:list[VideoMetaData]) -> TSubtitleSectionRet:
+    return super().run(self.__main, md_ls=md_ls)
   
-  def __main(self, md:MetaData, opts_ls:list[Opts]) -> list[Opts]:
-    # get list of video meta data from md
-    video_mds:list[VideoMetaData] = md.videos if md.isPlaylist() else [md]
-    assert len(video_mds) == len(opts_ls)
-
-    # set clear subtitle of all opts first
-    for opts in opts_ls:
-      opts.removeSubtitle()
-
+  def __main(self, md_ls:list[VideoMetaData]) -> TSubtitleSectionRet:
     # mapping subtitle to position in opts_ls/video_mds, for selection usage
-    sub_pos_map:dict[Subtitle, list[int]] = self.map_subs(video_mds)
+    sub_pos_map:dict[Subtitle, list[int]] = self.map_subs(md_ls)
 
     # if no subtitle available, return
     if len(sub_pos_map.keys()) == 0:
       print(f'{Fore.YELLOW}No subtitle available.{Style.RESET_ALL}')
-      return opts_ls
+      return { 'do_write_subtitle': False }
     
     # select to write subtitle or not
     if not self.ask_write_sub():
-      return opts_ls
+      return { 'do_write_subtitle': False }
 
     # choose selection mode
-    if len(video_mds) == 1:
+    if len(md_ls) == 1:
       # if only one video, select subtitle one by one
-      opts_ls = self.one_by_one_select(video_mds, opts_ls)
+      selection_res = self.one_by_one_select(md_ls)
     else:
-      # if multiple videos, select batch or one by one
+      # if multiple videos, choose to select in batch or one by one
       if self.ask_selection_mode() == SelectionMode.BATCH.value:
-        opts_ls = self.batch_select(sub_pos_map, opts_ls)
+        selection_res = self.batch_select(sub_pos_map, len(md_ls))
       else:
-        opts_ls = self.one_by_one_select(video_mds, opts_ls)
+        selection_res = self.one_by_one_select(md_ls)
 
     # check if user select subtitle for any video
-    if not self.assigned_any_subtitle(opts_ls):
+    if not any(selection_res):
       print(f'{Fore.YELLOW}No subtitle selected.{Style.RESET_ALL}')
-      return opts_ls
+      return { 'do_write_subtitle': False }
 
     # show selection result
     if self.ask_show_summary():
-      self.show_selection_result(video_mds, opts_ls)
+      self.show_selection_result(selection_res)
 
     # select write mode
     doEmbed, doBurn = self.select_write_mode()
@@ -67,18 +67,22 @@ class SubTitleSection (Section):
       print(Fore.YELLOW)
       print('Warning: You did not choose any mode to write the subtitle, so the subtitle will not be shown in the video.')
       print(Style.RESET_ALL)
-    else:
-      for opts in opts_ls:
-        opts.embedSubtitle = doEmbed
-        opts.burnSubtitle = doBurn
 
-    return opts_ls
+    return {
+      'do_write_subtitle': True,
+      'do_embed': doEmbed,
+      'do_burn': doBurn,
+      'subtitle_ls': selection_res
+    }
   
-  def one_by_one_select(self, video_mds:list[VideoMetaData], opts_ls:list[Opts]) -> list[Opts]:
-    for idx, (md, opts) in enumerate(zip(video_mds, opts_ls)):
+  def one_by_one_select(self, video_mds:list[VideoMetaData]) -> list[Subtitle]:
+    res = []
+    
+    for idx, md in enumerate(video_mds):
       # if no subtitle, skip
       if len(md.subtitles) == 0 and len(md.autoSubtitles) == 0:
         print(f'{Fore.YELLOW}No subtitle available for {md.title}.{Style.RESET_ALL}')
+        res.append(None)
         continue
 
       # select subtitle
@@ -88,16 +92,11 @@ class SubTitleSection (Section):
         [*sorted(md.subtitles), *sorted(md.autoSubtitles)],
         can_skip=True, skip_msg='Skip this video'
       )
-      if sub is None:
-        # if choose to skip
-        continue
+      res.append(sub)
 
-      # assign subtitle to opts
-      opts.setSubtitle(sub)
+    return res
 
-    return opts_ls
-
-  def batch_select(self, sub_pos_map:dict[Subtitle, list[int]], opts_ls:list[Opts]) -> list[Opts]:
+  def batch_select(self, sub_pos_map:dict[Subtitle, list[int]], video_num:int) -> list[Subtitle]:
     """
       Procedure:
         Repeat until map empty / no more video without subtitle / choose to end selection.\n
@@ -107,22 +106,29 @@ class SubTitleSection (Section):
 
       Args:
         `sub_pos_map`\n
-        `key`: subtitle; `value`: list of position in opts_ls/video_mds that support the subtitle.\n
+        key: subtitle; value: list of position in video_mds that support the subtitle.\n
         The value of sub_pos_map are treated as stacks.\n
         After assign a subtitle, pop every stack until reach the video of the idx is not assigned subtitle, or stack empty.\n
         If the stack is empty, remove the subtitle from map.\n
-
-        `opts_ls`\n
-        All video's download options. The selected subtitle will be assigned to the corresponding opts.\n
+        
+        `video_num`\n
+        The number of video that should be assigned subtitle.\n
+        
+      Return:
+        A list of subtitle that each video should use. The position is mapped to the metadata list.
     """
-    # the number of video that does not have subtitle
-    no_sub_cnt:int = len(opts_ls)
     # copy sub_pos_map to prevent changing the original one
     sub_pos_map = sub_pos_map.copy()
+
+    # result list
+    res : list[Subtitle] = [ None for _ in range(video_num) ]
+    # the number of video that does not have subtitle
+    no_sub_cnt:int = len(res)
 
     # keep selecting until the map empty
     # the map will also be empty if all video assigned subtitle
     while len(sub_pos_map) > 0:
+      # sub_pos_map.keys() is the union of all remaining video's subtitles
       sub:Subtitle = self.select_sub(sorted(sub_pos_map.keys()), can_skip=True, skip_msg='End selection')
 
       # if choose to end the selection, break
@@ -132,9 +138,9 @@ class SubTitleSection (Section):
       # assign subtitle to the corresponding opts
       assigned_cnt:int = 0
       for idx in sub_pos_map[sub]:
-        if opts_ls[idx].hasSubtitle():
+        if res[idx] is not None:
           continue
-        opts_ls[idx].setSubtitle(sub)
+        res[idx] = sub
         assigned_cnt += 1
       no_sub_cnt -= assigned_cnt
       assert no_sub_cnt >= 0
@@ -150,7 +156,7 @@ class SubTitleSection (Section):
       empty_keys = []
       for s, pos_ls in sub_pos_map.items():
         # pop every stack until reach the video of the idx is not assigned subtitle, or stack empty
-        while len(pos_ls) > 0 and opts_ls[pos_ls[-1]].hasSubtitle():
+        while len(pos_ls) > 0 and res[pos_ls[-1]] is not None:
           pos_ls.pop()
         if len(pos_ls) == 0:
           empty_keys.append(s)
@@ -158,9 +164,12 @@ class SubTitleSection (Section):
       for k in empty_keys:
         del sub_pos_map[k]
 
-    return opts_ls
+    return res
 
   def map_subs(self, video_mds:list[VideoMetaData]) -> dict[Subtitle, list[int]]:
+    """
+      Construct a map from subtitle to position in video_mds that support the subtitle
+    """
     sub_pos_map:dict[Subtitle, list[int]] = dict()
 
     for idx, md in enumerate(video_mds):
@@ -177,22 +186,16 @@ class SubTitleSection (Section):
 
     return sub_pos_map
 
-  def assigned_any_subtitle(self, opts_ls:list[Opts]) -> bool:
-    for opts in opts_ls:
-      if opts.hasSubtitle():
-        return True
-    return False
-
-  def show_selection_result(self, video_mds:list[VideoMetaData], opts_ls:list[Opts]) -> None:
-    for idx, md in enumerate(video_mds):
+  def show_selection_result(self, video_mds:list[VideoMetaData], selection_res:list[Subtitle]) -> None:
+    for idx, (md, sub) in enumerate(zip(video_mds, selection_res)):
       print(f'{Fore.GREEN}Video {idx+1}/{len(video_mds)}{Style.RESET_ALL}')
       print(md.title)
-      print(opts_ls[idx].subtitle)
+      print(sub if sub is not None else 'No subtitle selected')
       print()
     print()
 
-  # ==================== Inquiry functions ==================== #
 
+  # ==================== Inquiry functions ==================== #
   def ask_write_sub(self) -> bool:
     """
       Ask user to select whether to write subtitle
@@ -266,6 +269,5 @@ class SubTitleSection (Section):
         choices=['Embed', 'Burn'], default=['Embed', 'Burn']
       )
     ])['writeMode']
-    return ('Embed' in ans, 'Burn' in ans)
-  
+    return ('Embed' in ans, 'Burn' in ans)  
   # ==================== End Inquiry functions ==================== #

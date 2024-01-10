@@ -1,11 +1,32 @@
-"""
-  Structs
-"""
 from __future__ import annotations
-
+from typing import TypedDict
 from colorama import Fore, Style
 
-# ========================== Subtitle structure ========================= #
+
+# ============ video format ============ #
+class BundledFormat:
+  """ a type that contains both video and audio format """
+  def __init__(self, video:str=None, audio:str=None):
+    self.video : str = video
+    self.audio : str = audio
+
+class TFormatDesc (TypedDict):
+  codec : str
+  ext : str
+
+class TFormatBase (TypedDict):
+  format_id : str
+  tsr : float
+class TFormatVideo (TFormatBase):
+  video : TFormatDesc
+class TFormatAudio (TFormatBase):
+  audio : TFormatDesc
+class TFormatBoth (TFormatVideo, TFormatAudio):
+  pass
+# ============ video format ============ #
+
+
+# ============ subtitle ============ #
 class Subtitle:
   """
     Structure of VideoMetaData subtitle
@@ -51,4 +72,4 @@ class BiliBiliSubtitle(Subtitle):
 
   def isAutoGen(self) -> bool:
     return self.ai_status != 0
-# ========================== End Subtitle structure ========================= #
+# ============ subtitle ============ #

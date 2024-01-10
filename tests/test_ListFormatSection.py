@@ -1,17 +1,24 @@
-from sys import path as sysPath
-sysPath.append('src')
+from sys import path
+from pathlib import Path
+path.append(Path('..').resolve().as_posix())
 
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
-from src.section.ListFormatSection import ListFormatSection, VALUE
-from src.service.YtDlpHelper import Opts
+from src.section.ListFormatSection import ListFormatSection
+
+class fake_opt ():
+  @property
+  def url (self):
+    return 'url'
+  def copy (self):
+    return self
 
 @patch('builtins.input', return_value='Y')
 @patch('src.section.ListFormatSection.YoutubeDL')
-def test_list_format(youtubeDl_mock, input_mock):
-  ListFormatSection('').run('')
+def test_list_format(youtubeDl_mock:Mock, input_mock):
+  ListFormatSection('').run(fake_opt())
 
-  called_paramCommands = youtubeDl_mock.call_args.kwargs['params']
+  called_paramCommands = youtubeDl_mock.call_args.args[0]
   assert called_paramCommands['listformats'] == True
 
 @patch('src.section.ListFormatSection.YoutubeDL')
@@ -19,18 +26,10 @@ def test_list_format(youtubeDl_mock, input_mock):
 def test_not_list_format(input_mock, youtubeDl_mock):
   section = ListFormatSection('')
 
-  input_mock.return_value = VALUE.IN_NOT_LIST.value
-  section.run('')
+  input_mock.return_value = 'N'
+  section.run(fake_opt())
 
-  input_mock.return_value = VALUE.IN_EMPTY.value
-  section.run('')
+  input_mock.return_value = ''
+  section.run(fake_opt())
 
   assert youtubeDl_mock.call_count == 0
-
-@patch('builtins.input', return_value='Y')
-@patch('src.section.ListFormatSection.YoutubeDL.download')
-def test_not_change_param_opts(_, __):
-  opts = Opts()
-  backup_opts = opts.copy()
-  ListFormatSection().run('', opts)
-  assert opts == backup_opts

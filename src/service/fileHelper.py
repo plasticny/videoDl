@@ -1,10 +1,10 @@
 from os.path import exists
-from os import mkdir, remove, listdir
+from os import mkdir, remove, listdir, getcwd
 
 """
 folder for storing temp file when downlaoding
 """
-TEMP_FOLDER_PATH = 'temp'
+TEMP_FOLDER_PATH = f'{getcwd()}\\temp'
 
 def perpare_temp_folder():
   """
