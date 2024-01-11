@@ -1,8 +1,13 @@
+from sys import path
+from pathlib import Path
+path.append(Path('.').resolve().as_posix())
+
 import src.service.packageChecker as packageChecker
 packageChecker.check()
 
 from src.service.urlHelper import getSource, UrlSource
 from src.service.MetaData import VideoMetaData
+from src.service.autofill import get_login_autofill
 
 from src.section.Section import HeaderType
 from src.section.DownloadSection import DownloadOpt
@@ -22,6 +27,10 @@ class lazyYtDownload(Dl):
       Overwirte Dl.login\n
       Only ask login if the url is from bilibili
     """
+    autofill_res = get_login_autofill(url)
+    if autofill_res is not None:
+      return autofill_res
+
     if getSource(url) == UrlSource.BILIBILI:
       return super().login(url)
     return None
@@ -34,7 +43,7 @@ class lazyYtDownload(Dl):
     opt_ls = [DownloadOpt(md.opts) for md in md_ls]
     
     # select format
-    selected_format = LazyFormatSection(
+    selected_format_ls = LazyFormatSection(
       title='Format',
       headerType=HeaderType.SUB_HEADER
     ).run(md_ls)
@@ -54,7 +63,7 @@ class lazyYtDownload(Dl):
 
     # assign options
     for idx, opt in enumerate(opt_ls):
-      opt.set_format(selected_format)
+      opt.set_format(selected_format_ls[idx])
       opt.set_subtitle(
         selected_sub_ret['subtitle_ls'][idx],
         selected_sub_ret['do_embed'],

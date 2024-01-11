@@ -138,10 +138,8 @@ def test_MetadataOpt_to_ytdlp_opt(get_source_mock:Mock):
   # not bilibili
   opt = MetaDataOpt()
   opt.url = 'url'
-  opt.cookie_file_path = 'cookie_file_path'
   
   ret_opt = MetaDataOpt.to_ytdlp_opt(opt)
-  assert ret_opt['cookiefile'] == 'cookie_file_path'
   assert ret_opt['extract_flat']
   assert ret_opt['listsubtitles']
   

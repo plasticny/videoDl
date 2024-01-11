@@ -34,11 +34,21 @@ class SubTitleSection (Section):
     # if no subtitle available, return
     if len(sub_pos_map.keys()) == 0:
       print(f'{Fore.YELLOW}No subtitle available.{Style.RESET_ALL}')
-      return { 'do_write_subtitle': False }
+      return {
+        'do_write_subtitle': False,
+        'subtitle_ls': [ None for _ in range(len(md_ls)) ],
+        'do_embed': False,
+        'do_burn': False
+      }
     
     # select to write subtitle or not
     if not self.ask_write_sub():
-      return { 'do_write_subtitle': False }
+      return {
+        'do_write_subtitle': False,
+        'subtitle_ls': [ None for _ in range(len(md_ls)) ],
+        'do_embed': False,
+        'do_burn': False
+      }
 
     # choose selection mode
     if len(md_ls) == 1:
@@ -54,7 +64,12 @@ class SubTitleSection (Section):
     # check if user select subtitle for any video
     if not any(selection_res):
       print(f'{Fore.YELLOW}No subtitle selected.{Style.RESET_ALL}')
-      return { 'do_write_subtitle': False }
+      return {
+        'do_write_subtitle': False,
+        'subtitle_ls': [ None for _ in range(len(md_ls)) ],
+        'do_embed': False,
+        'do_burn': False
+      }
 
     # show selection result
     if self.ask_show_summary():

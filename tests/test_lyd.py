@@ -34,7 +34,7 @@ def test_login(login_mock:Mock):
 @patch('src.lazyYtDownload.SubTitleSection.run')
 @patch('src.lazyYtDownload.LazyFormatSection.run')
 def test_setup (format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
-  format_mock.return_value = 'mp4'
+  format_mock.return_value = ['mp4']
   
   ret_subtitle : TSubtitleSectionRet = {
     'do_write_subtitle': True,

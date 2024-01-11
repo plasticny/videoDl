@@ -10,7 +10,7 @@ class TListFormatOpt (TOpt):
   listformats: bool
 
 
-class ListFormatSection (Section):    
+class ListFormatSection (Section):
   def run(self, opts:IOpt) -> None:
     return super().run(self._listFormat, opts=opts.copy())
 

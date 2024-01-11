@@ -6,6 +6,7 @@ from src.section.Section import Section
 from src.section.DownloadSection import BundledFormat
 
 from src.service.MetaData import VideoMetaData
+from src.service.autofill import get_lyd_format_autofill
   
 
 class FormatSection (Section):
@@ -59,6 +60,10 @@ class LazyFormatSection (Section):
     
     if len(options) == 1:
       return options[0]
+    
+    autofill_selection = get_lyd_format_autofill()
+    if autofill_selection is not None:
+      return options[autofill_selection]
     
     return inq_prompt([
       inq_List(

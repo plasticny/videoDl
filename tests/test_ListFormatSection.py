@@ -5,13 +5,14 @@ path.append(Path('..').resolve().as_posix())
 from unittest.mock import patch, Mock
 
 from src.section.ListFormatSection import ListFormatSection
+from src.structs.option import IOpt
 
-class fake_opt ():
-  @property
-  def url (self):
-    return 'url'
+class fake_opt (IOpt):
   def copy (self):
     return self
+  def __init__(self) -> None:
+    super().__init__()
+    self.url = 'url'
 
 @patch('builtins.input', return_value='Y')
 @patch('src.section.ListFormatSection.YoutubeDL')

@@ -69,7 +69,6 @@ class TMetaDataOpt (TOpt):
   quiet : bool
   extract_flat : bool
   listsubtitles : bool
-  cookiefile : str
 
 class TMdFormats (TypedDict):
   video: list[TFormatVideo] # formats that support video
@@ -89,12 +88,10 @@ class MetaDataOpt (IOpt):
       'extract_flat': True,
       # use bilibili api to get bilibili subtitles
       'listsubtitles': getSource(obj.url) is not UrlSource.BILIBILI,
-      'cookiefile': obj.cookie_file_path
-    }
-  
-  def __init__(self):
+    } 
+    
+  def __init__(self) -> None:
     super().__init__()
-    self.cookie_file_path : str = None
 # ========================= options ========================= #
 
 

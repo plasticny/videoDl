@@ -14,11 +14,13 @@ class Message(Enum):
 
 # ask the login cookie
 class LoginSection(Section):    
-  def run(self) -> str | None:
-    """ Return the cookie file path if login, else return None """
+  def run(self) -> str:
+    """
+      Return the cookie file path if login, else return None
+    """
     return super().run(self._login)
   
-  def _login(self) -> str | None:    
+  def _login(self) -> str:    
     doLogin = self.__askLogin()
     if not doLogin:
       print(Message.NOT_LOGIN.value)
@@ -31,7 +33,7 @@ class LoginSection(Section):
       print(Message.LOGIN.value.format(cookie_file_path))
       return cookie_file_path
     else:
-      print(Message.NOT_LOGIN.value)  
+      print(Message.NOT_LOGIN.value)
       return None
   
   # ask if login

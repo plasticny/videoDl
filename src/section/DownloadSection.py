@@ -19,8 +19,6 @@ class TDownloadOptBase (TOpt):
   # output
   outtmpl: str
   paths : dict[str, str]
-  # cookie
-  cookiefile: str
   # others
   overwrites: bool
   
@@ -61,14 +59,13 @@ class DownloadOpt (IOpt):
       'outtmpl': f'{uuid4().__str__()}.%(ext)s',
       # download to temp folder first
       'paths': { 'home': TEMP_FOLDER_PATH },
-      'cookiefile': obj.cookie_file_path,
       'overwrites': True
     }
  
   @staticmethod
   def to_ytdlp_dl_opt(obj : DownloadOpt) -> TDownloadOpt | BundledTDownloadOpt:
     """ Convert DownloadOpt to YoutubeDL options for downloading video or audio """
-    assert obj.format is not None
+    assert isinstance(obj.format, str) or isinstance(obj.format, BundledFormat)
     
     if isinstance(obj.format, BundledFormat):      
       return BundledTDownloadOpt(
@@ -122,6 +119,7 @@ class DownloadOpt (IOpt):
     if iIOpt is not None:
       assert isinstance(iIOpt, IOpt)
       self.url = iIOpt.url
+      self.cookie_file_path = iIOpt.cookie_file_path
     
     # output
     self.output_nm : str = None
@@ -130,8 +128,6 @@ class DownloadOpt (IOpt):
     # if it is a string, only download the requested format
     # if it is a BundledFormat, download the video and audio, and merge them
     self.format : str | BundledFormat = None
-    # cookie
-    self.cookie_file_path : str = None
     # subtitle
     # this section will write the subtitle if `subtitle` is not None
     self.subtitle : Subtitle = None
@@ -256,8 +252,8 @@ class DownloadSection (Section) :
       # 'level': '6.2',
       # 'profile': 'rext',
       # 'tier': 'high',
-      # 'fps_mode': 'passthrough',
       'vcodec': 'copy', 'acodec': 'copy',
+      'fps_mode': 'passthrough',
       'loglevel': 'quiet' if quiet else 'info',
     }
     if subtitle_path is not None:
@@ -267,6 +263,9 @@ class DownloadSection (Section) :
       # burn subtitle
       if do_burn_sub:
         kwargs['vf'] = f"subtitles='{subtitle_path}':'force_style=Fontsize=12\,MarginV=3'"
+        # when use filter, vcodec and acodec must be specified
+        kwargs['vcodec'] = 'libx264'
+        kwargs['acodec'] = 'aac'
 
     try:
       ff_out(*streams_n_output,**kwargs).run(cmd=f'{ffmpeg_location}\\ffmpeg')

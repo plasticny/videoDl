@@ -1,3 +1,7 @@
+from sys import path
+from pathlib import Path
+path.append(Path('.').resolve().as_posix())
+
 import src.service.packageChecker as packageChecker
 packageChecker.check()
 

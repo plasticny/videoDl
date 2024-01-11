@@ -23,6 +23,9 @@ def test_noSubFound(map_subs_mock):
   map_subs_mock.return_value = {}
   ret = SubTitleSection().run([fake_VideoMetaData()])
   assert ret['do_write_subtitle'] == False
+  assert ret['subtitle_ls'] == [None]
+  assert ret['do_burn'] == False
+  assert ret['do_embed'] == False
   
 @patch('src.section.SubTitleSection.SubTitleSection.ask_write_sub')
 @patch('src.section.SubTitleSection.SubTitleSection.map_subs')
@@ -31,6 +34,9 @@ def test_notWriteSub(map_subs_mock, ask_write_sub_mock):
   ask_write_sub_mock.return_value = False
   ret = SubTitleSection('').run([fake_VideoMetaData()])
   assert ret['do_write_subtitle'] == False
+  assert ret['subtitle_ls'] == [None]
+  assert ret['do_burn'] == False
+  assert ret['do_embed'] == False
 
 @patch('src.section.SubTitleSection.SubTitleSection.ask_show_summary', return_value=False)
 @patch('src.section.SubTitleSection.SubTitleSection.select_write_mode')

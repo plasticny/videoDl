@@ -5,7 +5,7 @@ from typing_extensions import Self
 from copy import deepcopy
 
 class TOpt (TypedDict):
-  pass
+  cookiefile : str
   
 class IOpt (metaclass = ABCMeta):
   """
@@ -16,12 +16,13 @@ class IOpt (metaclass = ABCMeta):
   def to_ytdlp_opt(obj : IOpt) -> TOpt:
     """ Convert the properties to a dict for ytdlp options """
     assert obj.url is not None
-    return {}
+    return { 'cookiefile': obj.cookie_file_path }
 
   @abstractmethod
   def __init__(self) -> None:
     """ TODO: for child class, add options """
     self.url : str = None
+    self.cookie_file_path : str = None
 
   def copy(self) -> Self:
     return deepcopy(self)
