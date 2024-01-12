@@ -95,6 +95,8 @@ def test_main_flow(
 @patch('src.section.DownloadSection.YoutubeDL')
 def test_download_item (ytdl_mock:Mock):
   """ test the function return the file full name """
+  prepare_output_folder()
+  
   class fake_ytdlp ():
     def __init__(self, *args, **kwargs):
       pass
