@@ -59,10 +59,14 @@ class LazyFormatSection (Section):
     options = self._get_options(md_ls)
     
     if len(options) == 1:
+      print('Only one format option available, select it automatically')
+      print(f'Selected option: {Fore.CYAN}{options[0]}{Style.RESET_ALL}')
       return options[0]
     
     autofill_selection = get_lyd_format_autofill()
     if autofill_selection is not None:
+      print('Format autofill found')
+      print(f'Selected option: {Fore.CYAN}{options[autofill_selection]}{Style.RESET_ALL}')
       return options[autofill_selection]
     
     return inq_prompt([

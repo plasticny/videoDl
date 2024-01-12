@@ -110,8 +110,9 @@ def test_lazy_format_main(ask_format_mock:Mock):
   assert section.run(md_ls) == ['b1', 'v2']
   
 @patch('src.section.FormatSection.inq_prompt')
+@patch('src.section.FormatSection.get_lyd_format_autofill')
 @patch('src.section.FormatSection.LazyFormatSection._get_options')
-def test_lazy_format_ask_format(get_options_mock:Mock, prompt_mock:Mock):
+def test_lazy_format_ask_format(get_options_mock:Mock, autofill_mock:Mock, prompt_mock:Mock):
   """
     Test the function will return the first option if there is only one option
     without asking user
@@ -119,14 +120,24 @@ def test_lazy_format_ask_format(get_options_mock:Mock, prompt_mock:Mock):
   section = LazyFormatSection()
   prompt_mock.return_value = { 'format_option': '' }
   
+  # only one option
   get_options_mock.return_value = [LazyFormatSection.OPT_BEST_QUA]
   section._ask_format_option([])
-  assert len(prompt_mock.mock_calls) == 0
+  autofill_mock.assert_not_called()
+  prompt_mock.assert_not_called()
   
-  prompt_mock.reset_mock()
+  # === more than one option === #
   get_options_mock.return_value = [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_QUA_EFF]
+  
+  # autofill
+  autofill_mock.return_value = 0
   section._ask_format_option([])
-  assert len(prompt_mock.mock_calls) == 1
+  prompt_mock.assert_not_called()
+  
+  # multiple options
+  autofill_mock.return_value = None
+  section._ask_format_option([])
+  prompt_mock.assert_called_once()
 
 def test_lazy_format_get_options ():
   class fake_videoMd (VideoMetaData):

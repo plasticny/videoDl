@@ -49,7 +49,7 @@ class Dl:
 
   def login(self, url:str):
     """ return cookie file path """
-    return LoginSection(title='Login').run()
+    return LoginSection(title='Login').run(url)
   
   def get_metadata(self, url:str, cookie_file_path:str) -> list[VideoMetaData]:
     opt : MetaDataOpt = MetaDataOpt()

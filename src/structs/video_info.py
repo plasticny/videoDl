@@ -37,7 +37,7 @@ class Subtitle:
     self.isAuto : bool = isAuto
 
   def __str__(self):
-    return f'{self.name} {Fore.LIGHTBLACK_EX}{"(Auto gen)" if self.isAutoGen() else ""}{Style.RESET_ALL}'
+    return f'[{self.code}] {self.name} {Fore.LIGHTBLACK_EX}{"(Auto gen)" if self.isAutoGen() else ""}{Style.RESET_ALL}'
   
   def __eq__(self, __value) -> bool:
     if not hasattr(__value, 'code') or not hasattr(__value, 'isAutoGen'):

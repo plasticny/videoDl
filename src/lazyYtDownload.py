@@ -27,10 +27,6 @@ class lazyYtDownload(Dl):
       Overwirte Dl.login\n
       Only ask login if the url is from bilibili
     """
-    autofill_res = get_login_autofill(url)
-    if autofill_res is not None:
-      return autofill_res
-
     if getSource(url) == UrlSource.BILIBILI:
       return super().login(url)
     return None

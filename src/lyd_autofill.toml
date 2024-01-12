@@ -8,24 +8,31 @@ enable = false # do auto-fill login option
   # no cookie will be used if all keys are not found
   # cookie will not be used if the path is empty
   # priority from top to bottom
-  z = ''
   bilibili = ''
 
 # format
 [format]
 enable = false
 # 0: best quality, 1: quality-efficent balance
-prefered_format = 0
+prefered_format = 1
 
 # subtitle
 [subtitle]
-enable = false # do auto-fill subtitle option
-do_write_subtitle = true # do write subtitle if any subtitle is found
-sub_lang = ['en'] # prefered subtitle language, priority from left to right
-embed = true
-burn = true
+  [subtitle.do_write_subtitle]
+  enable = false # do auto-fill subtitle option
+  val = false # do write subtitle if any subtitle is found
+
+  [subtitle.sub_lang]
+  enable = false
+  val = [] # code of prefered subtitle language, priority from left to right
+
+  [subtitle.write_mode]
+  enable = false
+  embed = true
+  burn = true
 
 # download
 [download]
-enable = false # do auto-fill download option
-output_dir = ''
+  [download.output_dir]
+  enable = false # do auto-fill download option
+  val = '' # path

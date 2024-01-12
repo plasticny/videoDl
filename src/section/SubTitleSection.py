@@ -6,7 +6,9 @@ from enum import Enum
 from typing import TypedDict
 
 from src.section.Section import Section
+
 from src.service.MetaData import VideoMetaData
+from src.service.autofill import get_do_write_subtitle_autofill, get_sub_lang_autofill, get_sub_write_mode_autofill
 
 from src.structs.video_info import Subtitle
 
@@ -49,17 +51,9 @@ class SubTitleSection (Section):
         'do_embed': False,
         'do_burn': False
       }
-
-    # choose selection mode
-    if len(md_ls) == 1:
-      # if only one video, select subtitle one by one
-      selection_res = self.one_by_one_select(md_ls)
-    else:
-      # if multiple videos, choose to select in batch or one by one
-      if self.ask_selection_mode() == SelectionMode.BATCH.value:
-        selection_res = self.batch_select(sub_pos_map, len(md_ls))
-      else:
-        selection_res = self.one_by_one_select(md_ls)
+    
+    # select subtitle
+    selection_res = self.control_sub_selection(md_ls, sub_pos_map)
 
     # check if user select subtitle for any video
     if not any(selection_res):
@@ -73,7 +67,7 @@ class SubTitleSection (Section):
 
     # show selection result
     if self.ask_show_summary():
-      self.show_selection_result(selection_res)
+      self.show_selection_result(md_ls, selection_res)
 
     # select write mode
     doEmbed, doBurn = self.select_write_mode()
@@ -89,6 +83,27 @@ class SubTitleSection (Section):
       'do_burn': doBurn,
       'subtitle_ls': selection_res
     }
+
+  def control_sub_selection (self, md_ls:list[VideoMetaData], sub_pos_map:dict[Subtitle, list[int]]) -> list[Subtitle]:
+    """
+      Control the mode to select subtitle, also run the selection process
+      Return: a list of selected subtitle
+    """
+    # check if autofill
+    sub_select_autofill = get_sub_lang_autofill()
+    if sub_select_autofill is not None:
+      print(f'{Fore.GREEN}Autofill config found, subtitle is selected automatically{Style.RESET_ALL}\n')
+      return self.autofill_sub(md_ls, sub_select_autofill)
+
+    # if only one video, select one by one
+    if len(md_ls) == 1:
+      return self.one_by_one_select(md_ls)
+
+    # ask user to choose to select in batch or one by one
+    if self.ask_selection_mode() == SelectionMode.BATCH.value:
+      return self.batch_select(sub_pos_map, len(md_ls))
+    else:
+      return self.one_by_one_select(md_ls)
   
   def one_by_one_select(self, video_mds:list[VideoMetaData]) -> list[Subtitle]:
     res = []
@@ -201,6 +216,28 @@ class SubTitleSection (Section):
 
     return sub_pos_map
 
+  def autofill_sub(self, video_mds:list[VideoMetaData], config_preferred_ls:list[str]) -> list[Subtitle]:
+    """
+      Args:
+        `config_preferred_ls`: list of preferred subtitle code from config file
+    """             
+    res : list[Subtitle] = []
+    for md in video_mds:
+      available_sub : dict[str, Subtitle] = {}
+      for sub in md.subtitles:
+        available_sub[sub.code] = sub
+      for sub in md.autoSubtitles:
+        available_sub[sub.code] = sub
+      
+      selected_sub = None
+      for code in config_preferred_ls:
+        if code in available_sub:
+          selected_sub = available_sub[code]
+          break
+      res.append(selected_sub)
+
+    return res
+
   def show_selection_result(self, video_mds:list[VideoMetaData], selection_res:list[Subtitle]) -> None:
     for idx, (md, sub) in enumerate(zip(video_mds, selection_res)):
       print(f'{Fore.GREEN}Video {idx+1}/{len(video_mds)}{Style.RESET_ALL}')
@@ -215,6 +252,12 @@ class SubTitleSection (Section):
     """
       Ask user to select whether to write subtitle
     """
+    autofill = get_do_write_subtitle_autofill()
+    if autofill is not None:
+      if autofill == False:
+        print(f'{Fore.GREEN}do_write_subtitle is set False in Autofill config, subtitle will not be written{Style.RESET_ALL}\n')
+      return autofill
+    
     doWriteSub = inq_prompt([
       inq_List(
         'writeSub', message=f'{Fore.GREEN}Found subtitle(s). {Fore.CYAN}Write subtitle?{Style.RESET_ALL}', 
@@ -278,6 +321,13 @@ class SubTitleSection (Section):
       Returns:
         (do embed sub, do burn sub)
     """
+    autofill = get_sub_write_mode_autofill()
+    if autofill is not None:
+      print(f'{Fore.GREEN}Autofill config found{Style.RESET_ALL}')
+      print(f'Embed: {autofill[0]}, Burn: {autofill[1]}')
+      print()
+      return autofill[0], autofill[1]
+    
     ans = inq_prompt([
       inq_Checkbox(
         'writeMode', message=f'{Fore.CYAN}Choose the mode of writing subtitle (Space to select/deselect, Enter to confirm){Style.RESET_ALL}',

@@ -1,7 +1,9 @@
 from tkinter import filedialog as tkFileDialog
 from typing import TypedDict
+from colorama import Fore, Style
 
 from src.section.Section import Section
+from src.service.autofill import get_output_dir_autofill
 
 
 class TOutputSectionRet (TypedDict):
@@ -16,7 +18,7 @@ class OutputSection (Section):
   def __main(self, askDir:bool=True, askName:bool=True) -> TOutputSectionRet:
     if askDir:
       print('-- Output directory')
-      outputDir = self.__askOutputDir()
+      outputDir = self._ask_dir()
     else:
       outputDir = None
 
@@ -32,17 +34,21 @@ class OutputSection (Section):
     }
     return res
 
-  def __askOutputDir(self):
-    outputDir = None
-
-    while outputDir == None:  
-      dir = tkFileDialog.askdirectory()
-      if len(dir) > 0:
-        outputDir = dir
-        break
-      print('Invalid output directory, select again')
+  def _ask_dir(self):
+    autofill = get_output_dir_autofill()
+    
+    if autofill is not None:
+      print(f'{Fore.GREEN}Output directory autofilled{Style.RESET_ALL}')
+      outputDir = autofill
+    else:
+      while True:
+        dir = tkFileDialog.askdirectory()
+        if len(dir) > 0:
+          outputDir = dir
+          break
+        print('Invalid output directory, select again')
+        
     print(f"Output directory: {outputDir}")
-
     return outputDir
   
   def __askOutputName(self):

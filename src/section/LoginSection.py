@@ -3,6 +3,7 @@ from enum import Enum
 from tkinter import filedialog as tkFileDialog
 
 from src.section.Section import Section
+from src.service.autofill import get_login_autofill
 
 
 class Message(Enum):
@@ -14,14 +15,20 @@ class Message(Enum):
 
 # ask the login cookie
 class LoginSection(Section):    
-  def run(self) -> str:
+  def run(self, url:str) -> str:
     """
       Return the cookie file path if login, else return None
     """
-    return super().run(self._login)
+    return super().run(self._login, url=url)
   
-  def _login(self) -> str:    
-    doLogin = self.__askLogin()
+  def _login(self, url:str) -> str:    
+    autofill_res = get_login_autofill(url)
+    if autofill_res is not None:
+      print('Cookie found in config file')
+      print(f'Cookie path: {autofill_res}')
+      return autofill_res
+    
+    doLogin = self._askLogin()
     if not doLogin:
       print(Message.NOT_LOGIN.value)
       return None
@@ -37,6 +44,6 @@ class LoginSection(Section):
       return None
   
   # ask if login
-  def __askLogin(self) -> bool:
+  def _askLogin(self) -> bool:
     doLogin = input(Message.ASK_LOGIN.value).upper()
     return doLogin != 'N' and doLogin != ''

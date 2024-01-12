@@ -167,16 +167,6 @@ class BiliBiliPlaylistMetaData (PlaylistMetaData):
 class VideoMetaData (MetaData):
   """Video metadata"""
   @property
-  def subtitles(self) -> list[Subtitle]:
-    if self._sub is None:
-      self.getSubtitles()
-    return self._sub
-  @property
-  def autoSubtitles(self) -> list[Subtitle]:
-    if self._auto_sub is None:
-      self.getSubtitles()
-    return self._auto_sub
-  @property
   def formats(self) -> TMdFormats:
     return self._format
   
@@ -185,8 +175,8 @@ class VideoMetaData (MetaData):
 
     # subtitle
     sub, auto_sub = self._getSubtitles()
-    self._sub = sub
-    self._auto_sub = auto_sub
+    self.subtitles = sub
+    self.autoSubtitles = auto_sub
 
     # format
     self._format = self._extract_format()
