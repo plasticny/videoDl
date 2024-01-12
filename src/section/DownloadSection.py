@@ -209,7 +209,7 @@ class DownloadSection (Section) :
         YoutubeDL(opts.copy()).download([url])
         # YoutubeDL(opts.copy()).download_with_info_file(info_filename=info_path)
         break
-      except:
+      except Exception as e:
         tryCnt += 1
         if tryCnt > retry:
           raise Exception('Download failed', e)

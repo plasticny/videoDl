@@ -10,7 +10,7 @@ from uuid import uuid4
 from tests.helpers import prepare_output_folder, OUTPUT_FOLDER_PATH
 
 from src.section.DownloadSection import DownloadSection, DownloadOpt, BundledTDownloadOpt
-from src.service.fileHelper import TEMP_FOLDER_PATH
+from src.service.fileHelper import TEMP_FOLDER_PATH, perpare_temp_folder, clear_temp_folder
 from src.structs.video_info import Subtitle, BundledFormat
 
 
@@ -153,6 +153,9 @@ def test_move_temp_file():
     2. rename file correctly
     3. move file to correct folder
   """
+  perpare_temp_folder()
+  clear_temp_folder()
+  
   prepare_output_folder()
 
   # create a test file
