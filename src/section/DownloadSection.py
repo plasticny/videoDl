@@ -197,7 +197,8 @@ class DownloadSection (Section) :
       temp_name = video_name
       
     # rename and move to the output dir
-    self._move_temp_file(temp_name, out_dir=opts.output_dir, out_nm=opts.output_nm)
+    out_nm = f'{opts.output_nm}.mp4'
+    self._move_temp_file(temp_name, out_dir=opts.output_dir, out_nm=out_nm)
 
   def _download_item (self, url:str, opts:TDownloadOpt | TDlSubtitleOpt, retry:int) -> str:  
     """ Return: the name of the downloaded file """
@@ -211,7 +212,7 @@ class DownloadSection (Section) :
       except:
         tryCnt += 1
         if tryCnt > retry:
-          raise Exception('Download failed')
+          raise Exception('Download failed', e)
         print(f'Retry {tryCnt} times')
         
     # get the file full name (with extension)
@@ -284,7 +285,7 @@ class DownloadSection (Section) :
     for c in out_nm:
       output_nm += '' if c in ESCAPE_CHAR else c
     
-    dst = f'{out_dir}/{output_nm}.mp4'
+    dst = f'{out_dir}/{output_nm}'
     if exists(dst):
       remove(dst)
     rename(f'{TEMP_FOLDER_PATH}/{temp_nm}', dst)

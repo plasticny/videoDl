@@ -92,19 +92,21 @@ def test_main_flow(
   assert download_calls[1] == call('url', ret_sub_opt, 0)
   assert len(merge_mock.mock_calls) == 1
 
-@patch('src.section.DownloadSection.YoutubeDL.download')
-def test_download_item (download_mock:Mock):
+@patch('src.section.DownloadSection.YoutubeDL')
+def test_download_item (ytdl_mock:Mock):
   """ test the function return the file full name """
+  class fake_ytdlp ():
+    def __init__(self, *args, **kwargs):
+      pass
+    def download(self, *args):
+      open(f'{OUTPUT_FOLDER_PATH}/{temp_nm}.mp4', 'w')
+  ytdl_mock.side_effect = fake_ytdlp
+  
   temp_nm = uuid4().__str__()
   fake_opts = {
     'paths': { 'home': OUTPUT_FOLDER_PATH },
     'outtmpl': f'{temp_nm}.%(ext)s'
   }
-  
-  def fake_download (*args):
-    with open(f'{OUTPUT_FOLDER_PATH}/{temp_nm}.mp4', 'w'):
-      pass
-  download_mock.side_effect = fake_download
   
   ret_name =  DownloadSection()._download_item('url', fake_opts, retry=0)
   assert ret_name == f'{temp_nm}.mp4'
@@ -155,8 +157,7 @@ def test_move_temp_file():
 
   # create a test file
   temp_nm = f'{uuid4().__str__()}'
-  with open(f'{TEMP_FOLDER_PATH}\\{temp_nm}', 'w'):
-    pass
+  open(f'{TEMP_FOLDER_PATH}/{temp_nm}', 'w')
 
   out_nm = '"*:<>?|test'
   expected_name = 'test'
@@ -165,8 +166,8 @@ def test_move_temp_file():
     out_dir=OUTPUT_FOLDER_PATH, out_nm=out_nm
   )
 
-  assert not exists(f'{OUTPUT_FOLDER_PATH}\\{temp_nm}')
-  assert exists(f'{OUTPUT_FOLDER_PATH}\\{expected_name}.mp4')
+  assert not exists(f'{OUTPUT_FOLDER_PATH}/{temp_nm}')
+  assert exists(f'{OUTPUT_FOLDER_PATH}/{expected_name}')
 
 
 # ========== Download option ========== #
