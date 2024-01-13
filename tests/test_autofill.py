@@ -3,7 +3,7 @@ from src.service.autofill import *
 
 from unittest.mock import patch
 
-def test_get_login_autofill_not_enable ():
+def test_get_login_autofill ():
   fake_config = {
     'login': {
       'enable': False,
@@ -136,3 +136,12 @@ def test_get_output_dir_autofill ():
   fake_config['download']['output_dir']['val'] = 'value'
   with patch.object(autofill, 'lyd_autofill_config', fake_config):
     assert get_output_dir_autofill() == 'value'
+
+def test_all_disabled ():
+  """ Check if all autofill is disabled before upload to git """
+  assert get_login_autofill('url') is None
+  assert get_lyd_format_autofill() is None
+  assert get_do_write_subtitle_autofill() is None
+  assert get_sub_lang_autofill() is None
+  assert get_sub_write_mode_autofill() is None
+  assert get_output_dir_autofill() is None
