@@ -66,8 +66,8 @@ class SubTitleSection (Section):
       }
 
     # show selection result
-    if self.ask_show_summary():
-      self.show_selection_result(md_ls, selection_res)
+    # if self.ask_show_summary():
+    #   self.show_selection_result(md_ls, selection_res)
 
     # select write mode
     doEmbed, doBurn = self.select_write_mode()
