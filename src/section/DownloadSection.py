@@ -7,7 +7,7 @@ from os.path import exists
 
 from src.section.Section import Section
 
-from src.service.fileHelper import TEMP_FOLDER_PATH
+from src.service.fileHelper import TEMP_FOLDER_PATH, FFMPEG_FOLDER_PATH
 
 from src.structs.option import IOpt, TOpt
 from src.structs.video_info import Subtitle, BundledFormat
@@ -228,7 +228,7 @@ class DownloadSection (Section) :
       self,
       video_path:str, audio_path:str, subtitle_path:str,
       do_embed_sub:bool=False, do_burn_sub:bool=False,
-      ffmpeg_location:str='ffmpeg', quiet:bool=False
+      ffmpeg_location:str=FFMPEG_FOLDER_PATH, quiet:bool=False
     ):
     """
       Merge video, audio and subtitles\n      
@@ -263,7 +263,8 @@ class DownloadSection (Section) :
         kwargs['scodec'] = 'mov_text'
       # burn subtitle
       if do_burn_sub:
-        kwargs['vf'] = f"subtitles='{subtitle_path}':'force_style=Fontsize=12\,MarginV=3'"
+        sub_path = subtitle_path.replace('\\', '/').replace(':', '\\:')
+        kwargs['vf'] = f"subtitles='{sub_path}':'force_style=Fontsize=12\,MarginV=3'"
         # when use filter, vcodec and acodec must be specified
         kwargs['vcodec'] = 'libx264'
         kwargs['acodec'] = 'aac'

@@ -1,10 +1,17 @@
-from os.path import exists
-from os import mkdir, remove, listdir
+from os.path import exists, dirname, abspath
+from os import mkdir, remove, listdir, environ
 
-"""
-folder for storing temp file when downlaoding
-"""
-TEMP_FOLDER_PATH = 'temp'
+ENV = environ['RUNTIME_ENV'] if 'RUNTIME_ENV' in environ else 'dev'
+
+if ENV == 'dev':
+  ROOT_PATH = dirname(abspath(__file__)).split('\service')[0]
+  TEMP_FOLDER_PATH = f'{ROOT_PATH}/../temp'
+elif ENV == 'prod':
+  ROOT_PATH = dirname(abspath(__file__)).split('\src')[0]
+  TEMP_FOLDER_PATH = f'{ROOT_PATH}/temp'
+  
+LYD_AUTOFILL_TOML_PATH = f'{ROOT_PATH}/lyd_autofill.toml'
+FFMPEG_FOLDER_PATH = f'{ROOT_PATH}/ffmpeg'
 
 def perpare_temp_folder():
   """

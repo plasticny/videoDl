@@ -2,9 +2,6 @@ from sys import path
 from pathlib import Path
 path.append(Path('.').resolve().as_posix())
 
-import src.service.packageChecker as packageChecker
-packageChecker.check()
-
 from src.section.Section import Section, HeaderType
 from src.section.UrlSection import UrlSection
 from src.section.LoginSection import LoginSection
@@ -19,9 +16,12 @@ from src.service.fileHelper import perpare_temp_folder, clear_temp_folder
 
 
 class Dl:
+  def __init__ (self):
+    self.title = 'Download'
+  
   # main process
   def run (self, loop=True):    
-    print(f"----------------- Download -----------------", end='\n\n')
+    print(f"----------------- {self.title} -----------------", end='\n\n')
 
     perpare_temp_folder()
 

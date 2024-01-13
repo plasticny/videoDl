@@ -1,6 +1,7 @@
 from toml import load as toml_load
-from os import getcwd
 from typing import TypedDict
+
+from src.service.fileHelper import LYD_AUTOFILL_TOML_PATH
 
 
 class TLoginConfig(TypedDict):
@@ -39,7 +40,7 @@ class TLydAutofillConfig(TypedDict):
   download: TDownloadConfig
 
 
-with open(f'{getcwd()}/src/lyd_autofill.toml', 'r') as f:
+with open(LYD_AUTOFILL_TOML_PATH, 'r') as f:
   lyd_autofill_config : TLydAutofillConfig = toml_load(f)
 
 

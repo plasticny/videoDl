@@ -2,17 +2,13 @@ from sys import path
 from pathlib import Path
 path.append(Path('.').resolve().as_posix())
 
-import src.service.packageChecker as packageChecker
-packageChecker.check()
-
 from src.service.urlHelper import getSource, UrlSource
 from src.service.MetaData import VideoMetaData
-from src.service.autofill import get_login_autofill
 
 from src.section.Section import HeaderType
 from src.section.DownloadSection import DownloadOpt
 from src.section.SubTitleSection import SubTitleSection
-from src.section.OutputSection import OutputSection
+from src.section.OutputSection import OutputSection 
 from src.section.FormatSection import LazyFormatSection
 
 from src.dl import Dl
