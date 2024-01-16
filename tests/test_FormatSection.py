@@ -9,7 +9,7 @@ from src.service.MetaData import VideoMetaData
 from src.structs.video_info import BundledFormat
 
 @patch('builtins.input')
-def test_with_auto_format(input_mock:Mock):
+def test_format(input_mock:Mock):
   section = FormatSection()
 
   input_mock.return_value = 'auto'
@@ -17,6 +17,9 @@ def test_with_auto_format(input_mock:Mock):
 
   input_mock.return_value = ''
   assert section.run() == 'mp4'
+  
+  input_mock.return_value = 'avc'
+  assert section.run() == 'avc'
 
 @patch('src.section.FormatSection.LazyFormatSection._ask_format_option')
 def test_lazy_format_main(ask_format_mock:Mock):

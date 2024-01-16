@@ -4,7 +4,7 @@
 a = Analysis(
     ['src\\lazyYtDownload.py'],
     pathex=['src'],
-    binaries=[('src\\ffmpeg', 'ffmpeg')],
+    binaries=[('src\\ffmpeg', '.')],
     datas=[('src\\lyd_autofill.toml', '.')],
     hiddenimports=[],
     hookspath=[],
