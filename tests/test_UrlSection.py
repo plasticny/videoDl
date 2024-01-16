@@ -1,6 +1,3 @@
-from sys import path as sys_path
-sys_path.append('src')
-
 from unittest.mock import patch, call
 
 from src.section.UrlSection import UrlSection, Message

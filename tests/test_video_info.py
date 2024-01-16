@@ -1,4 +1,4 @@
-from src.service.structs import *
+from src.structs.video_info import Subtitle, BiliBiliSubtitle
 
 def test_subtitle():
   """Test subtitle structure"""

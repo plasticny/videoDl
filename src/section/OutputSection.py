@@ -1,53 +1,56 @@
-from enum import Enum
-import sys
-import tkinter.filedialog as tkFileDialog
+from tkinter import filedialog as tkFileDialog
+from typing import TypedDict
+from colorama import Fore, Style
 
-from section.Section import Section
-from service.YtDlpHelper import Opts
+from src.section.Section import Section
+from src.service.autofill import get_output_dir_autofill
 
-class Message(Enum):
-  DIR_SECTION_TITLE = '-- Output directory'
-  NAME_SECTION_TITLE = '-- Output file name'
 
-  INVALID_DIR = 'Invalid output directory, select again'
-  OUT_DIR = 'Output directory: '
+class TOutputSectionRet (TypedDict):
+  dir: str
+  name: str
 
-  ENTER_NAME = 'Enter the output file name: (auto) '
 
 class OutputSection (Section):
-  def run(self, opts_ls:list[Opts], askDir:bool=True, askName:bool=True) -> list[Opts]:
-    cp_opts_ls = [opts.copy() for opts in opts_ls]
-    return super().run(self.__main, opts_ls=cp_opts_ls, askDir=askDir, askName=askName)
+  def run(self, askDir:bool=True, askName:bool=True) -> TOutputSectionRet:
+    return super().run(self.__main, askDir=askDir, askName=askName)
   
-  def __main(self, opts_ls:list[Opts], askDir:bool=True, askName:bool=True) -> list[Opts]:
+  def __main(self, askDir:bool=True, askName:bool=True) -> TOutputSectionRet:
     if askDir:
-      print(Message.DIR_SECTION_TITLE.value)
-      outputDir = self.__askOutputDir()
-      for opts in opts_ls:
-        opts.outputDir = outputDir
+      print('-- Output directory')
+      outputDir = self._ask_dir()
+    else:
+      outputDir = None
 
     if askName:
-      print(Message.NAME_SECTION_TITLE.value)
+      print('-- Output file name')
       outputName = self.__askOutputName()
-      for opts in opts_ls:
-        opts.outputName = outputName
+    else:
+      outputName = None
 
-    return opts_ls
+    res : TOutputSectionRet = {
+      'dir': outputDir,
+      'name': outputName
+    }
+    return res
 
-  def __askOutputDir(self):
-    outputDir = None
-
-    while outputDir == None:  
-      dir = tkFileDialog.askdirectory()
-      if len(dir) > 0:
-        outputDir = dir
-        break
-      print(Message.INVALID_DIR.value)
-    print(f"{Message.OUT_DIR.value} {outputDir}")
-
+  def _ask_dir(self):
+    autofill = get_output_dir_autofill()
+    
+    if autofill is not None:
+      print(f'{Fore.GREEN}Output directory autofilled{Style.RESET_ALL}')
+      outputDir = autofill
+    else:
+      while True:
+        dir = tkFileDialog.askdirectory()
+        if len(dir) > 0:
+          outputDir = dir
+          break
+        print('Invalid output directory, select again')
+        
+    print(f"Output directory: {outputDir}")
     return outputDir
   
-  def __askOutputName(self) -> str:
-    sys.stdout.flush()
-    outputName = input(Message.ENTER_NAME.value)
+  def __askOutputName(self):
+    outputName = input('Enter the output file name: (auto) ')
     return outputName if outputName != '' else None

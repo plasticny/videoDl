@@ -1,6 +1,3 @@
-from sys import path as sysPath
-sysPath.append('src')
-
 from unittest.mock import patch, Mock
 
 from src.service.bilibili import get_bili_page_cids, get_bili_subs
@@ -36,7 +33,7 @@ def test_fetch_bili_page_subtitle():
 @patch('src.service.bilibili.json_loads')
 @patch('src.service.bilibili.build_opener')
 @patch('src.service.bilibili.load_cookies')
-def test_bili_fetch_failed(_, build_opener_mock : Mock, json_loads_mock : Mock):
+def test_bili_fetch_sub_failed(_, build_opener_mock : Mock, json_loads_mock : Mock):
   """Test the code will return empty list when fetch failed"""
   def fake_build_opener(*args, **kwargs):
     class FakeResponse:

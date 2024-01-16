@@ -9,3 +9,6 @@ def prepare_output_folder ():
   
   for file in listdir(OUTPUT_FOLDER_PATH):
     remove(f'tests/testFiles/output/{file}')
+
+def get_module_full_path (module):
+  return f'{module.__module__}.{module.__name__}'

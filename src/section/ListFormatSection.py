@@ -1,26 +1,30 @@
 from yt_dlp import YoutubeDL
 
-from enum import Enum
+from src.section.Section import Section
 
-from section.Section import Section
-from service.YtDlpHelper import Opts
+from src.structs.option import IOpt, TOpt
 
-class VALUE(Enum):
-  IN_NOT_LIST = 'N'
-  IN_EMPTY = ''
 
-class Message(Enum):
-  ASK_DO_LIST = 'List available format?(N) '
+class TListFormatOpt (TOpt):
+  skip_download : bool
+  listformats: bool
 
-class ListFormatSection (Section):    
-  def run(self, url:str, opts:Opts=Opts()) -> None:
-    return super().run(self.__listFormat, url=url, opts=opts.copy())
-  
-  def __listFormat (self, url:str, opts:Opts):
-    doList = input(Message.ASK_DO_LIST.value).upper()
-    if doList==VALUE.IN_NOT_LIST.value or doList==VALUE.IN_EMPTY.value:
+
+class ListFormatSection (Section):
+  def run(self, opts:IOpt) -> None:
+    return super().run(self._listFormat, opts=opts.copy())
+
+  def _listFormat (self, opts:IOpt):
+    doList = input('List available format?(N) ').upper()
+    if doList == 'N' or doList == '':
       return
 
-    opts.skip_download = True
-    opts.listFormats = True
-    YoutubeDL(params=opts.toParams()).download([url])
+    YoutubeDL(self._to_ytdlp_opt(opts)).download([opts.url])
+    
+  def _to_ytdlp_opt (self, opts:IOpt) -> TListFormatOpt:
+    res : TListFormatOpt = {
+      **IOpt.to_ytdlp_opt(opts),
+      'skip_download': True,
+      'listformats': True
+    }
+    return res

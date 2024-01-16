@@ -6,13 +6,11 @@ from json import loads as json_loads
 from yt_dlp.cookies import load_cookies
 from http.client import HTTPResponse
 from colorama import Fore, Style
-from requests import Session
 
-from service.structs import Subtitle, BiliBiliSubtitle
-from service.YtDlpHelper import Opts
+from src.structs.video_info import Subtitle, BiliBiliSubtitle
 
-# === Info fetcher === #
-def get_bili_page_cids(bvid:str, opts:Opts=Opts()) -> list[str]:
+
+def get_bili_page_cids(bvid:str, cookie_file_path : str = None) -> list[str]:
   """
     Get all cids of page in a bilibili page list
 
@@ -23,13 +21,12 @@ def get_bili_page_cids(bvid:str, opts:Opts=Opts()) -> list[str]:
     Returns:
       list[int]: cids
   """
-  cookiejar = load_cookies(opts.cookieFile, None, None)
+  cookiejar = load_cookies(cookie_file_path, None, None)
   opener = build_opener(HTTPCookieProcessor(cookiejar))
   res : HTTPResponse = opener.open(f'https://api.bilibili.com/x/player/pagelist?bvid={bvid}')
   json = json_loads(res.read().decode('utf-8'))
 
   if json['code'] != 0:
-    # if error
     print(f'{Fore.RED}[Get page cids] Bilibili fetcher error: return code != 0, bvid={bvid}{Style.RESET_ALL}')
     return []
   
@@ -50,13 +47,12 @@ def bvid_2_aid(bvid:str) -> str:
   json = json_loads(res.read().decode('utf-8'))
 
   if json['code'] != 0:
-    # if error
     print(f'{Fore.RED}[bvid to aid] Bilibili fetcher error: return code != 0, bvid={bvid}{Style.RESET_ALL}')
     return ''
   
   return json['data']['aid']
 
-def get_bili_subs(bvid:str, opts:Opts=Opts(), cid:int=None) -> tuple[list[Subtitle], list[Subtitle]]:
+def get_bili_subs(bvid:str, cid:int=None, cookie_file_path : str = None) -> tuple[list[Subtitle], list[Subtitle]]:
   """
     Get subtitles from bilibili
 
@@ -72,13 +68,12 @@ def get_bili_subs(bvid:str, opts:Opts=Opts(), cid:int=None) -> tuple[list[Subtit
   if cid is not None:
     req_url += f'&cid={cid}'
 
-  cookiejar = load_cookies(opts.cookieFile, None, None)
+  cookiejar = load_cookies(cookie_file_path, None, None)
   opener = build_opener(HTTPCookieProcessor(cookiejar))
   res : HTTPResponse = opener.open(req_url)
   json = json_loads(res.read().decode('utf-8'))
 
   if json['code'] != 0:
-    # if error
     print(f'{Fore.RED}Bilibili fetcher error: return code != 0, bvid={bvid}{Style.RESET_ALL}')
     return ([], [])
   
@@ -92,4 +87,3 @@ def get_bili_subs(bvid:str, opts:Opts=Opts(), cid:int=None) -> tuple[list[Subtit
       auto_sub.append(sub_obj)
 
   return (sub, auto_sub)
-# === Info fetcher === #

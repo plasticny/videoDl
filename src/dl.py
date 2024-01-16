@@ -1,95 +1,106 @@
-import service.packageChecker as packageChecker
-packageChecker.check()
+from sys import path
+from pathlib import Path
+path.append(Path('.').resolve().as_posix())
 
-from section.Section import Section, HeaderType
-from section.UrlSection import UrlSection
-from section.LoginSection import LoginSection
-from section.ListFormatSection import ListFormatSection
-from section.DownloadSection import DownloadSection
-from section.SubTitleSection import SubTitleSection
-from section.FormatSection import FormatSection
-from section.OutputSection import OutputSection
+from src.section.Section import Section, HeaderType
+from src.section.UrlSection import UrlSection
+from src.section.LoginSection import LoginSection
+from src.section.ListFormatSection import ListFormatSection
+from src.section.DownloadSection import DownloadSection, DownloadOpt
+from src.section.SubTitleSection import SubTitleSection
+from src.section.FormatSection import FormatSection
+from src.section.OutputSection import OutputSection
 
-from service.YtDlpHelper import Opts
-from service.MetaData import fetchMetaData, VideoMetaData
-from service.fileHelper import perpare_temp_folder, clear_temp_folder
+from src.service.MetaData import fetchMetaData, VideoMetaData, MetaDataOpt
+from src.service.fileHelper import perpare_temp_folder, clear_temp_folder
+
 
 class Dl:
   def __init__ (self):
     self.title = 'Download'
   
   # main process
-  def run (self, loop=True):
+  def run (self, loop=True):    
     print(f"----------------- {self.title} -----------------", end='\n\n')
-    
+
     perpare_temp_folder()
 
     while True:
-      # ask url
-      url = UrlSection(title='Url').run()
-                            
-      # ask Login
-      temp_opts : Opts = self.login(url, Opts())
+      URL = UrlSection(title='Url').run()
+      COOKIE_FILE_PATH = self.login(URL)
 
-      # fetch metadata
-      print('Getting download informaton...', end='\n\n')
-      md = fetchMetaData(url, temp_opts)
-      
-      # get video metadata list
-      videos_md : list[VideoMetaData] = md.videos if md.isPlaylist() else [md]
-      # prepare opts list
-      opts_ls : list[Opts] = [temp_opts.copy() for _ in range(len(videos_md))]
+      md_ls = self.get_metadata(URL, COOKIE_FILE_PATH)
 
-      # set up download
       # subtitle, format, output dir
-      opts_ls:list[Opts] = Section(title='Set up download').run(self.setup, md=md, opts_ls=opts_ls)
-                                        
+      opts_ls : list[DownloadOpt] = Section(title='Set up download').run(self.setup, md_ls=md_ls)
+
       # download
-      assert len(videos_md) == len(opts_ls)
-      for idx, (md, opts) in enumerate(zip(videos_md, opts_ls)):
+      assert len(md_ls) == len(opts_ls)
+      for idx, opts in enumerate(opts_ls):
         try:
-          Section(title=f'Download video {idx+1} of {len(videos_md)}').run(
-            self.download, opts=opts, md=md
+          Section(title=f'Download video {idx+1} of {len(opts_ls)}').run(
+            DownloadSection(doShowHeader=False).run, opts=opts
           )
         finally:
           clear_temp_folder()
 
       if not loop:
         break
-      
-  def login(self, url, opts):
-    return LoginSection(title='Login').run(opts)
+
+  def login(self, url:str):
+    """ return cookie file path """
+    return LoginSection(title='Login').run(url)
   
-  def setup(self, md:VideoMetaData, opts_ls:list[Opts]) -> list[Opts]:
+  def get_metadata(self, url:str, cookie_file_path:str) -> list[VideoMetaData]:
+    opt : MetaDataOpt = MetaDataOpt()
+    opt.url = url
+    opt.cookie_file_path = cookie_file_path
+    
+    print('Getting download informaton...', end='\n\n')      
+    md = fetchMetaData(opt)
+    
+    # get video metadata list
+    return md.videos if md.isPlaylist() else [md]
+  
+  def setup(self, md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
+    opt_ls = [DownloadOpt(md.opts) for md in md_ls]
+        
     # list format
-    ListFormatSection(title='List Format', headerType=HeaderType.SUB_HEADER).run(md.url, opts_ls[0])
+    ListFormatSection(title='List Format', headerType=HeaderType.SUB_HEADER).run(opt_ls[0])
 
     # format
-    temp_opts = FormatSection(
+    selected_format = FormatSection(
       title='Format',
       headerType=HeaderType.SUB_HEADER
-    ).run(opts_ls[0])
-    
-    for opts in opts_ls:
-      opts.format = temp_opts.format
+    ).run()
     
     # subtitle
-    opts_ls = SubTitleSection(
+    selected_sub_ret = SubTitleSection(
       title='Subtitle',
       headerType=HeaderType.SUB_HEADER
-    ).run(md, opts_ls=opts_ls)
+    ).run(md_ls)
 
     # output dir
-    opts_ls = OutputSection(
+    output_dir = OutputSection(
       title='Output',
       doShowFooter=False,
       headerType=HeaderType.SUB_HEADER
-    ).run(opts_ls=opts_ls, askName=False)
+    ).run(askName=False)['dir']
+    
+    # assign options
+    for idx, opt in enumerate(opt_ls):
+      opt.set_format(selected_format)
+      opt.set_subtitle(
+        selected_sub_ret['subtitle_ls'][idx],
+        selected_sub_ret['do_embed'],
+        selected_sub_ret['do_burn']
+      )
+      opt.output_dir = output_dir
+      opt.output_nm = md_ls[idx].title
 
-    return opts_ls
+    return opt_ls
 
-  def download(self, opts:Opts, md:VideoMetaData):
-    DownloadSection(doShowHeader=False).run(md.url, opts)
 
+""" Entry """
 if __name__ == "__main__":
   Dl().run()

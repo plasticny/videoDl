@@ -1,7 +1,7 @@
 from enum import Enum
 
-from section.Section import Section
-from service.urlHelper import isValid, removeSurplusParam, getSource, UrlSource
+from src.section.Section import Section
+from src.service.urlHelper import isValid, removeSurplusParam, getSource, UrlSource
 
 class Message(Enum):
   INPUT_URL = 'Enter the url: '
