@@ -4,11 +4,20 @@
 from urllib.request import build_opener, HTTPCookieProcessor
 from json import loads as json_loads
 from yt_dlp.cookies import load_cookies
-from http.client import HTTPResponse
 from colorama import Fore, Style
 
 from src.structs.video_info import Subtitle, BiliBiliSubtitle
 
+def _fetch (url : str, cookie_file_path : str = None) -> dict:
+  """ Return fetch result in json format """
+  cookiejar = load_cookies(cookie_file_path, None, None)
+  
+  opener = build_opener(HTTPCookieProcessor(cookiejar))
+  opener.addheaders = [
+    ('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ')
+  ]
+    
+  return json_loads(opener.open(url).read().decode('utf-8'))
 
 def get_bili_page_cids(bvid:str, cookie_file_path : str = None) -> list[str]:
   """
@@ -21,10 +30,10 @@ def get_bili_page_cids(bvid:str, cookie_file_path : str = None) -> list[str]:
     Returns:
       list[int]: cids
   """
-  cookiejar = load_cookies(cookie_file_path, None, None)
-  opener = build_opener(HTTPCookieProcessor(cookiejar))
-  res : HTTPResponse = opener.open(f'https://api.bilibili.com/x/player/pagelist?bvid={bvid}')
-  json = json_loads(res.read().decode('utf-8'))
+  json = _fetch(
+    f'https://api.bilibili.com/x/player/pagelist?bvid={bvid}',
+    cookie_file_path
+  )
 
   if json['code'] != 0:
     print(f'{Fore.RED}[Get page cids] Bilibili fetcher error: return code != 0, bvid={bvid}{Style.RESET_ALL}')
@@ -43,8 +52,7 @@ def bvid_2_aid(bvid:str) -> str:
     Returns:
       str: aid
   """
-  res : HTTPResponse = build_opener().open(f'https://api.bilibili.com/x/web-interface/view?bvid={bvid}')
-  json = json_loads(res.read().decode('utf-8'))
+  json = _fetch(f'https://api.bilibili.com/x/web-interface/view?bvid={bvid}')
 
   if json['code'] != 0:
     print(f'{Fore.RED}[bvid to aid] Bilibili fetcher error: return code != 0, bvid={bvid}{Style.RESET_ALL}')
@@ -68,10 +76,7 @@ def get_bili_subs(bvid:str, cid:int=None, cookie_file_path : str = None) -> tupl
   if cid is not None:
     req_url += f'&cid={cid}'
 
-  cookiejar = load_cookies(cookie_file_path, None, None)
-  opener = build_opener(HTTPCookieProcessor(cookiejar))
-  res : HTTPResponse = opener.open(req_url)
-  json = json_loads(res.read().decode('utf-8'))
+  json = _fetch(req_url, cookie_file_path)
 
   if json['code'] != 0:
     print(f'{Fore.RED}Bilibili fetcher error: return code != 0, bvid={bvid}{Style.RESET_ALL}')
