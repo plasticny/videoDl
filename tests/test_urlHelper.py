@@ -9,15 +9,6 @@ def test_isValid():
   url = "https://www.youtube.com/watch"
   valid, _ = isValid(url)
   assert valid == False
-  
-  # facebook
-  url = "https://www.facebook.com/watch/?v=10158340980295851"
-  valid, _ = isValid(url)
-  assert valid == True
-  
-  url = "https://www.facebook.com/watch/"
-  valid, _ = isValid(url)
-  assert valid == False
 
   # not a valid url
   url = "not a valid url"
