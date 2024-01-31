@@ -57,7 +57,7 @@ def isValid (url : str) -> (bool, str):
     return False, ErrMessage.INVALID_URL.value
            
   source = getSource(url)
-  if source is UrlSource.YOUTUBE or source is UrlSource.FACEBOOK:
+  if source is UrlSource.YOUTUBE:
     if 'v' not in parse_qs(urlparse(url).query):
       return False, ErrMessage.MISSING_PARAM.value.format('v')
   elif source is UrlSource.PORNHUB:
