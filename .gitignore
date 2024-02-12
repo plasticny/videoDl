@@ -1,5 +1,5 @@
 /cookie/*
-!/cookie/readme.txt
+!/cookie/readme.md
 
 __pycache__
 /src/model
