@@ -45,15 +45,19 @@ def fetchMetaData(opts:MetaDataOpt) -> MetaData:
   metadata = ytdlp_extract_metadata(opts)
   
   # instantiate the metadata
-  is_bilibili = getSource(opts.url) is UrlSource.BILIBILI
+  source = getSource(opts.url)
   if metadata['_type'] == 'playlist':
-    if is_bilibili:
+    if source is UrlSource.BILIBILI:
       return BiliBiliPlaylistMetaData(metadata, opts)
     else:
       return PlaylistMetaData(metadata, opts)
   else:
-    if is_bilibili:
+    if source is UrlSource.BILIBILI:
       return BiliBiliVideoMetaData(metadata, opts)
+    elif source is UrlSource.FACEBOOK:
+      return FacebookVideoMetaData(metadata, opts)
+    elif source is UrlSource.IG:
+      return IGVideoMetaData(metadata, opts)
     else:
       return VideoMetaData(metadata, opts)
     
@@ -195,6 +199,9 @@ class VideoMetaData (MetaData):
           res.append(Subtitle(code, code, isAuto))
       return res
     
+    if 'subtitles' not in self.metadata.keys():
+      return [], []
+    
     sub = __restruct_sub_info(self.metadata['subtitles'])
     if 'automatic_captions' in self.metadata.keys():
       auto_sub = __restruct_sub_info(self.metadata['automatic_captions'], True)
@@ -276,4 +283,42 @@ class BiliBiliVideoMetaData (VideoMetaData):
 
   def _getSubtitles(self) -> None:
     return get_bili_subs(self.bvid, self.cid, self.opts.cookie_file_path)
+
+class FacebookVideoMetaData (VideoMetaData):
+  def _extract_format(self) -> TMdFormats:
+    formats = super()._extract_format()
+    
+    all_format_id = [f['format_id'] for f in self.metadata['formats']]
+    for id in ['hd', 'sd']:
+      if id not in all_format_id:
+        continue
+      # not append to video and audio because it is hard to esitmate the tbr
+      formats['both'].append({
+        'format_id': id,
+        'audio': { 'codec': 'avc', 'ext': 'avc' },
+        'video': { 'codec': 'aac', 'ext': 'aac' }
+      })
+    
+    return formats
+  
+class IGVideoMetaData (VideoMetaData):
+  def _extract_format(self) -> TMdFormats:
+    def __compare(a, b):
+      a_res = a['height'] * a['width']
+      b_res = b['height'] * b['width']
+      return b_res - a_res
+    
+    sorted_raw_formats = sorted(self.metadata['formats'], key=cmp_to_key(__compare))
+    
+    formats : TMdFormats = {
+      'audio': [], 'video': [],
+      'both': [{
+        'format_id': f['format_id'],
+        'audio': { 'codec': 'aac', 'ext': 'aac' },
+        'video': { 'codec': 'mp4', 'ext': 'mp4' }
+      } for f in sorted_raw_formats]
+    }
+    assert len(formats['both']) > 0  
+    
+    return formats
 # ========================== End Video ========================= #

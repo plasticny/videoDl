@@ -15,7 +15,7 @@ class FormatSection (Section):
   
   def __main(self) -> str:
     fo = input('Enter the format:(auto) ').lower()
-    return 'mp4' if fo == '' or 'auto' else fo
+    return 'mp4' if fo == '' or fo == 'auto' else fo
 
 
 # ============== lazy format selection ============== #
@@ -77,13 +77,19 @@ class LazyFormatSection (Section):
     ])['format_option']
     
   def _get_options(self, md_ls:list[VideoMetaData]) -> [str]:
+    option_best_avaialble = True
     option_both_available = True
     for md in md_ls:
+      if not option_both_available and not option_best_avaialble:
+        break
+      if len(md.formats['video']) == 0:
+        option_best_avaialble = False
       if len(md.formats['both']) == 0:
         option_both_available = False
-        break
 
-    options = [self.OPT_BEST_QUA]
+    options = []
+    if option_best_avaialble:
+      options.append(self.OPT_BEST_QUA)
     if option_both_available:
       options.append(self.OPT_QUA_EFF)
     return options

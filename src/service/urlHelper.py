@@ -8,12 +8,16 @@ class UrlSource (Enum):
   YOUTU_BE = 1
   BILIBILI = 2
   PORNHUB = 3
+  FACEBOOK = 4
+  IG = 5
 
 class SourcePrefix (Enum):
   YOUTUBE = ['www.youtube.com']
   YOUTU_BE = ['youtu.be']
   BILIBILI = ['www.bilibili.com/video/']
   PORNHUB = ['pornhub.com/view_video.php']
+  FACEBOOK = ['www.facebook.com'] 
+  IG = ['www.instagram.com']
 
 # error message
 class ErrMessage (Enum):
@@ -28,17 +32,18 @@ def getSource (url : str) -> UrlSource:
         return True
     return False
 
-  # 'youtube' url
   if __check(url, SourcePrefix.YOUTUBE):
     return UrlSource.YOUTUBE
-  # 'youtu.be' url
   elif __check(url, SourcePrefix.YOUTU_BE):
     return UrlSource.YOUTU_BE
-  # 'www.bilibili.com/video' url
   elif __check(url, SourcePrefix.BILIBILI):
     return UrlSource.BILIBILI
   elif __check(url, SourcePrefix.PORNHUB):
     return UrlSource.PORNHUB
+  elif __check(url, SourcePrefix.FACEBOOK):
+    return UrlSource.FACEBOOK
+  elif __check(url, SourcePrefix.IG):
+    return UrlSource.IG
   
   return UrlSource.NOT_DEFINED
 
@@ -52,7 +57,6 @@ def isValid (url : str) -> (bool, str):
     return False, ErrMessage.INVALID_URL.value
            
   source = getSource(url)
-  # for 'www.youtube.com' url, check if it contain query 'v'
   if source is UrlSource.YOUTUBE:
     if 'v' not in parse_qs(urlparse(url).query):
       return False, ErrMessage.MISSING_PARAM.value.format('v')
@@ -82,13 +86,11 @@ def removeSurplusParam (url : str) -> str:
 
   urlSource = getSource(url)
 
-  # youtube
-  if urlSource == UrlSource.YOUTUBE:
+  if urlSource is UrlSource.YOUTUBE or urlSource is UrlSource.FACEBOOK:
     return keepQuery(url, ['v'])
-  # bilibili
-  elif urlSource == UrlSource.BILIBILI:
+  elif urlSource is UrlSource.BILIBILI:
     return keepQuery(url, ['p'])
-  elif urlSource == UrlSource.PORNHUB:
+  elif urlSource is UrlSource.PORNHUB:
     return keepQuery(url, ['viewkey'])
   
   return url
