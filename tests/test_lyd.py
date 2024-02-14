@@ -19,16 +19,22 @@ from src.structs.video_info import Subtitle
 # test login function
 @patch('src.dl.LoginSection.run')
 def test_login(login_mock:Mock):
-  lyd = lazyYtDownload()
-
-  # test other
-  lyd.login('other')
-  login_mock.assert_not_called()
-
-  # test bilibili
-  login_mock.reset_mock()
-  lyd.login('www.bilibili.com/video/BV1QK4y1d7dQ')
-  login_mock.assert_called_once()
+  # [(url, expected do login called)]
+  case_ls : list[tuple[str, bool]] = [
+    ('https://www.youtube.com/watch?v=JMu9kdGHU3A', False),
+    ('https://www.bilibili.com/video/BV1QK4y1d7dQ', True),
+    ('other', False)
+  ]
+  
+  for case in case_ls:
+    print('testing', case)
+    case_url, expected_login_called = case
+    
+    login_mock.reset_mock()
+    
+    lazyYtDownload().login(case_url)
+    
+    assert login_mock.called == expected_login_called
 
 @patch('src.lazyYtDownload.OutputSection.run')
 @patch('src.lazyYtDownload.SubTitleSection.run')

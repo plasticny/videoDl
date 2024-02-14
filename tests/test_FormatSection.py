@@ -3,6 +3,7 @@ from pathlib import Path
 path.append(Path('..').resolve().as_posix())
 
 from unittest.mock import patch, Mock
+from typing_extensions import Union
 
 from src.section.FormatSection import FormatSection, LazyFormatSection
 from src.service.MetaData import VideoMetaData
@@ -10,107 +11,68 @@ from src.structs.video_info import BundledFormat
 
 @patch('builtins.input')
 def test_format(input_mock:Mock):
-  section = FormatSection()
+  # [(input_mock_ret, exepected_ret)]
+  case_ls = [
+    ('auto', 'mp4'),
+    ('', 'mp4'),
+    ('avc', 'avc')
+  ]
 
-  input_mock.return_value = 'auto'
-  assert section.run() == 'mp4'
+  for case in case_ls:
+    print('testing', case)
+    input_mock_ret, exepected_ret = case
 
-  input_mock.return_value = ''
-  assert section.run() == 'mp4'
-  
-  input_mock.return_value = 'avc'
-  assert section.run() == 'avc'
+    input_mock.reset_mock()
+    
+    input_mock.return_value = input_mock_ret
+    assert FormatSection().run() == exepected_ret
 
 @patch('src.section.FormatSection.LazyFormatSection._ask_format_option')
-def test_lazy_format_main(ask_format_mock:Mock):
-  section = LazyFormatSection()
-  
+def test_lazy_format_main(ask_format_mock:Mock):  
   class fake_videoMd (VideoMetaData):
-    def __init__(self, fake_formats, *args, **kwargs):
-      self._format = fake_formats
+    def __init__(self, both_ls=[], video_ls=[], audio_ls=[], *args, **kwargs):
+      self._format = {
+        'both': both_ls,
+        'video': video_ls,
+        'audio': audio_ls
+      }
   
-  # === test when there is video only === #
-  md_ls = [
-    fake_videoMd({
-      'both': [],
-      'video': [
-        { 'format_id': 'v1' },
-      ],
-      'audio': []
-    })
-  ]
-  ask_format_mock.return_value = LazyFormatSection.OPT_QUA_EFF
-  assert section.run(md_ls) == ['v1']
+  fake_video_format1 = { 'format_id': 'v1' }
+  fake_video_format2 = { 'format_id': 'v2' }
+  fake_audio_format = { 'format_id': 'a1' }
+  fake_both_format = { 'format_id': 'b1' }
   
-  # === test when these is no both but there is audio === #
-  md_ls = [
-    fake_videoMd({
-      'both': [],
-      'video': [
-        { 'format_id': 'v1' },
-      ],
-      'audio': [
-        { 'format_id': 'a1' },
-      ]
-    })
-  ]
-  ask_format_mock.return_value = LazyFormatSection.OPT_QUA_EFF
-  ret_format_ls = section.run(md_ls)
-  assert len(ret_format_ls) == 1
-  ret_bundled_format = ret_format_ls[0]
-  assert isinstance(ret_bundled_format, BundledFormat)
-  assert ret_bundled_format.video == 'v1'
-  assert ret_bundled_format.audio == 'a1'
+  fake_videoMd_md1 = fake_videoMd(video_ls=[fake_video_format1])
+  fake_videoMd_md2 = fake_videoMd(video_ls=[fake_video_format1], audio_ls=[fake_audio_format])
+  fake_videoMd_md3 = fake_videoMd(video_ls=[fake_video_format1], audio_ls=[fake_audio_format], both_ls=[fake_both_format])
+  fake_videoMd_md4 = fake_videoMd(video_ls=[fake_video_format2])
   
-  # === test when there is both === #
-  md_ls = [
-    fake_videoMd({
-      'both': [
-        { 'format_id': 'b1' },
-      ],
-      'video': [
-        { 'format_id': 'v1' },
-      ],
-      'audio': [
-        { 'format_id': 'a1' },
-      ]
-    })
+  # [(video metadata list, ask_format_mock_ret, exepected_ret list)]
+  case_ls : list[tuple[list[fake_videoMd], str, list[Union[str, BundledFormat]]]] = [
+    # video format only
+    ([fake_videoMd_md1], LazyFormatSection.OPT_QUA_EFF, ['v1']),
+    # video and audio format only
+    ([fake_videoMd_md2], LazyFormatSection.OPT_QUA_EFF, [BundledFormat('v1', 'a1')]),
+    # video, audio and both format. And choose quality-efficient balance
+    ([fake_videoMd_md3], LazyFormatSection.OPT_QUA_EFF, ['b1']),
+    # video, audio and both format. And choose best quality
+    ([fake_videoMd_md3], LazyFormatSection.OPT_BEST_QUA, [BundledFormat('v1', 'a1')]),
+    # multiple video metadata
+    ([fake_videoMd_md3, fake_videoMd_md4], LazyFormatSection.OPT_QUA_EFF, ['b1', 'v2'])
   ]
-  # use quality-efficient balance
-  ask_format_mock.return_value = LazyFormatSection.OPT_QUA_EFF
-  assert section.run(md_ls) == ['b1']
-  # use best quality
-  ask_format_mock.return_value = LazyFormatSection.OPT_BEST_QUA
-  ret_format_ls = section.run(md_ls)
-  assert len(ret_format_ls) == 1
-  ret_bundled_format = ret_format_ls[0]
-  assert isinstance(ret_bundled_format, BundledFormat)
-  assert ret_bundled_format.video == 'v1'
-  assert ret_bundled_format.audio == 'a1'
   
-  # === test when there is multiple metadata === #
-  md_ls = [
-    fake_videoMd({
-      'both': [
-        { 'format_id': 'b1' },
-      ],
-      'video': [
-        { 'format_id': 'v1' },
-      ],
-      'audio': [
-        { 'format_id': 'a1' },
-      ]
-    }),
-    fake_videoMd({
-      'both': [],
-      'video': [
-        { 'format_id': 'v2' },
-      ],
-      'audio': []
-    })
-  ]
-  ask_format_mock.return_value = LazyFormatSection.OPT_QUA_EFF
-  assert section.run(md_ls) == ['b1', 'v2']
+  for case in case_ls:
+    print('testing', case)
+    case_md_ls, case_ask_format_mock_ret, case_exepected_ret = case
+    
+    ask_format_mock.reset_mock()
+    ask_format_mock.return_value = case_ask_format_mock_ret
+
+    ret_format_ls = LazyFormatSection().run(case_md_ls)
+    
+    assert len(ret_format_ls) == len(case_exepected_ret)
+    for ret_format, expected_format in zip(ret_format_ls, case_exepected_ret):
+      assert ret_format == expected_format
   
 @patch('src.section.FormatSection.inq_prompt')
 @patch('src.section.FormatSection.get_lyd_format_autofill')
@@ -119,76 +81,76 @@ def test_lazy_format_ask_format(get_options_mock:Mock, autofill_mock:Mock, promp
   """
     Test the function will return the first option if there is only one option
     without asking user
-  """
-  section = LazyFormatSection()
-  prompt_mock.return_value = { 'format_option': '' }
+  """  
+  # [(fake options, autofill return, prompt return, do autofill called, do prompt called, expected return)]
+  case_ls : list[tuple[list[str], int, str, bool, bool, str]] = [
+    # only one option
+    (
+      [LazyFormatSection.OPT_BEST_QUA], None, None,
+      False, False, LazyFormatSection.OPT_BEST_QUA
+    ),
+    # more than one option, and autofill 1
+    (
+      [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_QUA_EFF], 0, None,
+      True, False, LazyFormatSection.OPT_BEST_QUA
+    ),
+    # more than one option, and autofill 2
+    (
+      [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_QUA_EFF], 1, None,
+      True, False, LazyFormatSection.OPT_QUA_EFF
+    ),
+    # more than one option, and prompt
+    (
+      [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_QUA_EFF], None, LazyFormatSection.OPT_BEST_QUA,
+      True, True, LazyFormatSection.OPT_BEST_QUA
+    )
+  ]
   
-  # only one option
-  get_options_mock.return_value = [LazyFormatSection.OPT_BEST_QUA]
-  section._ask_format_option([])
-  autofill_mock.assert_not_called()
-  prompt_mock.assert_not_called()
-  
-  # === more than one option === #
-  get_options_mock.return_value = [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_QUA_EFF]
-  
-  # autofill
-  autofill_mock.return_value = 0
-  section._ask_format_option([])
-  prompt_mock.assert_not_called()
-  
-  # multiple options
-  autofill_mock.return_value = None
-  section._ask_format_option([])
-  prompt_mock.assert_called_once()
+  for case in case_ls:
+    print('testing', case)
+    case_options, case_autofill_ret, case_prompt_ret, case_do_autofill, case_do_prompt, case_exepected_ret = case
+    
+    get_options_mock.reset_mock()
+    autofill_mock.reset_mock()
+    prompt_mock.reset_mock()
+    
+    get_options_mock.return_value = case_options
+    autofill_mock.return_value = case_autofill_ret
+    prompt_mock.return_value = { 'format_option': case_prompt_ret }
+    
+    res = LazyFormatSection()._ask_format_option([])
+    
+    assert res == case_exepected_ret
+    assert autofill_mock.called == case_do_autofill
+    assert prompt_mock.called == case_do_prompt
 
 def test_lazy_format_get_options ():
   class fake_videoMd (VideoMetaData):
-    def __init__ (self, fake_formats, *args, **kwargs):
-      self._format = fake_formats
-  
-  section = LazyFormatSection()
+    def __init__(self, both_ls=[], video_ls=[], audio_ls=[], *args, **kwargs):
+      self._format = {
+        'both': both_ls,
+        'video': video_ls,
+        'audio': audio_ls
+      }
 
-  # test all format have both
-  md_ls = [
-    fake_videoMd({
-      'both': [
-        { 'format_id': 'b1' },
-      ],
-      'video': [
-        { 'format_id': 'v1' },
-      ],
-      'audio': [
-        { 'format_id': 'a1' },
-      ]
-    }),
-  ]
-  assert section._get_options(md_ls) == [
-    LazyFormatSection.OPT_BEST_QUA,
-    LazyFormatSection.OPT_QUA_EFF
-  ]
+  fake_video_format1 = { 'format_id': 'v1' }
+  fake_video_format2 = { 'format_id': 'v2' }
+  fake_audio_format1 = { 'format_id': 'a1' }
+  fake_audio_format2 = { 'format_id': 'a2' }
+  fake_both_format = { 'format_id': 'b1' }
   
-  # test not all format have both
-  md_ls = [
-    fake_videoMd({
-      'both': [],
-      'video': [
-        { 'format_id': 'v1' },
-      ],
-      'audio': [
-        { 'format_id': 'a1' },
-      ]
-    }),
-    fake_videoMd({
-      'both': [
-        { 'format_id': 'b1' },
-      ],
-      'video': [
-        { 'format_id': 'v2' },
-      ],
-      'audio': [
-        { 'format_id': 'a2' },
-      ]
-    })
+  fake_videoMd_md1 = fake_videoMd(video_ls=[fake_video_format1], audio_ls=[fake_audio_format1], both_ls=[fake_both_format])
+  fake_videoMd_md2 = fake_videoMd(video_ls=[fake_video_format2], audio_ls=[fake_audio_format2])
+
+  # [(list of video md, expected return)]
+  case_ls : list[tuple[list[fake_videoMd], list[str]]] = [
+    # all format have both
+    ([fake_videoMd_md1], [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_QUA_EFF]),
+    # not all format have both
+    ([fake_videoMd_md1, fake_videoMd_md2], [LazyFormatSection.OPT_BEST_QUA])
   ]
-  assert section._get_options(md_ls) == [LazyFormatSection.OPT_BEST_QUA]
+
+  for case in case_ls:
+    print('testing', case)
+    case_video_md_ls, case_exepected_ret = case    
+    assert LazyFormatSection()._get_options(case_video_md_ls) == case_exepected_ret

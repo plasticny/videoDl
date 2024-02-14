@@ -52,7 +52,7 @@ class LazyFormatSection (Section):
     return res
 
   # === Inquiry functions === #
-  def _ask_format_option(self, md_ls:list[VideoMetaData]) -> bool:
+  def _ask_format_option(self, md_ls:list[VideoMetaData]) -> str:
     """
       Ask user to select format option if there are multiple options available
     """    
@@ -76,7 +76,7 @@ class LazyFormatSection (Section):
       )
     ])['format_option']
     
-  def _get_options(self, md_ls:list[VideoMetaData]) -> [str]:
+  def _get_options(self, md_ls:list[VideoMetaData]) -> list[str]:
     option_best_avaialble = True
     option_both_available = True
     for md in md_ls:

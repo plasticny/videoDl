@@ -14,23 +14,28 @@ class fake_opt (IOpt):
     super().__init__()
     self.url = 'url'
 
-@patch('builtins.input', return_value='Y')
-@patch('src.section.ListFormatSection.YoutubeDL')
-def test_list_format(youtubeDl_mock:Mock, input_mock):
-  ListFormatSection('').run(fake_opt())
-
-  called_paramCommands = youtubeDl_mock.call_args.args[0]
-  assert called_paramCommands['listformats'] == True
-
 @patch('src.section.ListFormatSection.YoutubeDL')
 @patch('builtins.input')
-def test_not_list_format(input_mock, youtubeDl_mock):
-  section = ListFormatSection('')
-
-  input_mock.return_value = 'N'
-  section.run(fake_opt())
-
-  input_mock.return_value = ''
-  section.run(fake_opt())
-
-  assert youtubeDl_mock.call_count == 0
+def test(input_mock : Mock, youtubeDl_mock : Mock):
+  # [(input value, expected do called)]
+  case_ls : list[tuple[str, bool]] = [
+    ('Y', True),
+    ('N', False),
+    ('', False)
+  ]
+  
+  for case in case_ls:
+    print('testing', case)
+    input_val, excepted_do_called = case
+    
+    input_mock.reset_mock()
+    youtubeDl_mock.reset_mock()
+    
+    input_mock.return_value = input_val
+    ListFormatSection('').run(fake_opt())
+    
+    if excepted_do_called:
+      assert youtubeDl_mock.called
+      assert youtubeDl_mock.call_args.args[0]['listformats'] == True
+    else:
+      assert youtubeDl_mock.call_count == 0

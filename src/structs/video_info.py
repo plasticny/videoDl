@@ -9,6 +9,11 @@ class BundledFormat:
   def __init__(self, video:str=None, audio:str=None):
     self.video : str = video
     self.audio : str = audio
+    
+  def __eq__(self, __value: object) -> bool:
+    if not isinstance(__value, BundledFormat):
+      return False
+    return self.video == __value.video and self.audio == __value.audio
 
 class TFormatDesc (TypedDict):
   codec : str

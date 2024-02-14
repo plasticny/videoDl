@@ -1,6 +1,7 @@
 from unittest.mock import patch, Mock
 
 from json import loads as jsonLoads
+from typing import Literal
 
 from src.service.MetaData import fetchMetaData, MetaDataOpt
 from src.service.MetaData import VideoMetaData, BiliBiliVideoMetaData, FacebookVideoMetaData, IGVideoMetaData
@@ -51,27 +52,26 @@ def test_fetchMetaData_type(
   playlist_md_mock.return_value = fake_playlist_md()
   bili_playlist_md_mock.return_value = fake_bili_playlist_md()
 
-  # == test video == #
-  extract_metadata_mock.return_value = { '_type': 'video' }
-  getSource_mock.return_value = 'fake source'
-  assert isinstance(fetchMetaData(MetaDataOpt()), VideoMetaData)
+  # test cases [(extract metadata returned type, url source, expected metadata type)]
+  case_ls : list[tuple[Literal['video', 'playlist'], str, type]] = [
+    ('video', 'fake source', VideoMetaData),
+    ('video', UrlSource.BILIBILI, BiliBiliVideoMetaData),
+    ('video', UrlSource.FACEBOOK, FacebookVideoMetaData),
+    ('video', UrlSource.IG, IGVideoMetaData),
+    ('playlist', 'fake source', PlaylistMetaData),
+    ('playlist', UrlSource.BILIBILI, BiliBiliPlaylistMetaData)  
+  ]
   
-  getSource_mock.return_value = UrlSource.BILIBILI
-  assert isinstance(fetchMetaData(MetaDataOpt()), BiliBiliVideoMetaData)
-  
-  getSource_mock.return_value = UrlSource.FACEBOOK
-  assert isinstance(fetchMetaData(MetaDataOpt()), FacebookVideoMetaData)
-  
-  getSource_mock.return_value = UrlSource.IG
-  assert isinstance(fetchMetaData(MetaDataOpt()), IGVideoMetaData)
-
-  # === test playlist === #
-  extract_metadata_mock.return_value = { '_type': 'playlist' }
-  getSource_mock.return_value = 'fake source'
-  assert isinstance(fetchMetaData(MetaDataOpt()), PlaylistMetaData)
-  
-  getSource_mock.return_value = UrlSource.BILIBILI
-  assert isinstance(fetchMetaData(MetaDataOpt()), BiliBiliPlaylistMetaData)
+  for case in case_ls:
+    print('testing', case)
+    case_metadata_type, case_source, case_expected_ret_type = case
+    
+    extract_metadata_mock.reset_mock()
+    getSource_mock.reset_mock()
+    
+    extract_metadata_mock.return_value = { '_type': case_metadata_type }
+    getSource_mock.return_value = case_source
+    assert isinstance(fetchMetaData(MetaDataOpt()), case_expected_ret_type)
 
 def test_videoMd_getSubtitles():
   """test getSubtitles method of VideoMetaData"""
@@ -106,23 +106,26 @@ def test_videoMd_getSubtitles():
     Subtitle('auto-zh', 'Auto Chinese', True)
   ]
 
-  # test only subtitle
-  sub, auto_sub = fake_video_md({'subtitles': subtitle_md})._getSubtitles()
-  assert sub == expected_sub
-  assert auto_sub == []
+  # test cases [(subtitle metadata, auto subtitle metadata, expected subtitle, expected auto subtitle)]
+  case_ls : list[tuple[dict, dict, list[Subtitle], list[Subtitle]]] = [
+    # only subtitle
+    (subtitle_md, {}, expected_sub, []),
+    # subtitle and auto subtitle
+    (subtitle_md, auto_subtitle_md, expected_sub, expected_auto_sub),
+    # no subtitle key in metadata
+    ({}, {}, [], [])
+  ]
 
-  # test subtitle and auto subtitle
-  sub, auto_sub = fake_video_md({
-    'subtitles': subtitle_md, 
-    'automatic_captions': auto_subtitle_md
-  })._getSubtitles()
-  assert sub == expected_sub
-  assert auto_sub == expected_auto_sub
-  
-  # test no subtitle key in metadata
-  sub, auto_sub = fake_video_md({})._getSubtitles()
-  assert sub == []
-  assert auto_sub == []
+  for case in case_ls:
+    print('testing', case)
+    case_subtitle_md, case_auto_subtitle_md, case_expected_sub, case_expected_auto_sub = case
+    
+    sub, auto_sub = fake_video_md({
+      'subtitles': case_subtitle_md,
+      'automatic_captions': case_auto_subtitle_md
+    })._getSubtitles()
+    assert sub == case_expected_sub
+    assert auto_sub == case_expected_auto_sub
 
 def test_videoMd_extract_format():
   class fake_video_md (VideoMetaData):
@@ -162,27 +165,27 @@ def test_fb_videoMd_extract_format (video_md_extract_format_mock:Mock):
   sd_format = { 'format_id': 'sd' }
   hd_format = { 'format_id': 'hd' }
   other_format = { 'format_id': 'other' }
+    
+  # test cases [(format metadata, expected formats of both)]
+  case_ls : list[tuple[dict, list[dict]]] = [
+    (hd_format, [hd_format]),
+    (sd_format, [sd_format]),
+    (other_format, [])
+  ]
   
-  # hd
-  video_md_extract_format_mock.return_value = {
-    'video': [], 'audio': [], 'both': []
-  }
-  formats = fake_fb_video_md([hd_format])._extract_format()
-  assert formats['both'][0]['format_id'] == 'hd'
-  
-  # sd
-  video_md_extract_format_mock.return_value = {
-    'video': [], 'audio': [], 'both': []
-  }
-  formats = fake_fb_video_md([sd_format])._extract_format()
-  assert formats['both'][0]['format_id'] == 'sd'
-  
-  # no hd and sd
-  video_md_extract_format_mock.return_value = {
-    'video': [], 'audio': [], 'both': []
-  }
-  formats = fake_fb_video_md([other_format])._extract_format()
-  assert len(formats['both']) == 0
+  for case in case_ls:
+    print('testing', case)
+    case_format, case_expected_both = case
+
+    video_md_extract_format_mock.return_value = {
+      'video': [], 'audio': [], 'both': []
+    }
+    
+    formats = fake_fb_video_md([case_format])._extract_format()
+    
+    assert len(formats['both']) == len(case_expected_both)
+    for ret_format, expected_format in zip(formats['both'], case_expected_both):
+      assert ret_format['format_id'] == expected_format['format_id']
   
 def test_ig_videoMd_extract_format ():
   class fake_ig_video_md (IGVideoMetaData):
