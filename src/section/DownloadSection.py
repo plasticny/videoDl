@@ -164,7 +164,7 @@ class DownloadSection (Section) :
     sub_opts = DownloadOpt.to_ytdlp_sub_opt(opts)
     
     is_bundle = isinstance(dl_opts, BundledTDownloadOpt)
-    has_sub = opts.subtitle is not None
+    has_sub = len(sub_opts['subtitleslangs']) > 0
     
     if is_bundle:
       video_name = self._download_item(URL, dl_opts.video, retry)

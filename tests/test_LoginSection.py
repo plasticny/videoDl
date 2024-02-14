@@ -1,37 +1,31 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 from src.section.LoginSection import LoginSection
 
-@patch('builtins.input', return_value='N')
-@patch('src.section.LoginSection.get_login_autofill', return_value=None)
-def test_not_login(autofill_mock, print_mock):
-  assert LoginSection().run('url') is None
+def test():
+  # [(autofill, input, filedialog, expected)]
+  case_ls : list[tuple[str, str, str, str]] = [
+    # not login
+    (None, 'N', None, None),
+    # login
+    (None, 'Y', 'cookie.txt', 'cookie.txt'),
+    # login canceled
+    (None, 'Y', '', None),
+    # autofill
+    ('cookie.txt', None, None, 'cookie.txt')
+  ]
 
-@patch('builtins.input', return_value='Y')
-@patch('tkinter.filedialog.askopenfilename', return_value='cookie.txt')
-@patch('src.section.LoginSection.get_login_autofill', return_value=None)
-def test_login(autofill_mock, print_mock, _):
-  assert LoginSection().run('url') == 'cookie.txt'
-
-@patch('builtins.input', return_value='Y')
-@patch('tkinter.filedialog.askopenfilename', return_value='')
-@patch('src.section.LoginSection.get_login_autofill', return_value=None)
-def test_login_canceled(autofill_mock, print_mock, _):
-  assert LoginSection().run('url') is None
-
-@patch('src.section.LoginSection.LoginSection._askLogin')
-@patch('src.section.LoginSection.get_login_autofill')
-def test_autofill (autofill_mock:Mock, ask_mock:Mock):
-  section = LoginSection()
-  ask_mock.return_value = None
-  
-  # no autofill
-  autofill_mock.return_value = None
-  section.run('url')
-  ask_mock.assert_called_once()
-  
-  # autofill
-  ask_mock.reset_mock()
-  autofill_mock.return_value = 'cookie.txt'
-  assert section.run('url') == 'cookie.txt'
-  ask_mock.assert_not_called()
+  for case in case_ls:
+    print('testing', case)
+    case_autofill, case_input, case_filedialog, case_expected = case
+    
+    with\
+      patch('src.section.LoginSection.get_login_autofill', return_value=case_autofill),\
+      patch('builtins.input', return_value=case_input) as input_mock,\
+      patch('tkinter.filedialog.askopenfilename', return_value=case_filedialog) as filedialog_mock\
+    :
+      assert LoginSection().run('url') == case_expected
+      
+      if case_autofill is not None:
+        assert not input_mock.called
+        assert not filedialog_mock.called

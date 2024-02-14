@@ -26,21 +26,25 @@ def test_download_call_count(
   class fake_videoMd (VideoMetaData):
     def __init__ (self, *args, **kwargs):
       pass
+    
+  # [(md_mock return, expected download call count)]
+  case_ls = [
+    ([fake_videoMd()], 1),
+    ([fake_videoMd() for _ in range(3)], 3)
+  ]
   
   url_mock.return_value = ''
   login_mock.return_value = ''
   setup_mock.side_effect = lambda md_ls : [DownloadOpt() for _ in md_ls]
-
-  # test video
-  md_mock.return_value = [fake_videoMd()]
-  Dl().run(loop=False)
-  assert download_mock.call_count == 1
-
-  # test playlist
-  download_mock.reset_mock()
-  md_mock.return_value = [fake_videoMd() for _ in range(3)]
-  Dl().run(loop=False)
-  assert download_mock.call_count == 3
+  
+  for case in case_ls:
+    print('testing', case)
+    md_mock_ret, expected_call_count = case
+    
+    download_mock.reset_mock()
+    md_mock.return_value = md_mock_ret
+    Dl().run(loop=False)
+    assert download_mock.call_count == expected_call_count
 
 @patch('src.dl.Dl.setup')
 @patch('src.dl.LoginSection.run')

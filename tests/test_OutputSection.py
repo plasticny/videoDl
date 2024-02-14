@@ -10,24 +10,32 @@ def test_all_not_ask():
 @patch('src.section.OutputSection.get_output_dir_autofill')
 @patch('tkinter.filedialog.askdirectory')
 def test_ask_dir(askdirectory_mock:Mock, autofill_mock:Mock):
-  output_section = OutputSection()
-
-  # First test with invalid directory, then with valid directory
-  valid_dir = '/path/to/output/dir'
-  autofill_mock.return_value = None
-  askdirectory_mock.side_effect = ['', valid_dir]
+  fake_dir = '/path/to/output/dir'
   
-  ret = output_section.run(askName=False)
-  assert ret['dir'] == valid_dir
-  assert ret['name'] == None
+  # test cases [(autofill, fake input, expected return dir)]
+  case_ls : list[tuple[str, list[str], str]] = [
+    # no autofill, first input is invalid, second input is valid
+    (None, ['', fake_dir], fake_dir),
+    # autofill
+    (fake_dir, [], fake_dir)
+  ]
   
-  # autofill
-  autofill_mock.return_value = valid_dir
-  askdirectory_mock.reset_mock()
-  ret = output_section.run(askName=False)
-  assert ret['dir'] == valid_dir
-  assert ret['name'] == None
-  askdirectory_mock.assert_not_called()
+  for case in case_ls:
+    print('testing', case)
+    case_autofill, case_input, expected_dir = case
+    
+    autofill_mock.reset_mock()
+    askdirectory_mock.reset_mock()
+    
+    autofill_mock.return_value = case_autofill
+    askdirectory_mock.side_effect = case_input
+    
+    ret = OutputSection().run(askName=False)
+    assert ret['dir'] == expected_dir
+    assert ret['name'] == None
+    
+    if case_autofill:
+      assert not askdirectory_mock.called
 
 @patch('builtins.input')
 def test_ask_name(input_mock):

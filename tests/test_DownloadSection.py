@@ -2,10 +2,11 @@ from sys import path
 from pathlib import Path
 path.append(Path('..').resolve().as_posix())
 
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, Mock, call as mock_call
 from pytest import raises as pytest_raises
 from os.path import exists
 from uuid import uuid4
+from typing_extensions import Union
 
 from tests.helpers import prepare_output_folder, OUTPUT_FOLDER_PATH
 
@@ -40,57 +41,68 @@ def test_main_flow(
     2. add and not add subtitle\n
     3. merge or not
   """
-  opts = DownloadOpt()
-  opts.url = 'url'
+  # fake basic setting
+  fake_url = 'url'
+  fake_downloaded_file_nm = 'downloaded file name'
+  # fake non-bundled download option
+  fake_dl_opt = { "outtmpl": { "default": "" } }
+  # fake bundled download option
+  fake_bundled_v = { 'v': 'v' }
+  fake_bundled_a = { 'a': 'a' }
+  fake_bundled_dl_opt = BundledTDownloadOpt(video=fake_bundled_v, audio=fake_bundled_a)
+  # fake subtitle
+  fake_sub_lang = 'en'
   
-  ret_dl_opt = { "outtmpl": { "default": "" } }
-  bundled_v = { 'v': 'v' }
-  bundled_a = { 'a': 'a' }
-  ret_bundled_dl_opt = BundledTDownloadOpt(video=bundled_v, audio=bundled_a)
-  ret_sub_opt = { 'sub': 'sub' }
+  # [(fake download option, subtitleslangs list in fake subtitle option)]
+  case_ls : list[tuple[Union[dict, BundledTDownloadOpt], list[str]]] = [
+    # not bundled, no subtitle
+    (fake_dl_opt, []),
+    # bundled, no subtitle
+    (fake_bundled_dl_opt, []),
+    # not bundled, has subtitle
+    (fake_dl_opt, [fake_sub_lang]),
+  ]
   
-  download_mock.return_value = 'downloaded file name'
+  for case in case_ls:
+    print('testing', case)
+    case_dl_opt, case_sub_langs = case
+    case_sub_opt = { 'subtitleslangs': case_sub_langs }
     
-  # === test the flow in different `is_bundle` === #
-  opts.subtitle = None
-  to_sub_opt_mock.return_value = ret_sub_opt
-  
-  # is_bundle = False
-  to_dl_opt_mock.return_value = ret_dl_opt
-  DownloadSection().run(opts, retry=0)
-  download_calls = download_mock.mock_calls.copy()
-  assert len(download_calls) == 1
-  assert download_calls[0] == call('url', ret_dl_opt, 0)
-  assert len(merge_mock.mock_calls) == 0
-  
-  # is_bundle = True
-  download_mock.reset_mock()
-  merge_mock.reset_mock()
-  to_dl_opt_mock.return_value = ret_bundled_dl_opt
-  DownloadSection().run(opts, retry=0)
-  download_calls = download_mock.mock_calls.copy()
-  assert len(download_calls) == 2
-  assert download_calls[0] == call('url', bundled_v, 0)
-  assert download_calls[1] == call('url', bundled_a, 0)
-  assert len(merge_mock.mock_calls) == 1
-  
-  # === test the flow in different `has_sub` === #
-  to_dl_opt_mock.return_value = ret_dl_opt
-  to_sub_opt_mock.return_value = ret_sub_opt
-  
-  # has_sub = False
-  # already tested above
-  
-  # has_sub = True
-  download_mock.reset_mock()
-  merge_mock.reset_mock()
-  opts.subtitle = Subtitle('en', 'en', False)
-  DownloadSection().run(opts, retry=0)
-  download_calls = download_mock.mock_calls.copy()
-  assert len(download_calls) == 2
-  assert download_calls[0] == call('url', ret_dl_opt, 0)
-  assert download_calls[1] == call('url', ret_sub_opt, 0)
-  assert len(merge_mock.mock_calls) == 1
+    # reset mock
+    download_mock.reset_mock()
+    merge_mock.reset_mock()
+    
+    # mock
+    download_mock.return_value = fake_downloaded_file_nm
+    to_dl_opt_mock.return_value = case_dl_opt
+    to_sub_opt_mock.return_value = case_sub_opt
+
+    opts = DownloadOpt()
+    opts.url = fake_url
+    
+    is_bundle = isinstance(case_dl_opt, BundledTDownloadOpt)
+    has_sub = len(case_sub_langs) > 0
+    
+    # expected download call
+    expected_download_calls = []
+    if is_bundle:
+      expected_download_calls.append(mock_call(fake_url, fake_bundled_v, 0))
+      expected_download_calls.append(mock_call(fake_url, fake_bundled_a, 0))
+    else:
+      expected_download_calls.append(mock_call(fake_url, case_dl_opt, 0))
+      
+    if has_sub:
+      expected_download_calls.append(mock_call(fake_url, case_sub_opt, 0))
+
+    DownloadSection().run(opts, retry=0)
+
+    download_calls = download_mock.mock_calls.copy()
+    assert len(download_calls) == len(expected_download_calls)
+    for call in download_calls:
+      assert call in expected_download_calls
+
+    if is_bundle or has_sub:
+      assert merge_mock.call_count == 1
 
 @patch('src.section.DownloadSection.YoutubeDL')
 def test_download_item (ytdl_mock:Mock):
@@ -117,36 +129,46 @@ def test_download_item (ytdl_mock:Mock):
 @patch('src.section.DownloadSection.ff_in')
 def test_merge_subtitle(ffin_mock:Mock, ffout_mock:Mock):
   """test subtitle feature of merge function"""
-  section = DownloadSection()
-
   # fake returned ffmpeg object of ffout_mock
   class FakeFfmpeg:
     def run(*args, **kwargs):
       pass
-  ffout_mock.return_value = FakeFfmpeg()
 
-  # test no subtitle
-  ffin_mock.side_effect = [{'v':''},{'a':''}]
-  section._merge('in.mp4', 'in.m4a', None)
-  kwargs = ffout_mock.call_args.kwargs
-  assert 'scodec' not in kwargs
-  assert 'vf' not in kwargs
+  fake_ff_in_v = { 'v': '' }
+  fake_ff_in_a = { 'a': '' }
+  fake_ff_in_s = { 's': '' }
+  fake_video_path = 'in.mp4'
+  fake_audio_path = 'in.m4a'
+  fake_subtitle_path = 'in.vtt'
+  
+  # [(list of ff_in return, do_embed_sub, do_burn_sub, expected key of kwargs in ff_out call)]
+  case_ls : list[tuple[list[dict], bool, bool, list[str]]] = [
+    # test no subtitle
+    ([fake_ff_in_v, fake_ff_in_a], False, False, []),
+    # test embed subtitle
+    ([fake_ff_in_v, fake_ff_in_a, fake_ff_in_s], True, False, ['scodec']),
+    # test embed subtitle and burn subtitle
+    ([fake_ff_in_v, fake_ff_in_a, fake_ff_in_s], True, True, ['scodec', 'vf'])
+  ]
+  
+  for case in case_ls:
+    print('testing', case)
+    case_ff_in_side_effect, case_do_embed_sub, case_do_burn_sub, case_expected_keys = case
+    
+    ffin_mock.reset_mock()
+    ffout_mock.reset_mock()
+    
+    ffout_mock.return_value = FakeFfmpeg()
+    ffin_mock.side_effect = case_ff_in_side_effect
+    
+    DownloadSection()._merge(
+      fake_video_path, fake_audio_path, fake_subtitle_path,
+      do_embed_sub=case_do_embed_sub, do_burn_sub=case_do_burn_sub
+    )
 
-  # test embed subtitle
-  ffout_mock.reset_mock()
-  ffin_mock.side_effect = [{'v':''},{'a':''},{'s':''}]
-  section._merge('in.mp4', 'in.m4a', 'in.vtt', do_embed_sub=True)
-  kwargs = ffout_mock.call_args.kwargs
-  assert 'scodec' in kwargs
-  assert 'vf' not in kwargs
-
-  # test embed subtitle and burn subtitle
-  ffout_mock.reset_mock()
-  ffin_mock.side_effect = [{'v':''},{'a':''},{'s':''}]
-  section._merge('in.mp4', 'in.m4a', 'in.vtt', do_embed_sub=True, do_burn_sub=True)
-  kwargs = ffout_mock.call_args.kwargs
-  assert 'scodec' in kwargs
-  assert 'vf' in kwargs
+    kwargs = ffout_mock.call_args.kwargs
+    for key in case_expected_keys:
+      assert key in kwargs
   
 def test_move_temp_file():
   """
@@ -199,53 +221,73 @@ def test_downloadOpt_to_dl_opt ():
     test the function return correct type of opt\n
     For type BundledTDownloadOpt, check video and audio have different name
   """
-  # test not bundled
-  opts = DownloadOpt()
-  opts.url = 'url'
-  opts.output_dir = 'output_dir'
-  opts.format = 'format'
+  fake_url = 'url'
+  fake_output_dir = 'output_dir'
+  fake_format = 'format'
+  fake_bundled_format = BundledFormat('v', 'a')
   
-  dl_opt = DownloadOpt.to_ytdlp_dl_opt(opts)
-  assert not isinstance(dl_opt, BundledTDownloadOpt)
+  # [(format, expected is bundled)]
+  case_ls : list[Union[str, BundledFormat]] = [
+    # not bundled
+    fake_format,
+    # bundled
+    fake_bundled_format
+  ]
   
-  # test bundled
-  opts.format = BundledFormat('v', 'a')
-  
-  dl_opt = DownloadOpt.to_ytdlp_dl_opt(opts)
-  assert isinstance(dl_opt, BundledTDownloadOpt)
-  assert dl_opt.video['outtmpl'] != dl_opt.audio['outtmpl']
+  for case_format in case_ls:
+    print('testing', case_format)
+    opts = DownloadOpt()
+    opts.url = fake_url
+    opts.output_dir = fake_output_dir
+    opts.format = case_format
+    
+    dl_opt = DownloadOpt.to_ytdlp_dl_opt(opts)
+    
+    if isinstance(case_format, BundledFormat):
+      assert isinstance(dl_opt, BundledTDownloadOpt)
+      assert dl_opt.video['format'] == case_format.video
+      assert dl_opt.audio['format'] == case_format.audio
+    else:
+      assert not isinstance(dl_opt, BundledTDownloadOpt)
+      assert dl_opt['format'] == case_format
 
 def test_downloadOpt_to_sub_opt():
   """
     Check the returned opt has all the required fields,\n
     and set the fields correctly
   """
-  opts = DownloadOpt()
-  opts.url = 'url'
-  opts.output_dir = 'output_dir'
+  fake_url = 'url'
+  fake_output_dir = 'output_dir'
+  fake_sub1 = Subtitle('en', 'en', False)
+  fake_sub2 = Subtitle('cn', 'cn', True)
   
-  # test no subtitle
-  opts.subtitle = None
-  sub_opt = DownloadOpt.to_ytdlp_sub_opt(opts)
-  assert sub_opt['writesubtitles'] == False
-  assert sub_opt['writeautomaticsub'] == False
-  assert sub_opt['subtitleslangs'] == []
-  assert sub_opt['skip_download'] == True
+  # [subtitle in option]
+  case_ls : list[Subtitle] = [
+    # no subtitle
+    None,
+    # not auto subtitle
+    fake_sub1,
+    # auto subtitle
+    fake_sub2
+  ]
   
-  # == test subtitle == #
-  # not auto subtitle
-  opts.subtitle = Subtitle('en', 'en', False)
-  sub_opt = DownloadOpt.to_ytdlp_sub_opt(opts)
-  assert sub_opt['writesubtitles'] == True
-  assert sub_opt['writeautomaticsub'] == False
-  assert sub_opt['subtitleslangs'] == ['en']
-  assert sub_opt['skip_download'] == True
-  
-  # auto subtitle
-  opts.subtitle = Subtitle('cn', 'cn', True)
-  sub_opt = DownloadOpt.to_ytdlp_sub_opt(opts)
-  assert sub_opt['writesubtitles'] == False
-  assert sub_opt['writeautomaticsub'] == True
-  assert sub_opt['subtitleslangs'] == ['cn']
-  assert sub_opt['skip_download'] == True
+  for case_sub in case_ls:
+    print('testing', case_sub)
+    opts = DownloadOpt()
+    opts.url = fake_url
+    opts.output_dir = fake_output_dir
+    opts.subtitle = case_sub
+
+    sub_opt = DownloadOpt.to_ytdlp_sub_opt(opts)
+
+    if case_sub is None:
+      assert sub_opt['writesubtitles'] == False
+      assert sub_opt['writeautomaticsub'] == False
+      assert sub_opt['subtitleslangs'] == []
+      assert sub_opt['skip_download'] == True
+    else:
+      assert sub_opt['writesubtitles'] == (not case_sub.isAuto)
+      assert sub_opt['writeautomaticsub'] == case_sub.isAuto
+      assert sub_opt['subtitleslangs'] == [case_sub.code]
+      assert sub_opt['skip_download'] == True
 # ========== Download option ========== #

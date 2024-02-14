@@ -1,4 +1,4 @@
-from src.structs.video_info import Subtitle, BiliBiliSubtitle
+from src.structs.video_info import *
 
 def test_subtitle():
   """Test subtitle structure"""
@@ -33,3 +33,24 @@ def test_bilibili_subtitle():
   assert sub1 != sub2
   assert sub1 != sub3
   assert sub2 == sub3
+  
+def test_BundledFormat_eq():
+  bundled_format1 = BundledFormat(video='mp4', audio='mp3')
+  bundled_format2 = BundledFormat(video='mp4', audio='mp3')
+  bundled_format3 = BundledFormat(video='mp4', audio='aac')
+  bundled_format4 = BundledFormat(video='mkv', audio='mp3')
+  
+  # test cases [(format1, format2, expected_result)]  
+  case_ls : list[tuple[BundledFormat, BundledFormat, bool]] = [
+    (bundled_format1, bundled_format1, True),
+    (bundled_format1, bundled_format2, True),
+    (bundled_format1, bundled_format3, False),
+    (bundled_format2, bundled_format4, False),
+    (bundled_format1, 'not a BundledFormat', False),
+    (bundled_format1, None, False),
+  ]
+  
+  for case in case_ls:
+    print('testing', case)
+    case_format1, case_format2, expected_result = case
+    assert (case_format1 == case_format2) == expected_result

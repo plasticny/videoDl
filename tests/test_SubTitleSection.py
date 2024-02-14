@@ -45,43 +45,48 @@ def test_control_sub_selection (
     get_autofill_mock:Mock, autofill_mock:Mock,
     one_by_one_mock:Mock, batch_mock:Mock
   ):
+  """Test the flow of control_sub_selection function"""
   class fake_video_md (VideoMetaData):
     def __init__ (self, *args, **kwargs):
       pass
   
-  section = SubTitleSection()
+  # test cases [(
+  #   video_mds, autofill, selected mode,
+  #   expected do autofill, expected do ask mode, expected do one by one, expected do batch
+  # )]
+  case_ls : list[tuple[
+    list[fake_video_md], list[str], str,
+    bool, bool, bool, bool
+  ]] = [
+    # autofill set
+    ([fake_video_md()], ['en'], None, True, False, False, False),
+    # only one video
+    ([fake_video_md()], None, None, False, False, True, False),
+    # more than one video and choose one by one
+    ([fake_video_md(), fake_video_md()], None, SelectionMode.ONE_BY_ONE.value, False, True, True, False),
+    # more than one video and choose batch mode
+    ([fake_video_md(), fake_video_md()], None, SelectionMode.BATCH.value, False, True, False, True),
+  ]
   
-  # autofill
-  get_autofill_mock.return_value = True
-  section.control_sub_selection([fake_video_md()], {})
-  autofill_mock.assert_called_once()
-  one_by_one_mock.assert_not_called()
-  batch_mock.assert_not_called()
-  
-  # only one video
-  autofill_mock.reset_mock()
-  get_autofill_mock.return_value = None
-  section.control_sub_selection([fake_video_md()], {})
-  autofill_mock.assert_not_called()
-  one_by_one_mock.assert_called_once()
-  batch_mock.assert_not_called()  
-  
-  # === multiple video === #
-  # choose batch mode
-  one_by_one_mock.reset_mock()
-  ask_mode_mock.return_value = SelectionMode.BATCH.value
-  section.control_sub_selection([fake_video_md(), fake_video_md()], {})
-  autofill_mock.assert_not_called()
-  one_by_one_mock.assert_not_called()
-  batch_mock.assert_called_once()
-  
-  # choose one by one
-  batch_mock.reset_mock()
-  ask_mode_mock.return_value = SelectionMode.ONE_BY_ONE.value
-  section.control_sub_selection([fake_video_md(), fake_video_md()], {})
-  autofill_mock.assert_not_called()
-  one_by_one_mock.assert_called_once()
-  batch_mock.assert_not_called()  
+  for case in case_ls:
+    print('testing', case)
+    case_video_mds, case_autofill, case_mode, exp_do_autofill, exp_do_ask_mode, exp_do_one_by_one, exp_do_batch = case
+    
+    get_autofill_mock.reset_mock()
+    autofill_mock.reset_mock()
+    ask_mode_mock.reset_mock()
+    one_by_one_mock.reset_mock()
+    batch_mock.reset_mock()
+    
+    get_autofill_mock.return_value = case_autofill
+    ask_mode_mock.return_value = case_mode
+    
+    SubTitleSection().control_sub_selection(case_video_mds, {})
+    
+    assert autofill_mock.called == exp_do_autofill
+    assert ask_mode_mock.called == exp_do_ask_mode
+    assert one_by_one_mock.called == exp_do_one_by_one
+    assert batch_mock.called == exp_do_batch
 
 @patch('src.section.SubTitleSection.SubTitleSection.select_sub')
 def test_one_by_one_select(select_sub_mock):
@@ -91,16 +96,19 @@ def test_one_by_one_select(select_sub_mock):
       2. skip selecting subtitle
       3. no subtitle available
   """
-  fake_video_md = fake_VideoMetaData(auto_sub=[Subtitle('en', 'English', True)])
-  fake_video_md_no_sub = fake_VideoMetaData()
-  video_mds = [fake_video_md, fake_video_md, fake_video_md_no_sub]
-
-  select_sub_mock.side_effect = [
-    Subtitle('en', 'English', True),
-    None
-  ]
+  fake_sub1 = Subtitle('en', 'English', True)
+  fake_sub2 = Subtitle('fr', 'French', True)
+  fake_video_md1 = fake_VideoMetaData(auto_sub=[fake_sub1, fake_sub2])
+  fake_video_md2 = fake_VideoMetaData(auto_sub=[fake_sub1, fake_sub2])
+  fake_video_md3 = fake_VideoMetaData()
+  
+  # 2 video with subtitle and 1 video without subtitle
+  video_mds = [fake_video_md1, fake_video_md2, fake_video_md3]
+  # first select english subtitle, then skip the second video
+  select_sub_mock.side_effect = [fake_sub1, None]
+  
   opts_ls = SubTitleSection('').one_by_one_select(video_mds)
-  assert len(opts_ls) == 3
+  assert opts_ls == [fake_sub1, None, None]
   assert select_sub_mock.call_count == 2
 
 @patch('src.section.SubTitleSection.SubTitleSection.select_sub')
@@ -121,43 +129,52 @@ def test_batch_select(select_sub_mock):
   sub2 = Subtitle('sub2', 'sub2', True)
   sub3 = Subtitle('sub3', 'sub3', True)
   test_video_nm = 4
-
-  # ==== test 1: select subtitle for 2 video and then skip the remaining video ==== #
-  sub_pos_map = {
-    sub1: [2, 0], # use a unsorted list for testing
-    sub2: [1],
-    sub3: [2]
-  }
-  # select sub3 (assign to 2) > select sub1 (assign to 0) > end selection
-  selector_obj = selector([2, 0, None])
-  res = SubTitleSection().batch_select(sub_pos_map, test_video_nm)
-  assert res == [sub1, None, sub3, None]
   
-  # ==== test 2: all video have subtitle after first selection ==== #
-  sub_pos_map = {
-    sub1: [0, 1, 2, 3],
-    sub2: [0],
-    sub3: [0]
-  }
-  # select sub 1 (suppose assigned to all video)
-  select_sub_mock.reset_mock()
-  selector_obj = selector([0])
-  res = SubTitleSection('').batch_select(sub_pos_map, test_video_nm)
-  assert res == [sub1, sub1, sub1, sub1]
-  assert select_sub_mock.call_count == 1
-
-  # ==== test 3: no subtitle left after first selection ==== #
-  sub_pos_map = {
-    sub1: [0],
-    sub2: [0],
-    sub3: [0]
-  }
-  # select sub 1
-  select_sub_mock.reset_mock()
-  selector_obj = selector([0])
-  res = SubTitleSection('').batch_select(sub_pos_map, test_video_nm)
-  assert res == [sub1, None, None, None]
-  assert select_sub_mock.call_count == 1
+  # test cases [(
+  #   sub_pos_map, selecting sequence, number of fake video, expected result
+  # )]
+  case_ls : list[tuple[
+    dict, list[int], int, list[Subtitle]
+  ]] = [
+    # select subtitle for 2 video and then skip the remaining video
+    # select sub3 (assign to 2) > select sub1 (assign to 0) > end selection
+    (
+      {
+        sub1: [2, 0], # use a unsorted list for testing
+        sub2: [1],
+        sub3: [2]
+      }, [2, 0, None], test_video_nm, [sub1, None, sub3, None]
+    ),
+    # all video have subtitle after first selection
+    # select sub 1 (suppose assigned to all video)
+    (
+      {
+        sub1: [0, 1, 2, 3],
+        sub2: [0],
+        sub3: [0]
+      }, [0], test_video_nm, [sub1, sub1, sub1, sub1]
+    ),
+    # no subtitle left after first selection
+    # select sub 1
+    (
+      {
+        sub1: [0],
+        sub2: [0],
+        sub3: [0]
+      }, [0], test_video_nm, [sub1, None, None, None]
+    )
+  ]
+  
+  for case in case_ls:
+    print('testing', case)
+    case_sub_pos_map, case_select_seq, case_video_nm, exp_res = case
+    
+    select_sub_mock.reset_mock()
+    
+    selector_obj = selector(case_select_seq)
+    res = SubTitleSection().batch_select(case_sub_pos_map, case_video_nm)
+    assert res == exp_res
+    assert select_sub_mock.call_count == len(case_select_seq)
 
 def test_map_subs():
   sub1 = Subtitle('sub1', 'sub1', False)
@@ -184,16 +201,26 @@ def test_map_subs():
 @patch('src.section.SubTitleSection.get_do_write_subtitle_autofill')
 def test_ask_write_sub (autofill_mock:Mock, prompt_mock:Mock):
   """ test the autofill work """
-  section = SubTitleSection()
+  # test cases [(autofill, prompt, expected returned value)]
+  case_ls : list[tuple[bool, str, bool]] = [
+    (True, None, True),
+    (False, None, False),
+    (None, 'Yes', True),
+    (None, 'No', False)
+  ]
   
-  autofill_mock.return_value = True
-  assert section.ask_write_sub() == True
-  prompt_mock.assert_not_called()
-  
-  autofill_mock.return_value = None
-  prompt_mock.return_value = { 'writeSub': 'No' }
-  assert section.ask_write_sub() == False
-  prompt_mock.assert_called_once()
+  for case in case_ls:
+    print('testing', case)
+    case_autofill, case_prompt, exp_ret = case
+    
+    autofill_mock.reset_mock()
+    prompt_mock.reset_mock()
+    
+    autofill_mock.return_value = case_autofill
+    prompt_mock.return_value = {'writeSub': case_prompt}
+    
+    assert SubTitleSection().ask_write_sub() == exp_ret
+    assert prompt_mock.called == (case_autofill is None)
   
 def test_autofill_sub ():
   class fake_video_md (VideoMetaData):
@@ -227,12 +254,25 @@ def test_autofill_sub ():
 @patch('src.section.SubTitleSection.inq_prompt')
 @patch('src.section.SubTitleSection.get_sub_write_mode_autofill')
 def test_select_write_mode (autofill_mock:Mock, prompt_mock:Mock):
-  section = SubTitleSection()
+  # test cases [(autofill(doEmbed, doBurn), prompt(doEmbed, doBurn), expected result(doEmbed, doBurn))]
+  case_ls : list[tuple[tuple[bool, bool], list[bool, bool], tuple[bool, bool]]] = [
+    ((True, True), None, (True, True)),
+    ((False, False), None, (False, False)),
+    (None, ['Embed', 'Burn'], (True, True)),
+    (None, [], (False, False)),
+    (None, ['Embed'], (True, False)),
+    (None, ['Burn'], (False, True))
+  ]
   
-  autofill_mock.return_value = (True, True)
-  section.select_write_mode()
-  prompt_mock.assert_not_called()
-  
-  autofill_mock.return_value = None
-  section.select_write_mode()
-  prompt_mock.assert_called_once()
+  for case in case_ls:
+    print('testing', case)
+    case_autofill, case_prompt, exp_res = case
+    
+    autofill_mock.reset_mock()
+    prompt_mock.reset_mock()
+    
+    autofill_mock.return_value = case_autofill
+    prompt_mock.return_value = {'writeMode': case_prompt}
+    
+    assert SubTitleSection().select_write_mode() == exp_res
+    assert prompt_mock.called == (case_autofill is None)
