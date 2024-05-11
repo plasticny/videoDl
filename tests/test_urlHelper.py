@@ -38,6 +38,7 @@ def test_removeSurplusParam():
   # test cases [(url, expected_url)]
   case_ls : list[tuple[str, str]] = [
     ("https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=10s", "https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+    ("https://youtu.be/js1CtxSY38I?list=PLot67IosVFw1aOiraoa5zxbM9Y3xjb1EF", "https://youtu.be/js1CtxSY38I"),
     ("https://www.bilibili.com/video/BV1Kb411W75N?spm_id_from=333.851.b_7265636f6d6d656e64.1", "https://www.bilibili.com/video/BV1Kb411W75N"),
     ("https://www.facebook.com/watch/?v=10158340980295851&ref=sharing", "https://www.facebook.com/watch/?v=10158340980295851"),
     ("https://example.com", "https://example.com")

@@ -88,9 +88,11 @@ def removeSurplusParam (url : str) -> str:
 
   if urlSource is UrlSource.YOUTUBE or urlSource is UrlSource.FACEBOOK:
     return keepQuery(url, ['v'])
+  elif urlSource is UrlSource.YOUTU_BE:
+    return keepQuery(url, [])
   elif urlSource is UrlSource.BILIBILI:
     return keepQuery(url, ['p'])
   elif urlSource is UrlSource.PORNHUB:
     return keepQuery(url, ['viewkey'])
-  
+
   return url
