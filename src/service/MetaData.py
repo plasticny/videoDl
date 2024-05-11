@@ -16,6 +16,7 @@ from functools import cmp_to_key
 
 from src.service.urlHelper import getSource, UrlSource
 from src.service.bilibili import get_bili_subs, get_bili_page_cids, bvid_2_aid
+from src.service.logger import Logger
 
 from src.structs.option import IOpt, TOpt
 from src.structs.video_info import TFormatVideo, TFormatAudio, TFormatBoth, TFormatDesc, Subtitle
@@ -28,6 +29,11 @@ def ytdlp_extract_metadata (opts:MetaDataOpt):
       # download basic metadata using yt-dlp
       metadata = ydl.extract_info(opts.url, download = False)
       metadata : dict = ydl.sanitize_info(metadata)
+
+      logger = Logger()
+      json_name = logger.dump_dict(metadata)
+      logger.info(f'Metadata of {opts.url} has been saved to {json_name}.json')
+
   except Exception as e:
     print(e)
     raise Exception('Get metadata failed')
