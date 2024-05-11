@@ -49,7 +49,7 @@ def getSource (url : str) -> UrlSource:
 
 # checking if the url is valid
 # return: valid (bool), err (str/None)
-def isValid (url : str) -> (bool, str):
+def isValid (url : str) -> tuple[bool, str]:
   parsedUrl = urlparse(url)
 
   # check if it is url

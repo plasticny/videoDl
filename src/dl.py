@@ -13,14 +13,17 @@ from src.section.OutputSection import OutputSection
 
 from src.service.MetaData import fetchMetaData, VideoMetaData, MetaDataOpt
 from src.service.fileHelper import perpare_temp_folder, clear_temp_folder
+from src.service.check_update import check_update
 
 
 class Dl:
-  def __init__ (self):
+  def __init__ (self, do_check_update : bool = False):
     self.title = 'Download'
+    if do_check_update:
+      check_update()
   
   # main process
-  def run (self, loop=True):    
+  def run (self, loop=True):
     print(f"----------------- {self.title} -----------------", end='\n\n')
 
     perpare_temp_folder()
@@ -103,4 +106,4 @@ class Dl:
 
 """ Entry """
 if __name__ == "__main__":
-  Dl().run()
+  Dl(do_check_update=True).run()
