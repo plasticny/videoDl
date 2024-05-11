@@ -2,8 +2,8 @@ from __future__ import annotations
 from yt_dlp import YoutubeDL
 from uuid import uuid4
 from ffmpeg import input as ff_in, output as ff_out, Error as ff_Error
-from os import remove, rename, listdir
-from os.path import exists
+from os import listdir
+from shutil import move as move_file
 
 from src.section.Section import Section
 
@@ -286,7 +286,4 @@ class DownloadSection (Section) :
     for c in out_nm:
       output_nm += '' if c in ESCAPE_CHAR else c
     
-    dst = f'{out_dir}/{output_nm}'
-    if exists(dst):
-      remove(dst)
-    rename(f'{TEMP_FOLDER_PATH}/{temp_nm}', dst)
+    move_file(f'{TEMP_FOLDER_PATH}/{temp_nm}', f'{out_dir}/{output_nm}')
