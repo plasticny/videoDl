@@ -8,6 +8,7 @@ from shutil import move as move_file
 from src.section.Section import Section
 
 from src.service.fileHelper import TEMP_FOLDER_PATH, FFMPEG_FOLDER_PATH
+from src.service.logger import Logger
 
 from src.structs.option import IOpt, TOpt
 from src.structs.video_info import Subtitle, BundledFormat
@@ -287,3 +288,4 @@ class DownloadSection (Section) :
       output_nm += '' if c in ESCAPE_CHAR else c
     
     move_file(f'{TEMP_FOLDER_PATH}/{temp_nm}', f'{out_dir}/{output_nm}')
+    self.logger.info(f'Temp file is moved from {TEMP_FOLDER_PATH}/{temp_nm} to {out_dir}/{output_nm}')
