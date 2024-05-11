@@ -5,6 +5,7 @@ __pycache__
 /src/model
 /src/*.exe
 /src/draft.py
+/src/logs
 
 /info_reference/*
 /temp/*

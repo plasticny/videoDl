@@ -24,6 +24,7 @@ class UrlSection (Section):
       # check url valid
       valid, err = isValid(url)
       if not(valid):
+        self.logger.debug(err)
         print(err)
       else:
         break
@@ -33,4 +34,5 @@ class UrlSection (Section):
     else:
       url = removeSurplusParam(url)
 
+    self.logger.debug(f'Url: {url}')
     return url

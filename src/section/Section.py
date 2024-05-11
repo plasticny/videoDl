@@ -1,6 +1,8 @@
 import sys
 from enum import Enum
 
+from src.service.logger import Logger
+
 class HeaderType(Enum):
   HEADER = 1
   SUB_HEADER = 2
@@ -16,7 +18,9 @@ class Section:
     self.doShowFooter = doShowFooter
 
     self.headerType = headerType
-  
+    
+    self.logger = Logger()
+    
   @property
   def header (self):
     return f"================= {self.title} ================="
