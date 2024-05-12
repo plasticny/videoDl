@@ -11,7 +11,12 @@ class Logger:
 
   def _prepare (self):
     makedirs(self.log_dir, exist_ok=True)
-    logging.basicConfig(filename=f'{self.log_dir}/lyd.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(
+      filename=f'{self.log_dir}/lyd.log',
+      level=logging.DEBUG,
+      format='%(asctime)s - %(levelname)s - %(message)s',
+      encoding='utf-8'
+    )
     
   def _get_dir (self, file_path : str) -> str:
     while not (file_path[-3] == 's' and file_path[-2] == 'r' and file_path[-1] == 'c'):
@@ -28,3 +33,4 @@ class Logger:
     """ return name of saved json file """
     with open(f'{self.log_dir}/{name}.json', 'w') as f:
       json_dump(d, f, indent=2)
+    return name
