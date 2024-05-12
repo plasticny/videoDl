@@ -7,6 +7,7 @@ def test_isValid():
   case_ls : list[tuple[str, bool]] = [
     ("https://www.youtube.com/watch?v=dQw4w9WgXcQ", True),
     ("https://youtu.be/dQw4w9WgXcQ", True),
+    ("https://www.youtube.com/playlist?list=PLD7UlE9Qf9UZMMwF6XLyWRUJF8koJ3igJ", True),
     ("https://www.bilibili.com/video/BV1Kb411W75N", True),
     ("https://www.facebook.com/watch/?v=10158340980295851", True),
     ("https://www.instagram.com/p/CP9QqZ0nZ6I/", True),
@@ -27,6 +28,7 @@ def test_getSource():
   case_ls : list[tuple[str, UrlSource]] = [
     ('https://www.youtube.com/watch?v=dQw4w9WgXcQ', UrlSource.YOUTUBE),
     ('https://youtu.be/dQw4w9WgXcQ', UrlSource.YOUTU_BE),
+    ('https://www.youtube.com/playlist?list=PLD7UlE9Qf9UZMMwF6XLyWRUJF8koJ3igJ', UrlSource.YOUTUBE_LS),
     ('https://www.bilibili.com/video/BV1Kb411W75N', UrlSource.BILIBILI),
     ('https://www.facebook.com/watch/?v=10158340980295851', UrlSource.FACEBOOK),
     ('https://www.instagram.com/p/CP9QqZ0nZ6I/', UrlSource.IG),
@@ -45,6 +47,7 @@ def test_removeSurplusParam():
   case_ls : list[tuple[str, str]] = [
     ("https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=10s", "https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
     ("https://youtu.be/js1CtxSY38I?list=PLot67IosVFw1aOiraoa5zxbM9Y3xjb1EF", "https://youtu.be/js1CtxSY38I"),
+    ("https://www.youtube.com/playlist?list=PLD7UlE9Qf9UZMMwF6XLyWRUJF8koJ3igJ", "https://www.youtube.com/playlist?list=PLD7UlE9Qf9UZMMwF6XLyWRUJF8koJ3igJ"),
     ("https://www.bilibili.com/video/BV1Kb411W75N?spm_id_from=333.851.b_7265636f6d6d656e64.1", "https://www.bilibili.com/video/BV1Kb411W75N"),
     ("https://www.facebook.com/watch/?v=10158340980295851&ref=sharing", "https://www.facebook.com/watch/?v=10158340980295851"),
     ("https://www.pinterest.com/pin/123456789012345678/?utm_source=share", "https://www.pinterest.com/pin/123456789012345678/"),
