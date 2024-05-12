@@ -1,6 +1,6 @@
 import logging
-from os.path import dirname as dir, abspath
-from os import makedirs
+from os.path import dirname as dir, abspath, exists
+from os import makedirs, listdir, remove
 from datetime import datetime
 from json import dump as json_dump
 
@@ -29,8 +29,21 @@ class Logger:
   def debug (self, message : str):
     logging.debug(message)
     
-  def dump_dict (self, d : dict, name : str = str(int(datetime.timestamp(datetime.now())))) -> str:
+  def dump_dict (self, d : dict, name : str = None) -> str:
     """ return name of saved json file """
+    if name is None:
+      name = str(int(datetime.timestamp(datetime.now()) * 1000000))
     with open(f'{self.log_dir}/{name}.json', 'w') as f:
       json_dump(d, f, indent=2)
     return name
+  
+  def clear (self):
+    self.info('Clear log files')
+    if (not exists(self.log_dir)):
+      return
+    for file_nm in listdir(self.log_dir):
+      path = f'{self.log_dir}/{file_nm}'
+      if file_nm == 'lyd.log':
+        open(path, 'w').close()
+      else:
+        remove(path)
