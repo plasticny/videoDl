@@ -39,6 +39,7 @@ This tool is tested to be able to download video from these sites:
   <li>Bilibili</li>
   <li>Instagram</li>
   <li>Facebook</li>
+  <li>Pinterest</li>
 </ul>
 
 ## Testing
