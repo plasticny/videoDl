@@ -52,6 +52,8 @@ def fetchMetaData(opts:MetaDataOpt) -> MetaData:
   
   # instantiate the metadata
   source = getSource(opts.url)
+  Logger().debug(f'Getting metadata from {source}')
+  
   if metadata['_type'] == 'playlist':
     if source is UrlSource.BILIBILI:
       return BiliBiliPlaylistMetaData(metadata, opts)
@@ -269,8 +271,6 @@ class VideoMetaData (MetaData):
           **basic_info,
           'video': video
         })
-
-    assert len(formats['video']) > 0
 
     return formats
 
