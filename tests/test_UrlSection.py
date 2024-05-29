@@ -1,11 +1,11 @@
-from unittest.mock import patch, call
+from unittest.mock import patch, call, Mock
 
 from src.section.UrlSection import UrlSection, Message
 from src.service.urlHelper import ErrMessage
 
 @patch('builtins.print')
 @patch('builtins.input')
-def test_problematic_url(input_mock, print_mock):
+def test_problematic_url(input_mock : Mock, print_mock : Mock):
   section = UrlSection(doShowHeader=False, doShowFooter=False)
 
   # test problematic url
@@ -24,7 +24,7 @@ def test_problematic_url(input_mock, print_mock):
 # test url that should be well handled
 @patch('builtins.print')
 @patch('builtins.input')
-def test_valid_url(input_mock, print_mock):
+def test_valid_url(input_mock : Mock, print_mock : Mock):
   input_mock.return_value = 'https://www.youtube.com/watch?v=9bZkp7q19f0'
   assert UrlSection(doShowHeader=False, doShowFooter=False).run() == 'https://www.youtube.com/watch?v=9bZkp7q19f0'
   assert print_mock.mock_calls == []
