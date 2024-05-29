@@ -1,5 +1,6 @@
 from urllib.parse import urlparse, parse_qs, urlunparse
 from enum import Enum
+from requests import get
 
 # website source of the url
 class UrlSource (Enum):
@@ -101,3 +102,14 @@ def removeSurplusParam (url : str) -> str:
 
   return url
 
+def redirect (url : str) -> str:
+  source = getSource(url)
+  if source is not UrlSource.PIN_IT:
+    return url
+
+  # pin.it to pinterest  
+  k = '"pinId":"'
+  html = get(url).text
+  srt = html.find(k) + len(k)
+  end = html.find('"', srt)
+  return 'https://www.pinterest.com/pin/' + html[srt : end]

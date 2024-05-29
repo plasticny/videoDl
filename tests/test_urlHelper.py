@@ -1,3 +1,5 @@
+from unittest.mock import patch, Mock
+
 from src.service.urlHelper import *
 
 def test_isValid():
@@ -53,3 +55,20 @@ def test_removeSurplusParam():
     print('testing', case)
     case_url, expected_url = case
     assert removeSurplusParam(case_url) == expected_url
+
+def test_redirect ():
+  case_ls : list[tuple[str, str]] = [
+    ("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+    ("https://youtu.be/dQw4w9WgXcQ", "https://youtu.be/dQw4w9WgXcQ"),
+    ("https://www.bilibili.com/video/BV1Kb411W75N", "https://www.bilibili.com/video/BV1Kb411W75N"),
+    ("https://www.facebook.com/watch/?v=10158340980295851", "https://www.facebook.com/watch/?v=10158340980295851"),
+    ("https://www.instagram.com/p/CP9QqZ0nZ6I/", "https://www.instagram.com/p/CP9QqZ0nZ6I/"),
+    ("https://www.pinterest.com/pin/123456789012345678/", "https://www.pinterest.com/pin/123456789012345678/"),
+    ("https://pin.it/5hI35yyC9", "https://www.pinterest.com/pin/979532987693940546")
+  ]
+  
+  for case in case_ls:
+    print('testing', case)
+    case_url, expected_url = case
+    assert redirect(case_url) == expected_url
+  
