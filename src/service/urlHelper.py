@@ -11,6 +11,7 @@ class UrlSource (Enum):
   FACEBOOK = 4
   IG = 5
   PINTEREST = 6
+  PIN_IT = 7
 
 class SourcePrefix (Enum):
   YOUTUBE = ['www.youtube.com']
@@ -20,6 +21,7 @@ class SourcePrefix (Enum):
   FACEBOOK = ['www.facebook.com'] 
   IG = ['www.instagram.com']
   PINTEREST = ['www.pinterest.com/pin/']
+  PIN_IT = ['pin.it']
 
 # error message
 class ErrMessage (Enum):
@@ -41,7 +43,8 @@ def getSource (url : str) -> UrlSource:
     SourcePrefix.PORNHUB : UrlSource.PORNHUB,
     SourcePrefix.FACEBOOK : UrlSource.FACEBOOK,
     SourcePrefix.IG : UrlSource.IG,
-    SourcePrefix.PINTEREST : UrlSource.PINTEREST
+    SourcePrefix.PINTEREST : UrlSource.PINTEREST,
+    SourcePrefix.PIN_IT : UrlSource.PIN_IT
   }
   for prefix, source in prefix_url_map.items():
     if __check(url, prefix):
@@ -86,7 +89,6 @@ def removeSurplusParam (url : str) -> str:
     return updatedUrl
   
   urlSource = getSource(url)
-  print(urlSource)
 
   if urlSource is UrlSource.YOUTUBE or urlSource is UrlSource.FACEBOOK:
     return keepQuery(url, ['v'])
@@ -98,3 +100,4 @@ def removeSurplusParam (url : str) -> str:
     return keepQuery(url, [])
 
   return url
+

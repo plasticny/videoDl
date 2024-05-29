@@ -9,6 +9,7 @@ def test_isValid():
     ("https://www.facebook.com/watch/?v=10158340980295851", True),
     ("https://www.instagram.com/p/CP9QqZ0nZ6I/", True),
     ("https://www.pinterest.com/pin/123456789012345678/", True),
+    ("https://pin.it/5hI35yyC9", True),
     ("https://example.com", False),
     ("not a valid url", False)
   ]
@@ -28,6 +29,7 @@ def test_getSource():
     ('https://www.facebook.com/watch/?v=10158340980295851', UrlSource.FACEBOOK),
     ('https://www.instagram.com/p/CP9QqZ0nZ6I/', UrlSource.IG),
     ('https://www.pinterest.com/pin/123456789012345678/', UrlSource.PINTEREST),
+    ('https://pin.it/5hI35yyC9', UrlSource.PIN_IT),
     ('https://example.com', UrlSource.NOT_DEFINED)
   ]
   
