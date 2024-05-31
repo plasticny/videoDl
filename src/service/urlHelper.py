@@ -1,5 +1,6 @@
 from urllib.parse import urlparse, parse_qs, urlunparse
 from enum import Enum
+from requests import get
 
 # website source of the url
 class UrlSource (Enum):
@@ -10,6 +11,8 @@ class UrlSource (Enum):
   PORNHUB = 3
   FACEBOOK = 4
   IG = 5
+  PINTEREST = 6
+  PIN_IT = 7
 
 class SourcePrefix (Enum):
   YOUTUBE = ['www.youtube.com']
@@ -18,6 +21,8 @@ class SourcePrefix (Enum):
   PORNHUB = ['pornhub.com/view_video.php']
   FACEBOOK = ['www.facebook.com'] 
   IG = ['www.instagram.com']
+  PINTEREST = ['www.pinterest.com/pin/']
+  PIN_IT = ['pin.it']
 
 # error message
 class ErrMessage (Enum):
@@ -31,20 +36,20 @@ def getSource (url : str) -> UrlSource:
       if url.count(p) != 0:
         return True
     return False
-
-  if __check(url, SourcePrefix.YOUTUBE):
-    return UrlSource.YOUTUBE
-  elif __check(url, SourcePrefix.YOUTU_BE):
-    return UrlSource.YOUTU_BE
-  elif __check(url, SourcePrefix.BILIBILI):
-    return UrlSource.BILIBILI
-  elif __check(url, SourcePrefix.PORNHUB):
-    return UrlSource.PORNHUB
-  elif __check(url, SourcePrefix.FACEBOOK):
-    return UrlSource.FACEBOOK
-  elif __check(url, SourcePrefix.IG):
-    return UrlSource.IG
   
+  prefix_url_map : dict[SourcePrefix, UrlSource] = {
+    SourcePrefix.YOUTUBE : UrlSource.YOUTUBE,
+    SourcePrefix.YOUTU_BE : UrlSource.YOUTU_BE,
+    SourcePrefix.BILIBILI : UrlSource.BILIBILI,
+    SourcePrefix.PORNHUB : UrlSource.PORNHUB,
+    SourcePrefix.FACEBOOK : UrlSource.FACEBOOK,
+    SourcePrefix.IG : UrlSource.IG,
+    SourcePrefix.PINTEREST : UrlSource.PINTEREST,
+    SourcePrefix.PIN_IT : UrlSource.PIN_IT
+  }
+  for prefix, source in prefix_url_map.items():
+    if __check(url, prefix):
+      return source
   return UrlSource.NOT_DEFINED
 
 # checking if the url is valid
@@ -83,16 +88,28 @@ def removeSurplusParam (url : str) -> str:
     updatedUrl = urlunparse(parsedUrl._replace(query=updatedQuery))
 
     return updatedUrl
-
+  
   urlSource = getSource(url)
 
   if urlSource is UrlSource.YOUTUBE or urlSource is UrlSource.FACEBOOK:
     return keepQuery(url, ['v'])
-  elif urlSource is UrlSource.YOUTU_BE:
-    return keepQuery(url, [])
   elif urlSource is UrlSource.BILIBILI:
     return keepQuery(url, ['p'])
   elif urlSource is UrlSource.PORNHUB:
     return keepQuery(url, ['viewkey'])
+  elif urlSource is UrlSource.YOUTU_BE or urlSource is UrlSource.PINTEREST:
+    return keepQuery(url, [])
 
   return url
+
+def redirect (url : str) -> str:
+  source = getSource(url)
+  if source is not UrlSource.PIN_IT:
+    return url
+
+  # pin.it to pinterest  
+  k = '"pinId":"'
+  html = get(url).text
+  srt = html.find(k) + len(k)
+  end = html.find('"', srt)
+  return 'https://www.pinterest.com/pin/' + html[srt : end]

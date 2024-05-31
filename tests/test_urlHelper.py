@@ -1,3 +1,5 @@
+from unittest.mock import patch, Mock
+
 from src.service.urlHelper import *
 
 def test_isValid():
@@ -8,6 +10,8 @@ def test_isValid():
     ("https://www.bilibili.com/video/BV1Kb411W75N", True),
     ("https://www.facebook.com/watch/?v=10158340980295851", True),
     ("https://www.instagram.com/p/CP9QqZ0nZ6I/", True),
+    ("https://www.pinterest.com/pin/123456789012345678/", True),
+    ("https://pin.it/5hI35yyC9", True),
     ("https://example.com", False),
     ("not a valid url", False)
   ]
@@ -26,6 +30,8 @@ def test_getSource():
     ('https://www.bilibili.com/video/BV1Kb411W75N', UrlSource.BILIBILI),
     ('https://www.facebook.com/watch/?v=10158340980295851', UrlSource.FACEBOOK),
     ('https://www.instagram.com/p/CP9QqZ0nZ6I/', UrlSource.IG),
+    ('https://www.pinterest.com/pin/123456789012345678/', UrlSource.PINTEREST),
+    ('https://pin.it/5hI35yyC9', UrlSource.PIN_IT),
     ('https://example.com', UrlSource.NOT_DEFINED)
   ]
   
@@ -41,6 +47,7 @@ def test_removeSurplusParam():
     ("https://youtu.be/js1CtxSY38I?list=PLot67IosVFw1aOiraoa5zxbM9Y3xjb1EF", "https://youtu.be/js1CtxSY38I"),
     ("https://www.bilibili.com/video/BV1Kb411W75N?spm_id_from=333.851.b_7265636f6d6d656e64.1", "https://www.bilibili.com/video/BV1Kb411W75N"),
     ("https://www.facebook.com/watch/?v=10158340980295851&ref=sharing", "https://www.facebook.com/watch/?v=10158340980295851"),
+    ("https://www.pinterest.com/pin/123456789012345678/?utm_source=share", "https://www.pinterest.com/pin/123456789012345678/"),
     ("https://example.com", "https://example.com")
   ]
   
@@ -48,3 +55,20 @@ def test_removeSurplusParam():
     print('testing', case)
     case_url, expected_url = case
     assert removeSurplusParam(case_url) == expected_url
+
+def test_redirect ():
+  case_ls : list[tuple[str, str]] = [
+    ("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+    ("https://youtu.be/dQw4w9WgXcQ", "https://youtu.be/dQw4w9WgXcQ"),
+    ("https://www.bilibili.com/video/BV1Kb411W75N", "https://www.bilibili.com/video/BV1Kb411W75N"),
+    ("https://www.facebook.com/watch/?v=10158340980295851", "https://www.facebook.com/watch/?v=10158340980295851"),
+    ("https://www.instagram.com/p/CP9QqZ0nZ6I/", "https://www.instagram.com/p/CP9QqZ0nZ6I/"),
+    ("https://www.pinterest.com/pin/123456789012345678/", "https://www.pinterest.com/pin/123456789012345678/"),
+    ("https://pin.it/5hI35yyC9", "https://www.pinterest.com/pin/979532987693940546")
+  ]
+  
+  for case in case_ls:
+    print('testing', case)
+    case_url, expected_url = case
+    assert redirect(case_url) == expected_url
+  

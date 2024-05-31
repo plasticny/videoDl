@@ -1,7 +1,8 @@
 from enum import Enum
 
 from src.section.Section import Section
-from src.service.urlHelper import isValid, removeSurplusParam, getSource, UrlSource
+from src.service.urlHelper import isValid, removeSurplusParam, getSource, redirect
+from src.service.urlHelper import UrlSource
 
 class Message(Enum):
   INPUT_URL = 'Enter the url: '
@@ -32,7 +33,8 @@ class UrlSection (Section):
     if getSource(url) == UrlSource.NOT_DEFINED:
       print(Message.URL_SOURCE_NOT_TESTED.value)
     else:
-      url = removeSurplusParam(url)
+      url = redirect(removeSurplusParam(url))
 
     self.logger.debug(f'Url: {url}')
     return url
+  
