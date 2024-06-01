@@ -13,6 +13,7 @@ from yt_dlp import YoutubeDL
 from contextlib import redirect_stdout
 from io import StringIO
 from functools import cmp_to_key
+from colorama import Fore, Style
 
 from src.service.urlHelper import getSource, UrlSource
 from src.service.bilibili import get_bili_subs, get_bili_page_cids, bvid_2_aid
@@ -32,7 +33,7 @@ def ytdlp_extract_metadata (opts:MetaDataOpt):
 
       logger = Logger()
       json_name = logger.dump_dict(metadata)
-      logger.info(f'Metadata of {opts.url} has been saved to {json_name}.json')
+      logger.debug(f'Metadata of {opts.url} has been saved to {json_name}.json')
 
   except Exception as e:
     print(e)
@@ -145,7 +146,9 @@ class PlaylistMetaData (MetaData):
     
   def fetchVideoMd(self) -> list[VideoMetaData]:
     res = []
-    for entry in self.metadata['entries']:
+    for idx, entry in enumerate(self.metadata['entries']):
+      print(f'{Fore.CYAN}Getting info of video {idx + 1} / {self.playlist_count}{Style.RESET_ALL}')
+      
       entry_opts : MetaDataOpt = self.opts.copy()
       entry_opts.url = entry['url']
       

@@ -13,10 +13,12 @@ class UrlSource (Enum):
   IG = 5
   PINTEREST = 6
   PIN_IT = 7
+  YOUTUBE_LS = 8
 
 class SourcePrefix (Enum):
   YOUTUBE = ['www.youtube.com']
   YOUTU_BE = ['youtu.be']
+  YOUTUBE_LS = ['www.youtube.com/playlist']
   BILIBILI = ['www.bilibili.com/video/']
   PORNHUB = ['pornhub.com/view_video.php']
   FACEBOOK = ['www.facebook.com'] 
@@ -38,6 +40,8 @@ def getSource (url : str) -> UrlSource:
     return False
   
   prefix_url_map : dict[SourcePrefix, UrlSource] = {
+    # youtube ls should always be checked before youtube
+    SourcePrefix.YOUTUBE_LS : UrlSource.YOUTUBE_LS,
     SourcePrefix.YOUTUBE : UrlSource.YOUTUBE,
     SourcePrefix.YOUTU_BE : UrlSource.YOUTU_BE,
     SourcePrefix.BILIBILI : UrlSource.BILIBILI,
@@ -62,11 +66,15 @@ def isValid (url : str) -> tuple[bool, str]:
     return False, ErrMessage.INVALID_URL.value
            
   source = getSource(url)
+  qs = parse_qs(urlparse(url).query)
   if source is UrlSource.YOUTUBE:
-    if 'v' not in parse_qs(urlparse(url).query):
+    if 'v' not in qs:
       return False, ErrMessage.MISSING_PARAM.value.format('v')
+  elif source is UrlSource.YOUTUBE_LS:
+    if 'list' not in qs:
+      return False, ErrMessage.MISSING_PARAM.value.format('list')
   elif source is UrlSource.PORNHUB:
-    if 'viewkey' not in parse_qs(urlparse(url).query):
+    if 'viewkey' not in qs:
       return False, ErrMessage.MISSING_PARAM.value.format('viewkey')
 
   # valid checked
@@ -93,9 +101,11 @@ def removeSurplusParam (url : str) -> str:
 
   if urlSource is UrlSource.YOUTUBE or urlSource is UrlSource.FACEBOOK:
     return keepQuery(url, ['v'])
-  elif urlSource is UrlSource.BILIBILI:
+  if urlSource is UrlSource.YOUTUBE_LS:
+    return keepQuery(url, ['list'])
+  if urlSource is UrlSource.BILIBILI:
     return keepQuery(url, ['p'])
-  elif urlSource is UrlSource.PORNHUB:
+  if urlSource is UrlSource.PORNHUB:
     return keepQuery(url, ['viewkey'])
   elif urlSource is UrlSource.YOUTU_BE or urlSource is UrlSource.PINTEREST:
     return keepQuery(url, [])

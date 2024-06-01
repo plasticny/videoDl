@@ -14,6 +14,7 @@ from src.section.OutputSection import OutputSection
 from src.service.MetaData import fetchMetaData, VideoMetaData, MetaDataOpt
 from src.service.fileHelper import perpare_temp_folder, clear_temp_folder
 from src.service.check_update import check_update
+from src.service.logger import Logger
 
 
 class Dl:
@@ -24,6 +25,10 @@ class Dl:
   
   # main process
   def run (self, loop=True):
+    logger = Logger()
+    logger.debug('======= Start download process =======')
+    logger.clear()
+
     print(f"----------------- {self.title} -----------------", end='\n\n')
 
     perpare_temp_folder()
@@ -37,8 +42,7 @@ class Dl:
       # subtitle, format, output dir
       opts_ls : list[DownloadOpt] = Section(title='Set up download').run(self.setup, md_ls=md_ls)
 
-      # download
-      assert len(md_ls) == len(opts_ls)
+      # download all video in the url
       for idx, opts in enumerate(opts_ls):
         try:
           Section(title=f'Download video {idx+1} of {len(opts_ls)}').run(

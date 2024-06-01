@@ -33,13 +33,19 @@ Execute download.bat to run this tool.</br>
 <b>However, this tool current not work well and is used as a debug helper. So use lyd instead.</b>
 
 ## Tested sites
-This tool is tested to be able to download video from these sites:
+This tool is tested to be able to:</br>
+Download video from these sites
 <ul>
   <li>Youtube</li>
   <li>Bilibili</li>
   <li>Instagram</li>
   <li>Facebook</li>
   <li>Pinterest</li>
+</ul>
+Download playlist from these sites
+<ul>
+  <li>Youtube</li>
+  <li>Bilibili</li>
 </ul>
 
 ## Testing

@@ -30,11 +30,13 @@ class UrlSection (Section):
       else:
         break
 
-    if getSource(url) == UrlSource.NOT_DEFINED:
+    source = getSource(url)
+    if source == UrlSource.NOT_DEFINED:
       print(Message.URL_SOURCE_NOT_TESTED.value)
     else:
       url = redirect(removeSurplusParam(url))
 
-    self.logger.debug(f'Url: {url}')
+    self.logger.info(f'Url: {url}')
+    self.logger.info(f'Source: {source}')
     return url
   
