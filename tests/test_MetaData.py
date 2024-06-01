@@ -134,23 +134,27 @@ def test_videoMd_extract_format():
   
   fake_metadata = {'formats': [
     {}, # some format without audio or video
-    { 'tbr': 1, 'format_id': '1', 'acodec': 'm4a', 'vcodec': 'mp4', 'ext': 'mp4', 'audio_ext': 'm4a', 'video_ext': 'mp4'  },
-    { 'tbr': 3, 'format_id': '2', 'acodec': 'none', 'vcodec': 'avi', 'ext': 'avi', 'audio_ext': 'none', 'video_ext': 'avi' },
+    { 'tbr': 1, 'format_id': '1', 'acodec': 'm4a', 'vcodec': 'mp4', 'ext': 'mp4', 'audio_ext': 'm4a', 'video_ext': 'mp4', 'resolution': '720x720' },
+    { 'tbr': 3, 'format_id': '2', 'acodec': 'none', 'vcodec': 'avi', 'ext': 'avi', 'audio_ext': 'none', 'video_ext': 'avi', 'resolution': '720x720' },
     { 'tbr': 4, 'format_id': '3', 'acodec': 'mp3', 'vcodec': 'none', 'ext': 'mp3', 'audio_ext': 'mp3', 'video_ext': 'none' },
-    { 'tbr': 2, 'format_id': '4', 'acodec': 'none', 'vcodec': 'mp4', 'ext': 'mp4', 'audio_ext': 'none', 'video_ext': 'mp4' }
+    { 'tbr': 2, 'format_id': '4', 'acodec': 'none', 'vcodec': 'mp4', 'ext': 'mp4', 'audio_ext': 'none', 'video_ext': 'mp4', 'resolution': '720x720' }
   ]}
   
   expected_result : TMdFormats = {
     'both': [
-      { 'tbr': 1, 'format_id': '1', 'audio': { 'codec': 'm4a', 'ext': 'm4a' }, 'video': { 'codec': 'mp4', 'ext': 'mp4' } }
+      {
+        'tbr': 1, 'format_id': '1',
+        'audio': { 'tbr': 1, 'format_id': '1', 'codec': 'm4a', 'ext': 'm4a' },
+        'video': { 'tbr': 1, 'format_id': '1', 'codec': 'mp4', 'ext': 'mp4', 'height': 720, 'width': 720 }
+      }
     ],
     'audio': [
-      { 'tbr': 4, 'format_id': '3', 'audio': { 'codec': 'mp3', 'ext': 'mp3' } },
-      { 'tbr': 1, 'format_id': '1', 'audio': { 'codec': 'm4a', 'ext': 'm4a' } }
+      { 'tbr': 4, 'format_id': '3', 'codec': 'mp3', 'ext': 'mp3' },
+      { 'tbr': 1, 'format_id': '1', 'codec': 'm4a', 'ext': 'm4a' }
     ],
     'video': [
-      { 'tbr': 2, 'format_id': '4', 'video': { 'codec': 'mp4', 'ext': 'mp4' } },
-      { 'tbr': 1, 'format_id': '1', 'video': { 'codec': 'mp4', 'ext': 'mp4' } }
+      { 'tbr': 2, 'format_id': '4', 'codec': 'mp4', 'ext': 'mp4', 'height': 720, 'width': 720 },
+      { 'tbr': 1, 'format_id': '1', 'codec': 'mp4', 'ext': 'mp4', 'height': 720, 'width': 720 }
     ]
   }
   
