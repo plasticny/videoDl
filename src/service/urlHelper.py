@@ -40,9 +40,10 @@ def getSource (url : str) -> UrlSource:
     return False
   
   prefix_url_map : dict[SourcePrefix, UrlSource] = {
+    # youtube ls should always be checked before youtube
+    SourcePrefix.YOUTUBE_LS : UrlSource.YOUTUBE_LS,
     SourcePrefix.YOUTUBE : UrlSource.YOUTUBE,
     SourcePrefix.YOUTU_BE : UrlSource.YOUTU_BE,
-    SourcePrefix.YOUTU_BE : UrlSource.YOUTUBE_LS,
     SourcePrefix.BILIBILI : UrlSource.BILIBILI,
     SourcePrefix.PORNHUB : UrlSource.PORNHUB,
     SourcePrefix.FACEBOOK : UrlSource.FACEBOOK,

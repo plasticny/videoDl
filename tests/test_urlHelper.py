@@ -20,7 +20,8 @@ def test_isValid():
   for case in case_ls:
     print('testing', case)
     case_url, expected_result = case
-    valid, _ = isValid(case_url)
+    valid, err = isValid(case_url)
+    print(err)
     assert valid == expected_result
 
 def test_getSource():
