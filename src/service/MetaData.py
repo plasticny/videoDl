@@ -223,6 +223,16 @@ class VideoMetaData (MetaData):
       
   def _extract_format (self) -> TMdFormats:    
     def __compare(a, b):
+      # If a and b is video in the format, compare by resolution first
+      IS_VIDEO = lambda x: 'vcodec' in x and x['vcodec'] != 'none'
+      if IS_VIDEO(a) and IS_VIDEO(b) and a['resolution'] != b['resolution']:
+        a_res = a['resolution'].split('x')
+        b_res = b['resolution'].split('x')
+        if a_res[0] != b_res[0]:
+          return int(b_res[0]) - int(a_res[0])
+        if a_res[1] != b_res[1]:
+          return int(b_res[1]) - int(a_res[1])
+
       # Compare two formats by tsr, from high to low
       # If the format has no tsr, it will be placed at the end
       if 'tbr' not in a or a['tbr'] is None:
@@ -265,8 +275,9 @@ class VideoMetaData (MetaData):
       
       if has_audio and has_video:
         formats['both'].append({**basic_info, 'audio': audio, 'video': video})
-      if has_audio:
-        formats['audio'].append(audio)
+      if has_audio and not has_video:
+        # only accept format that has audio only
+        formats['audio'].append(audio)  
       if has_video:
         formats['video'].append(video)
 
