@@ -13,7 +13,7 @@ enable = false # do auto-fill login option
 # format
 [format]
 enable = false
-# 0: best quality, 1: quality-efficent balance
+# 0: best quality, 1: best quality lowest size 2: quality-efficent balance
 prefered_format = 1
 
 # subtitle
