@@ -4,8 +4,11 @@ path.append(Path('..').resolve().as_posix())
 
 from unittest.mock import patch, Mock
 from typing_extensions import Union
+from dataclasses import dataclass
 
-from src.section.FormatSection import FormatSection, LazyFormatSection
+from src.section.FormatSection import FormatSection
+from src.section.FormatSection import LazyFormatSection, LazyFormatSelector, LazyMediaSelector
+from src.section.FormatSection import LazyFormatType, LazyMediaType
 from src.service.MetaData import VideoMetaData
 from src.structs.video_info import BundledFormat
 
@@ -65,11 +68,11 @@ def test_lazy_format_main(ask_format_mock:Mock, quality_efficient_mock:Mock, bes
   # [(video metadata list, ask_format_mock_ret, exepected_ret list)]
   case_ls : list[tuple[list[fake_videoMd], str, list[Union[str, BundledFormat]]]] = [
     # quality-efficient
-    ([fake_md], LazyFormatSection.OPT_QUA_EFF, [quality_efficient_ret]),
+    ([fake_md], LazyFormatType.QUALITY_EFFICIENT.value, [quality_efficient_ret]),
     # best quality
-    ([fake_md], LazyFormatSection.OPT_BEST_QUA, [best_quality_ret]),
+    ([fake_md], LazyFormatType.BEST_QUALITY.value, [best_quality_ret]),
     # best quality lowest size
-    ([fake_md], LazyFormatSection.OPT_BEST_QUA_LOW_SIZE, [best_quality_ret])
+    ([fake_md], LazyFormatType.BEST_QUALITY_LOW_SIZE.value, [best_quality_ret])
   ]
   
   for case in case_ls:
@@ -121,52 +124,59 @@ def test_lazy_format_best_quality ():
   # [(video metadata, format option, expected return)]
   case_ls : list[tuple[fake_videoMd, str, Union[str, BundledFormat]]] = [
     # best quality
-    (fake_md1, LazyFormatSection.OPT_BEST_QUA, BundledFormat('v1', 'a1')),
-    (fake_md2, LazyFormatSection.OPT_BEST_QUA, 'v1'),
-    (fake_md3, LazyFormatSection.OPT_BEST_QUA, 'v1'),
+    (fake_md1, LazyFormatType.BEST_QUALITY.value, BundledFormat('v1', 'a1')),
+    (fake_md2, LazyFormatType.BEST_QUALITY.value, 'v1'),
+    (fake_md3, LazyFormatType.BEST_QUALITY.value, 'v1'),
     # best quality lowest size
-    (fake_md3, LazyFormatSection.OPT_BEST_QUA_LOW_SIZE, 'v2')
+    (fake_md3, LazyFormatType.BEST_QUALITY_LOW_SIZE.value, 'v2')
   ]
   for case in case_ls:
     print('testing', case)
     case_md, case_format_option, case_exepected_ret = case
     assert LazyFormatSection()._best_quality(case_md, case_format_option) == case_exepected_ret
   
+  
+# ======================== LazyFormatSelector ======================== #
 @patch('src.section.FormatSection.inq_prompt')
 @patch('src.section.FormatSection.get_lyd_format_autofill')
-@patch('src.section.FormatSection.LazyFormatSection._get_options')
+@patch('src.section.FormatSection.LazyFormatSelector._get_options')
 def test_lazy_format_ask_format(get_options_mock:Mock, autofill_mock:Mock, prompt_mock:Mock):
   """
     Test the function will return the first option if there is only one option
     without asking user
   """  
-  # [(fake options, autofill return, prompt return, do autofill called, do prompt called, expected return)]
-  case_ls : list[tuple[list[str], int, str, bool, bool, str]] = [
+  # [(fake options, media, autofill return, prompt return, do autofill called, do prompt called, expected return)]
+  case_ls : list[tuple[list[str], str, int, str, bool, bool, str]] = [
     # only one option
     (
-      [LazyFormatSection.OPT_BEST_QUA], None, None,
-      False, False, LazyFormatSection.OPT_BEST_QUA
+      [LazyFormatType.BEST_QUALITY.value], 'Video', None, None,
+      False, False, LazyFormatType.BEST_QUALITY.value
     ),
     # more than one option, and autofill 1
     (
-      [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_QUA_EFF], 0, None,
-      True, False, LazyFormatSection.OPT_BEST_QUA
+      [LazyFormatType.BEST_QUALITY.value, LazyFormatType.QUALITY_EFFICIENT.value], 'Video', 0, None,
+      True, False, LazyFormatType.BEST_QUALITY.value
     ),
     # more than one option, and autofill 2
     (
-      [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_QUA_EFF], 1, None,
-      True, False, LazyFormatSection.OPT_QUA_EFF
+      [LazyFormatType.BEST_QUALITY.value, LazyFormatType.QUALITY_EFFICIENT.value], 'Video', 1, None,
+      True, False, LazyFormatType.QUALITY_EFFICIENT.value
     ),
     # more than one option, and prompt
     (
-      [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_QUA_EFF], None, LazyFormatSection.OPT_BEST_QUA,
-      True, True, LazyFormatSection.OPT_BEST_QUA
+      [LazyFormatType.BEST_QUALITY.value, LazyFormatType.QUALITY_EFFICIENT.value], 'Video', None, LazyFormatType.BEST_QUALITY.value,
+      True, True, LazyFormatType.BEST_QUALITY.value
+    ),
+    # audio
+    (
+      [], 'Audio', None, None,
+      False, False, LazyFormatType.BEST_QUALITY.value
     )
   ]
   
   for case in case_ls:
     print('testing', case)
-    case_options, case_autofill_ret, case_prompt_ret, case_do_autofill, case_do_prompt, case_exepected_ret = case
+    case_options, case_media, case_autofill_ret, case_prompt_ret, case_do_autofill, case_do_prompt, case_exepected_ret = case
     
     get_options_mock.reset_mock()
     autofill_mock.reset_mock()
@@ -176,7 +186,7 @@ def test_lazy_format_ask_format(get_options_mock:Mock, autofill_mock:Mock, promp
     autofill_mock.return_value = case_autofill_ret
     prompt_mock.return_value = { 'format_option': case_prompt_ret }
     
-    res = LazyFormatSection()._ask_format_option([])
+    res = LazyFormatSelector()._ask_format_option([], case_media)
     
     assert res == case_exepected_ret
     assert autofill_mock.called == case_do_autofill
@@ -195,12 +205,46 @@ def test_lazy_format_get_options ():
   # [(list of video md, expected return)]
   case_ls : list[tuple[list[fake_videoMd], list[str]]] = [
     # all format have both
-    ([fake_videoMd_md1], [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_BEST_QUA_LOW_SIZE, LazyFormatSection.OPT_QUA_EFF]),
+    ([fake_videoMd_md1], [LazyFormatType.BEST_QUALITY.value, LazyFormatType.BEST_QUALITY_LOW_SIZE.value, LazyFormatType.QUALITY_EFFICIENT.value]),
     # not all format have both
-    ([fake_videoMd_md1, fake_videoMd_md2], [LazyFormatSection.OPT_BEST_QUA, LazyFormatSection.OPT_BEST_QUA_LOW_SIZE])
+    ([fake_videoMd_md1, fake_videoMd_md2], [LazyFormatType.BEST_QUALITY.value, LazyFormatType.BEST_QUALITY_LOW_SIZE.value])
   ]
 
   for case in case_ls:
     print('testing', case)
     case_video_md_ls, case_exepected_ret = case    
-    assert LazyFormatSection()._get_options(case_video_md_ls) == case_exepected_ret
+    assert LazyFormatSelector()._get_options(case_video_md_ls) == case_exepected_ret
+# ======================== LazyFormatSelector ======================== #
+
+# ======================== LazyMediaSelector ======================== #
+def test_lazy_media_ask_media ():
+  pass
+
+def test_lazy_media_get_options ():
+  fake_video_format = create_fake_format('v1')
+  fake_audio_format = create_fake_format('a1')
+  fake_both_format = create_fake_format('b1')
+  
+  fake_md1 = fake_videoMd(both_ls=[fake_both_format])
+  fake_md2 = fake_videoMd(video_ls=[fake_video_format], audio_ls=[fake_audio_format])
+  fake_md3 = fake_videoMd(video_ls=[fake_video_format])
+  fake_md4 = fake_videoMd(audio_ls=[fake_audio_format])
+  
+  @dataclass
+  class Case:
+    md_ls : list[fake_videoMd]
+    expected_ret : list[str]
+    def __str__(self) -> str:
+      return f'Case({self.md_ls}, {self.expected_ret})'
+      
+  case_ls : list[Case] = [
+    Case([fake_md1], [LazyMediaType.VIDEO.value, LazyMediaType.AUDIO.value]),
+    Case([fake_md2], [LazyMediaType.VIDEO.value, LazyMediaType.AUDIO.value]),
+    Case([fake_md3], [LazyMediaType.VIDEO.value]),
+    Case([fake_md4], [LazyMediaType.AUDIO.value])
+  ]
+  
+  for case in case_ls:
+    print('testing', case)
+    assert LazyMediaSelector()._get_options(case.md_ls) == case.expected_ret
+# ======================== LazyMediaSelector ======================== #
