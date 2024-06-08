@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import TypedDict
 from colorama import Fore, Style
 
@@ -15,19 +16,22 @@ class BundledFormat:
       return False
     return self.video == __value.video and self.audio == __value.audio
 
-class TFormatDesc (TypedDict):
-  codec : str
-  ext : str
-
 class TFormatBase (TypedDict):
   format_id : str
   tsr : float
-class TFormatVideo (TFormatBase):
-  video : TFormatDesc
-class TFormatAudio (TFormatBase):
-  audio : TFormatDesc
-class TFormatBoth (TFormatVideo, TFormatAudio):
+
+class TFormatFile (TypedDict):
+  codec : str
+  ext : str
+class TFormatVideo (TFormatBase, TFormatFile):
+  width : int
+  height : int
+class TFormatAudio (TFormatBase, TFormatFile):
   pass
+
+class TFormatBoth (TFormatBase):
+  video : TFormatVideo
+  audio : TFormatAudio
 # ============ video format ============ #
 
 

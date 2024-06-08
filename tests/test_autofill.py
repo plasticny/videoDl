@@ -37,12 +37,12 @@ def test_get_lyd_format_autofill ():
   case_ls : list[tuple[bool, int, int]] = [
     # when not enable
     (False, 0, None),
-    # when enable and prefered_format is 0
+    # when enable and prefered format is available
     (True, 0, 0),
-    # when enable and prefered_format is 1
     (True, 1, 1),
-    # when enable and prefered_format is not 0 or 1
-    (True, 2, None)
+    (True, 2, 2),
+    # when the prefered format is not available
+    (True, 3, None)
   ]
   fake_config = {
     'format': {

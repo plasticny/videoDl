@@ -20,8 +20,9 @@ from src.service.bilibili import get_bili_subs, get_bili_page_cids, bvid_2_aid
 from src.service.logger import Logger
 
 from src.structs.option import IOpt, TOpt
-from src.structs.video_info import TFormatVideo, TFormatAudio, TFormatBoth, TFormatDesc, Subtitle
+from src.structs.video_info import TFormatVideo, TFormatAudio, TFormatBoth, Subtitle
 
+LOGGER = Logger()
 
 def ytdlp_extract_metadata (opts:MetaDataOpt):
   try:
@@ -31,9 +32,8 @@ def ytdlp_extract_metadata (opts:MetaDataOpt):
       metadata = ydl.extract_info(opts.url, download = False)
       metadata : dict = ydl.sanitize_info(metadata)
 
-      logger = Logger()
-      json_name = logger.dump_dict(metadata)
-      logger.debug(f'Metadata of {opts.url} has been saved to {json_name}.json')
+      json_name = LOGGER.dump_dict(metadata)
+      LOGGER.debug(f'Metadata of {opts.url} has been saved to {json_name}.json')
 
   except Exception as e:
     print(e)
@@ -53,7 +53,7 @@ def fetchMetaData(opts:MetaDataOpt) -> MetaData:
   
   # instantiate the metadata
   source = getSource(opts.url)
-  Logger().debug(f'Getting metadata from {source}')
+  LOGGER.debug(f'Getting metadata from {source}')
   
   if metadata['_type'] == 'playlist':
     if source is UrlSource.BILIBILI:
@@ -223,6 +223,16 @@ class VideoMetaData (MetaData):
       
   def _extract_format (self) -> TMdFormats:    
     def __compare(a, b):
+      # If a and b is video in the format, compare by resolution first
+      IS_VIDEO = lambda x: 'vcodec' in x and x['vcodec'] != 'none'
+      if IS_VIDEO(a) and IS_VIDEO(b) and a['resolution'] != b['resolution']:
+        a_res = a['resolution'].split('x')
+        b_res = b['resolution'].split('x')
+        if a_res[0] != b_res[0]:
+          return int(b_res[0]) - int(a_res[0])
+        if a_res[1] != b_res[1]:
+          return int(b_res[1]) - int(a_res[1])
+
       # Compare two formats by tsr, from high to low
       # If the format has no tsr, it will be placed at the end
       if 'tbr' not in a or a['tbr'] is None:
@@ -236,6 +246,7 @@ class VideoMetaData (MetaData):
     while len(sorted_raw_formats) > 0 and 'tbr' not in sorted_raw_formats[-1]:
       sorted_raw_formats.pop()
     
+    # extract formats
     formats : TMdFormats = { 'audio': [], 'video': [], 'both': [] }
     for format in sorted_raw_formats:
       has_audio = 'acodec' in format and format['acodec'] != 'none'
@@ -249,31 +260,31 @@ class VideoMetaData (MetaData):
         'format_id': format['format_id'],
         'tbr': format['tbr']
       }
-      audio : TFormatDesc = {
+      audio : TFormatAudio = {
+        **basic_info,
         'codec': format["acodec"],
         'ext': format['audio_ext']
       } if has_audio else None
-      video : TFormatDesc = {
+      video : TFormatVideo = {
+        **basic_info,
         'codec': format["vcodec"],
-        'ext': format['video_ext']
+        'ext': format['video_ext'],
+        'width': int(format['resolution'].split('x')[0]),
+        'height': int(format['resolution'].split('x')[1])
       } if has_video else None
       
       if has_audio and has_video:
-        formats['both'].append({
-          **basic_info,
-          'audio': audio,
-          'video': video
-        })
-      if has_audio:
-        formats['audio'].append({
-          **basic_info,
-          'audio': audio
-        })
+        formats['both'].append({**basic_info, 'audio': audio, 'video': video})
+      if has_audio and not has_video:
+        # only accept format that has audio only
+        formats['audio'].append(audio)  
       if has_video:
-        formats['video'].append({
-          **basic_info,
-          'video': video
-        })
+        formats['video'].append(video)
+
+    # log extracted formats
+    LOGGER.debug(f'Extracted audio formats: {formats["audio"]}')
+    LOGGER.debug(f'Extracted video formats: {formats["video"]}')
+    LOGGER.debug(f'Extracted both formats: {formats["both"]}')
 
     return formats
 

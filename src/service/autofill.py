@@ -59,7 +59,7 @@ def get_lyd_format_autofill () -> int:
     return None
   
   prefered_format = lyd_autofill_config['format']['prefered_format']
-  if prefered_format == 0 or prefered_format == 1:
+  if prefered_format in [0, 1, 2]:
     return prefered_format
   return None
 
