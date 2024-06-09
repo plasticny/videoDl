@@ -14,7 +14,7 @@ enable = false # do auto-fill login option
 [media]
 enable = false
 # 0: video, 1: audio
-media_type = 0
+val = 0
 
 # format
 [format]
