@@ -8,7 +8,7 @@ from src.section.Section import Section
 from src.section.DownloadSection import BundledFormat
 
 from src.service.MetaData import VideoMetaData
-from src.service.autofill import get_lyd_format_autofill
+from src.service.autofill import get_lyd_format_autofill, get_lyd_media_autofill
   
 
 class FormatSection (Section):
@@ -122,6 +122,12 @@ class LazyMediaSelector:
       print('Only one media option available, select it automatically')
       print(f'Selected option: {Fore.CYAN}{options[0]}{Style.RESET_ALL}')
       return options[0]
+    
+    autofill = get_lyd_media_autofill()
+    if autofill is not None:
+      print('Media autofill found')
+      print(f'Selected option: {Fore.CYAN}{options[autofill]}{Style.RESET_ALL}')
+      return options[autofill]
     
     return inq_prompt([
       inq_List(

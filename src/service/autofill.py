@@ -1,12 +1,18 @@
 from toml import load as toml_load
-from typing import TypedDict
+from typing import TypedDict, Union
 
 from src.service.fileHelper import LYD_AUTOFILL_TOML_PATH
 
+# ============== toml structure ============== #
+# bottom-up
 
 class TLoginConfig(TypedDict):
   enable: bool
   cookie_path : dict[str, str]
+
+class TMediaConfig(TypedDict):
+  enable: bool
+  val: int
 
 class TFormatConfig(TypedDict):
   enable: bool
@@ -35,14 +41,14 @@ class TDownloadConfig(TypedDict):
 
 class TLydAutofillConfig(TypedDict):  
   login: TLoginConfig
+  media: TMediaConfig
   format: TFormatConfig
   subtitle: TSubtitleConfig
   download: TDownloadConfig
-
+# ============== toml structure ============== #
 
 with open(LYD_AUTOFILL_TOML_PATH, 'r') as f:
   lyd_autofill_config : TLydAutofillConfig = toml_load(f)
-
 
 def get_login_autofill (url:str) -> str:
   config = lyd_autofill_config['login']
@@ -53,6 +59,11 @@ def get_login_autofill (url:str) -> str:
     if key in url and value != '':
       return value
   return None
+
+def get_lyd_media_autofill () -> Union[str, None]:
+  config = lyd_autofill_config['media']
+  val = config['val']
+  return val if config['enable'] and val in [0, 1] else None
 
 def get_lyd_format_autofill () -> int:
   if not lyd_autofill_config['format']['enable']:

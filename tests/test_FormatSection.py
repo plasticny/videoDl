@@ -253,38 +253,56 @@ def test_lazy_format_get_options ():
 
 # ======================== LazyMediaSelector ======================== #
 @patch('src.section.FormatSection.inq_prompt')
+@patch('src.section.FormatSection.get_lyd_media_autofill')
 @patch('src.section.FormatSection.LazyMediaSelector._get_options')
-def test_lazy_media_ask_media (get_options_mock:Mock, prompt_mock:Mock):
+def test_lazy_media_ask_media (get_options_mock:Mock, autofill_mock : Mock, prompt_mock:Mock):
   @dataclass
   class Case:
     options : list[str]
     prompt_ret : Union[str, None]
     do_prompt_called : bool
+    autofill_ret : Union[int, None]
+    do_autofill_called : bool
     expected_ret : str
     
   video = LazyMediaType.VIDEO.value
   audio = LazyMediaType.AUDIO.value
   
   case_ls : list[Case] = [
+    # video and audio, select video
     Case(
       options=[video, audio],
       prompt_ret=video, do_prompt_called=True,
+      autofill_ret=None, do_autofill_called=True,
       expected_ret=video
     ),
+    # video and audio, select audio
     Case(
       options=[video, audio],
       prompt_ret=audio, do_prompt_called=True,
+      autofill_ret=None, do_autofill_called=True,
       expected_ret=audio
     ),
+    # video only
     Case(
       options=[video],
       prompt_ret=None, do_prompt_called=False,
+      autofill_ret=None, do_autofill_called=False,
       expected_ret=video
     ),
+    # audio only
     Case(
       options=[audio],
       prompt_ret=None, do_prompt_called=False,
+      autofill_ret=None, do_autofill_called=False,
       expected_ret=audio
+    ),
+    # autofill
+    Case(
+      options=[video, audio],
+      prompt_ret=None, do_prompt_called=False,
+      autofill_ret=0, do_autofill_called=True,
+      expected_ret=video
     )
   ]
   
@@ -292,14 +310,17 @@ def test_lazy_media_ask_media (get_options_mock:Mock, prompt_mock:Mock):
     print('testing', case)
     get_options_mock.reset_mock()
     prompt_mock.reset_mock()
+    autofill_mock.reset_mock()
     
     get_options_mock.return_value = case.options
     prompt_mock.return_value = { 'media_option': case.prompt_ret }
+    autofill_mock.return_value = case.autofill_ret
     
     res = LazyMediaSelector()._ask_media([])
     
     assert res == case.expected_ret
     assert prompt_mock.called == case.do_prompt_called
+    assert autofill_mock.called == case.do_autofill_called
 
 def test_lazy_media_get_options ():
   fake_video_format = create_fake_format('v1')
