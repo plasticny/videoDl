@@ -36,7 +36,7 @@ class lazyYtDownload(Dl):
     opt_ls = [DownloadOpt(md.opts) for md in md_ls]
     
     # select format
-    selected_format_ls = LazyFormatSection(
+    lazy_format_ret = LazyFormatSection(
       title='Format',
       headerType=HeaderType.SUB_HEADER
     ).run(md_ls)
@@ -56,7 +56,8 @@ class lazyYtDownload(Dl):
 
     # assign options
     for idx, opt in enumerate(opt_ls):
-      opt.set_format(selected_format_ls[idx])
+      opt.set_media(lazy_format_ret.media)
+      opt.set_format(lazy_format_ret.format_ls[idx])
       opt.set_subtitle(
         selected_sub_ret['subtitle_ls'][idx],
         selected_sub_ret['do_embed'],

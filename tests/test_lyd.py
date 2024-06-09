@@ -14,6 +14,7 @@ from src.service.MetaData import VideoMetaData, MetaDataOpt
 from src.section.SubTitleSection import TSubtitleSectionRet
 from src.section.OutputSection import TOutputSectionRet
 from src.section.DownloadSection import DownloadOpt
+from src.section.FormatSection import LazyFormatSectionRet
 from src.structs.video_info import Subtitle
 
 # test login function
@@ -40,7 +41,7 @@ def test_login(login_mock:Mock):
 @patch('src.lazyYtDownload.SubTitleSection.run')
 @patch('src.lazyYtDownload.LazyFormatSection.run')
 def test_setup (format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
-  format_mock.return_value = ['mp4']
+  format_mock.return_value = LazyFormatSectionRet('Video', ['mp4'])
   
   ret_subtitle : TSubtitleSectionRet = {
     'do_write_subtitle': True,
@@ -65,6 +66,7 @@ def test_setup (format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
   assert len(setup_res) == 1
   
   dl_opt = setup_res[0]
+  assert dl_opt.media == 'Video'
   assert dl_opt.format == 'mp4'
   assert dl_opt.subtitle == ret_subtitle['subtitle_ls'][0]
   assert dl_opt.embed_sub == ret_subtitle['do_embed']
