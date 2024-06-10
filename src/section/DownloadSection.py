@@ -215,21 +215,21 @@ class DownloadSection (Section) :
 
     sample_rate = self._get_audio_sample_rate(item_path)
     
-    # convert the download item to wav
-    temp_nm = f'{uuid4().__str__()}.wav'
+    # convert the download item to flac
+    temp_nm = f'{uuid4().__str__()}.flac'
     streams_n_output = [
       ff_in(item_path)['a'],
       f'{TEMP_FOLDER_PATH}/{temp_nm}'
     ]
     kwargs = {
-      'acodec': 'pcm_s16le',
+      'acodec': 'flac',
       'ar': sample_rate,
       'loglevel': 'quiet'
     }
     self._run_ffmpeg(streams_n_output, kwargs)
   
     # move the temp file to the output directory
-    self._move_temp_file(temp_nm, out_dir=opts.output_dir, out_nm=f'{opts.output_nm}.wav')
+    self._move_temp_file(temp_nm, out_dir=opts.output_dir, out_nm=f'{opts.output_nm}.flac')
 
   def _download_item (self, url:str, opts:TDownloadOpt | TDlSubtitleOpt, retry:int) -> str:  
     """ Return: the name of the downloaded file """
