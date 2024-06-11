@@ -83,6 +83,7 @@ def test_download_yt_video(url_mock:Mock, setup_mock:Mock):
 
   def fake_setup (md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     dl_opt = DownloadOpt(md_ls[0].opts)
+    dl_opt.media = 'Video'
     dl_opt.format = 'mp4'
     dl_opt.set_subtitle(Subtitle('en', 'en', False), True, False)
     dl_opt.output_dir = OUTPUT_FOLDER_PATH
@@ -116,6 +117,7 @@ def test_download_bili_video(url_mock:Mock, login_mock:Mock, setup_mock:Mock):
 
   def fake_setup (md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     dl_opt = DownloadOpt(md_ls[0].opts)
+    dl_opt.media = 'Video'
     dl_opt.format = 'mp4'
     dl_opt.output_dir = OUTPUT_FOLDER_PATH
     dl_opt.output_nm = md_ls[0].title
