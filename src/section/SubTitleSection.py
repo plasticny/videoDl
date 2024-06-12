@@ -22,10 +22,19 @@ class TSubtitleSectionRet (TypedDict):
 
 class SelectionMode(Enum):
   BATCH = 0
-  ONE_BY_ONE = 1  
+  ONE_BY_ONE = 1
 
 
 class SubTitleSection (Section):
+  @staticmethod
+  def not_write_ret(md_ls:list[VideoMetaData]) -> TSubtitleSectionRet:
+    return {
+      'do_write_subtitle': False,
+      'subtitle_ls': [ None for _ in range(len(md_ls)) ],
+      'do_embed': False,
+      'do_burn': False
+    }
+  
   def run(self, md_ls:list[VideoMetaData]) -> TSubtitleSectionRet:
     return super().run(self.__main, md_ls=md_ls)
   
@@ -36,21 +45,11 @@ class SubTitleSection (Section):
     # if no subtitle available, return
     if len(sub_pos_map.keys()) == 0:
       print(f'{Fore.YELLOW}No subtitle available.{Style.RESET_ALL}')
-      return {
-        'do_write_subtitle': False,
-        'subtitle_ls': [ None for _ in range(len(md_ls)) ],
-        'do_embed': False,
-        'do_burn': False
-      }
+      return SubTitleSection.not_write_ret(md_ls)
     
     # select to write subtitle or not
     if not self.ask_write_sub():
-      return {
-        'do_write_subtitle': False,
-        'subtitle_ls': [ None for _ in range(len(md_ls)) ],
-        'do_embed': False,
-        'do_burn': False
-      }
+      return SubTitleSection.not_write_ret(md_ls)
     
     # select subtitle
     selection_res = self.control_sub_selection(md_ls, sub_pos_map)
@@ -58,12 +57,7 @@ class SubTitleSection (Section):
     # check if user select subtitle for any video
     if not any(selection_res):
       print(f'{Fore.YELLOW}No subtitle selected.{Style.RESET_ALL}')
-      return {
-        'do_write_subtitle': False,
-        'subtitle_ls': [ None for _ in range(len(md_ls)) ],
-        'do_embed': False,
-        'do_burn': False
-      }
+      return SubTitleSection.not_write_ret(md_ls)
 
     # show selection result
     # if self.ask_show_summary():

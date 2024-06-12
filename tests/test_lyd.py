@@ -6,6 +6,8 @@ from unittest.mock import patch, Mock
 
 from os.path import exists
 from pymediainfo import MediaInfo
+from dataclasses import dataclass
+from typing import Literal
 
 from tests.helpers import prepare_output_folder, OUTPUT_FOLDER_PATH
 
@@ -41,38 +43,58 @@ def test_login(login_mock:Mock):
 @patch('src.lazyYtDownload.SubTitleSection.run')
 @patch('src.lazyYtDownload.LazyFormatSection.run')
 def test_setup (format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
-  format_mock.return_value = LazyFormatSectionRet('Video', ['mp4'])
-  
-  ret_subtitle : TSubtitleSectionRet = {
-    'do_write_subtitle': True,
-    'subtitle_ls': [Subtitle('en', 'en', False)],
-    'do_embed': True,
-    'do_burn': False
-  }
-  subtitle_mock.return_value = ret_subtitle
-  
-  ret_output :TOutputSectionRet = { 'dir': OUTPUT_FOLDER_PATH }
-  output_mock.return_value = ret_output
-  
   class fake_md (VideoMetaData):
+    def __init__(self, *args, **kwargs):
+      self.opts = MetaDataOpt()
     @property
     def title(self):
       return 'test title'
-    def __init__(self, *args, **kwargs):
-      self.opts = MetaDataOpt()
-      pass
-  setup_res = lazyYtDownload().setup([fake_md()])
+
+  @dataclass
+  class Case:
+    media : Literal['Video', 'Audio']
+    format_ls : list[str]
+    do_write_subtitle : bool
+    subtitle_ls : list[Subtitle]
+    do_embed : bool
+    do_burn : bool
+    
+  case_ls : list[Case] = [
+    Case('Video', ['mp4'], True, [Subtitle('en', 'en', False)], True, False),
+    Case('Audio', ['mp3'], False, [], False, False)
+  ]
   
-  assert len(setup_res) == 1
-  
-  dl_opt = setup_res[0]
-  assert dl_opt.media == 'Video'
-  assert dl_opt.format == 'mp4'
-  assert dl_opt.subtitle == ret_subtitle['subtitle_ls'][0]
-  assert dl_opt.embed_sub == ret_subtitle['do_embed']
-  assert dl_opt.burn_sub == ret_subtitle['do_burn']
-  assert dl_opt.output_dir == ret_output['dir']
-  assert dl_opt.output_nm == 'test title'
+  for idx, case in enumerate(case_ls):
+    print('testing case', idx)
+    
+    sub_ret :TSubtitleSectionRet = {
+      'do_write_subtitle': case.do_write_subtitle,
+      'subtitle_ls': case.subtitle_ls,
+      'do_embed': case.do_embed,
+      'do_burn': case.do_burn
+    }
+    output_ret :TOutputSectionRet = { 'dir': OUTPUT_FOLDER_PATH }
+    
+    format_mock.return_value = LazyFormatSectionRet(case.media, case.format_ls)
+    subtitle_mock.return_value = sub_ret
+    output_mock.return_value = output_ret
+
+    md = fake_md()  
+    setup_res = lazyYtDownload().setup([md])
+    
+    assert len(setup_res) == 1
+    
+    dl_opt = setup_res[0]
+    assert dl_opt.media == case.media
+    assert dl_opt.format == case.format_ls[0]
+    if len(case.subtitle_ls) > 0:
+      assert dl_opt.subtitle == case.subtitle_ls[0]
+    else:
+      assert dl_opt.subtitle is None
+    assert dl_opt.embed_sub == case.do_embed
+    assert dl_opt.burn_sub == case.do_burn
+    assert dl_opt.output_dir == OUTPUT_FOLDER_PATH
+    assert dl_opt.output_nm == md.title
 
 @patch('src.lazyYtDownload.lazyYtDownload.setup')
 @patch('src.dl.UrlSection.run')

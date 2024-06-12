@@ -42,10 +42,14 @@ class lazyYtDownload(Dl):
     ).run(md_ls)
     
     # subtitle
-    selected_sub_ret = SubTitleSection(
-      title='Subtitle',
-      headerType=HeaderType.SUB_HEADER
-    ).run(md_ls)
+    # not ask subtitle if the media is audio
+    if lazy_format_ret.media == 'Video':
+      selected_sub_ret = SubTitleSection(
+        title='Subtitle',
+        headerType=HeaderType.SUB_HEADER
+      ).run(md_ls)
+    else :
+      selected_sub_ret = SubTitleSection.not_write_ret(md_ls)
 
     # output dir
     output_dir = OutputSection(
