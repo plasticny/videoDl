@@ -18,6 +18,7 @@ from src.section.OutputSection import TOutputSectionRet
 from src.section.DownloadSection import DownloadOpt
 from src.section.FormatSection import LazyFormatSectionRet
 from src.structs.video_info import Subtitle
+from src.structs.option import MediaType
 
 # test login function
 @patch('src.dl.LoginSection.run')
@@ -52,7 +53,7 @@ def test_setup (format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
 
   @dataclass
   class Case:
-    media : Literal['Video', 'Audio']
+    media : MediaType
     format_ls : list[str]
     do_write_subtitle : bool
     subtitle_ls : list[Subtitle]

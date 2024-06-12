@@ -10,7 +10,7 @@ from src.section.Section import Section
 from src.service.fileHelper import TEMP_FOLDER_PATH
 from src.service.ffmpeg_helper import ff_in, run_ffmpeg, get_audio_sample_rate
 
-from src.structs.option import IOpt, TOpt
+from src.structs.option import IOpt, TOpt, MediaType
 from src.structs.video_info import Subtitle, BundledFormat
 
 
@@ -126,7 +126,7 @@ class DownloadOpt (IOpt):
     self.output_nm : str = None
     self.output_dir : str = None
     # media
-    self.media : Literal['Video', 'Audio'] = None
+    self.media : MediaType = None
     # format
     # if it is a string, only download the requested format
     # if it is a BundledFormat, download the video and audio, and merge them
@@ -138,7 +138,7 @@ class DownloadOpt (IOpt):
     self.burn_sub : bool = False
   
   # === some setter functions === #
-  def set_media (self, val : Literal['Video', 'Audio']):
+  def set_media (self, val : MediaType):
     self.media = val
   def set_format (self, val : str | BundledFormat):
     self.format = val

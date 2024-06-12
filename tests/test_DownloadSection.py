@@ -17,6 +17,7 @@ from tests.helpers import prepare_output_folder, OUTPUT_FOLDER_PATH
 from src.section.DownloadSection import DownloadSection, DownloadOpt, BundledTDownloadOpt
 from src.service.fileHelper import TEMP_FOLDER_PATH, perpare_temp_folder, clear_temp_folder
 from src.structs.video_info import Subtitle, BundledFormat
+from src.structs.option import MediaType
 
 
 @patch('src.section.DownloadSection.YoutubeDL.download')
@@ -35,7 +36,7 @@ def test_with_fail_download(download_mock):
 def test_main (video_mock : Mock, audio_mock : Mock):
   @dataclass
   class Case:
-    media : Literal['Video', 'Audio']
+    media : MediaType
     video_called : bool
     audio_called : bool
     @property

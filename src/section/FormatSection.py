@@ -9,6 +9,8 @@ from src.section.DownloadSection import BundledFormat
 
 from src.service.MetaData import VideoMetaData
 from src.service.autofill import get_lyd_format_autofill, get_lyd_media_autofill
+
+from src.structs.option import MediaType
   
 
 class FormatSection (Section):
@@ -23,7 +25,7 @@ class FormatSection (Section):
 # ============== lazy format selection ============== #
 @dataclass
 class LazyFormatSectionRet:
-  media : Literal['Video', 'Audio']
+  media : MediaType
   format_ls : list[Union[str, BundledFormat]]
 
 class LazyMediaType (Enum):
