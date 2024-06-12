@@ -14,6 +14,7 @@ from contextlib import redirect_stdout
 from io import StringIO
 from functools import cmp_to_key
 from colorama import Fore, Style
+from typing import Union
 
 from src.service.urlHelper import getSource, UrlSource
 from src.service.bilibili import get_bili_subs, get_bili_page_cids, bvid_2_aid
@@ -25,31 +26,31 @@ from src.structs.video_info import TFormatVideo, TFormatAudio, TFormatBoth, Subt
 LOGGER = Logger()
 
 def ytdlp_extract_metadata (opts:MetaDataOpt):
-  try:
-    # quiet=True also print subtitle, redirect stdout to hide it
-    with redirect_stdout(StringIO()), YoutubeDL(MetaDataOpt.to_ytdlp_opt(opts)) as ydl:
-      # download basic metadata using yt-dlp
-      metadata = ydl.extract_info(opts.url, download = False)
-      metadata : dict = ydl.sanitize_info(metadata)
+  # quiet=True also print subtitle, redirect stdout to hide it
+  with redirect_stdout(StringIO()), YoutubeDL(MetaDataOpt.to_ytdlp_opt(opts)) as ydl:
+    # download basic metadata using yt-dlp
+    metadata = ydl.extract_info(opts.url, download = False)
+    metadata : dict = ydl.sanitize_info(metadata)
 
-      json_name = LOGGER.dump_dict(metadata)
-      LOGGER.debug(f'Metadata of {opts.url} has been saved to {json_name}.json')
-
-  except Exception as e:
-    print(e)
-    raise Exception('Get metadata failed')
+    json_name = LOGGER.dump_dict(metadata)
+    LOGGER.debug(f'Metadata of {opts.url} has been saved to {json_name}.json')
   
   return metadata
 
 
 """ ========================= funcitons for get the metadata ========================= """
-def fetchMetaData(opts:MetaDataOpt) -> MetaData:
+def fetchMetaData(opts:MetaDataOpt) -> Union[MetaData, None]:
   """
     Fetch metadata of the video or playlist to be downloaded\n
     Better use this function to get metadata instead of instantiating the metadata directly
   """
-  assert isinstance(opts, MetaDataOpt)  
-  metadata = ytdlp_extract_metadata(opts)
+  assert isinstance(opts, MetaDataOpt)
+  
+  try:
+    metadata = ytdlp_extract_metadata(opts)
+  except Exception as e:
+    LOGGER.error(f'Error when getting metadata: {e}')
+    return None
   
   # instantiate the metadata
   source = getSource(opts.url)
@@ -132,7 +133,7 @@ class MetaData (metaclass = ABCMeta):
 
 # ========================== Playlist ========================= #
 class PlaylistMetaData (MetaData):
-  """Playlist metadata"""
+  """ Playlist metadata """
   @property
   def playlist_count(self) -> int:
     return self.metadata['playlist_count']
@@ -140,11 +141,12 @@ class PlaylistMetaData (MetaData):
   def video_urls(self) -> list[str]:
     return [v.url for v in self.videos]
 
-  def __init__(self, metadata, opts : MetaDataOpt) -> None:
+  def __init__(self, metadata : dict, opts : MetaDataOpt) -> None:
     super().__init__(metadata, opts)
     self.videos = self.fetchVideoMd()
-    
+
   def fetchVideoMd(self) -> list[VideoMetaData]:
+    """ fetch metadata of videos in the playlist"""
     res = []
     for idx, entry in enumerate(self.metadata['entries']):
       print(f'{Fore.CYAN}Getting info of video {idx + 1} / {self.playlist_count}{Style.RESET_ALL}')
@@ -153,8 +155,12 @@ class PlaylistMetaData (MetaData):
       entry_opts.url = entry['url']
       
       videoMd = fetchMetaData(entry_opts)
-      assert not videoMd.isPlaylist()
-      res.append(videoMd)
+      
+      if videoMd is None:
+        print(f'{Fore.RED}Skipped {entry_opts.url}, error when getting info of video.{Style.RESET_ALL}')
+      else:
+        assert not videoMd.isPlaylist()
+        res.append(videoMd)
     return res
   
 class BiliBiliPlaylistMetaData (PlaylistMetaData):

@@ -2,6 +2,8 @@ from sys import path
 from pathlib import Path
 path.append(Path('.').resolve().as_posix())
 
+from colorama import Fore, Style
+
 from src.section.Section import Section, HeaderType
 from src.section.UrlSection import UrlSection
 from src.section.LoginSection import LoginSection
@@ -19,25 +21,33 @@ from src.service.logger import Logger
 
 class Dl:
   def __init__ (self, do_check_update : bool = False):
+    self.logger = Logger()
     self.title = 'Download'
     if do_check_update:
       check_update()
   
   # main process
   def run (self, loop=True):
-    logger = Logger()
-    logger.debug('======= Start download process =======')
-    logger.clear()
+    self.logger.debug('======= Start download process =======')
+    self.logger.clear()
 
     print(f"----------------- {self.title} -----------------", end='\n\n')
 
     perpare_temp_folder()
+    
+    is_first_started = False
 
-    while True:
+    while not is_first_started or loop:
+      is_first_started = True
+      
       URL = UrlSection(title='Url').run()
       COOKIE_FILE_PATH = self.login(URL)
 
-      md_ls = self.get_metadata(URL, COOKIE_FILE_PATH)
+      try:
+        md_ls = self.get_metadata(URL, COOKIE_FILE_PATH)
+      except:
+        print(f'\n{Fore.RED}Download Failed, error on getting url info{Style.RESET_ALL}\n')
+        continue
 
       # subtitle, format, output dir
       opts_ls : list[DownloadOpt] = Section(title='Set up download').run(self.setup, md_ls=md_ls)
@@ -48,23 +58,30 @@ class Dl:
           Section(title=f'Download video {idx+1} of {len(opts_ls)}').run(
             DownloadSection(doShowHeader=False).run, opts=opts
           )
+        except Exception as e:
+          print(f'\n{Fore.RED}Failed on downloading video{Style.RESET_ALL}\n')
+          self.logger.error(str(e))
         finally:
           clear_temp_folder()
-
-      if not loop:
-        break
 
   def login(self, url:str):
     """ return cookie file path """
     return LoginSection(title='Login').run(url)
   
   def get_metadata(self, url:str, cookie_file_path:str) -> list[VideoMetaData]:
+    """
+      get metadata of the url\n
+      raise exception if fetch metadata failed
+    """
     opt : MetaDataOpt = MetaDataOpt()
     opt.url = url
     opt.cookie_file_path = cookie_file_path
     
     print('Getting download informaton...', end='\n\n')      
     md = fetchMetaData(opt)
+    
+    if md is None:
+      raise Exception('Failed to get video metadata')
     
     # get video metadata list
     return md.videos if md.isPlaylist() else [md]
