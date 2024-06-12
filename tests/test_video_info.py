@@ -54,3 +54,8 @@ def test_BundledFormat_eq():
     print('testing', case)
     case_format1, case_format2, expected_result = case
     assert (case_format1 == case_format2) == expected_result
+    
+def test_Stream ():
+  # cause its implementation is copied from ffprobe-python module
+  # so it's not worth to test it
+  pass
