@@ -148,8 +148,8 @@ def test_download_video(
     move_mock.assert_called()
 
 @patch('src.section.DownloadSection.DownloadSection._move_temp_file')
-@patch('src.section.DownloadSection.DownloadSection._run_ffmpeg')
-@patch('src.section.DownloadSection.DownloadSection._get_audio_sample_rate')
+@patch('src.section.DownloadSection.run_ffmpeg')
+@patch('src.section.DownloadSection.get_audio_sample_rate')
 @patch('src.section.DownloadSection.DownloadSection._download_item')
 @patch('src.section.DownloadSection.DownloadOpt.to_ytdlp_dl_opt')
 def test_download_audio (
@@ -207,21 +207,18 @@ def test_download_item (ytdl_mock:Mock):
   ret_name =  DownloadSection()._download_item('url', fake_opts, retry=0)
   assert ret_name == f'{temp_nm}.mp4'
   
-@patch('src.section.DownloadSection.ff_out')
+@patch('src.section.DownloadSection.run_ffmpeg')
 @patch('src.section.DownloadSection.ff_in')
-def test_merge_subtitle(ffin_mock:Mock, ffout_mock:Mock):
+def test_merge_subtitle(ffin_mock:Mock, run_ffmpeg_mock:Mock):
   """test subtitle feature of merge function"""
-  # fake returned ffmpeg object of ffout_mock
-  class FakeFfmpeg:
-    def run(*args, **kwargs):
-      pass
-
-  fake_ff_in_v = { 'v': '' }
-  fake_ff_in_a = { 'a': '' }
-  fake_ff_in_s = { 's': '' }
+  fake_ff_in_v = {'v': ''}
+  fake_ff_in_a = {'a': ''}
+  fake_ff_in_s = {'s': ''}
   fake_video_path = 'in.mp4'
   fake_audio_path = 'in.m4a'
   fake_subtitle_path = 'in.vtt'
+  
+  run_ffmpeg_mock.return_value = None
   
   # [(list of ff_in return, do_embed_sub, do_burn_sub, expected key of kwargs in ff_out call)]
   case_ls : list[tuple[list[dict], bool, bool, list[str]]] = [
@@ -238,19 +235,17 @@ def test_merge_subtitle(ffin_mock:Mock, ffout_mock:Mock):
     case_ff_in_side_effect, case_do_embed_sub, case_do_burn_sub, case_expected_keys = case
     
     ffin_mock.reset_mock()
-    ffout_mock.reset_mock()
+    run_ffmpeg_mock.reset_mock()
     
-    ffout_mock.return_value = FakeFfmpeg()
     ffin_mock.side_effect = case_ff_in_side_effect
     
     DownloadSection()._merge(
       fake_video_path, fake_audio_path, fake_subtitle_path,
       do_embed_sub=case_do_embed_sub, do_burn_sub=case_do_burn_sub
     )
-
-    kwargs = ffout_mock.call_args.kwargs
+    
     for key in case_expected_keys:
-      assert key in kwargs
+      assert key in run_ffmpeg_mock.call_args[0][1]
   
 def test_move_temp_file():
   """

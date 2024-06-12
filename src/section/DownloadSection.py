@@ -1,15 +1,14 @@
 from __future__ import annotations
 from yt_dlp import YoutubeDL
 from uuid import uuid4
-from ffmpeg import input as ff_in, output as ff_out, Error as ff_Error
-from ffprobe import FFProbe
 from os import listdir
 from shutil import move as move_file
 from typing import Literal
 
 from src.section.Section import Section
 
-from src.service.fileHelper import TEMP_FOLDER_PATH, FFMPEG_FOLDER_PATH
+from src.service.fileHelper import TEMP_FOLDER_PATH
+from src.service.ffmpeg_helper import ff_in, run_ffmpeg, get_audio_sample_rate
 
 from src.structs.option import IOpt, TOpt
 from src.structs.video_info import Subtitle, BundledFormat
@@ -213,7 +212,9 @@ class DownloadSection (Section) :
     item_nm : str = self._download_item(opts.url, dl_opts, retry)
     item_path : str = f'{TEMP_FOLDER_PATH}/{item_nm}'
 
-    sample_rate = self._get_audio_sample_rate(item_path)
+    sample_rate = get_audio_sample_rate(item_path)
+    if sample_rate is None:
+      raise Exception('No audio stream found')
     
     # convert the download item to flac
     temp_nm = f'{uuid4().__str__()}.flac'
@@ -226,7 +227,7 @@ class DownloadSection (Section) :
       'ar': sample_rate,
       'loglevel': 'quiet'
     }
-    self._run_ffmpeg(streams_n_output, kwargs)
+    run_ffmpeg(streams_n_output, kwargs)
   
     # move the temp file to the output directory
     self._move_temp_file(temp_nm, out_dir=opts.output_dir, out_nm=f'{opts.output_nm}.flac')
@@ -267,9 +268,7 @@ class DownloadSection (Section) :
     """
     MERGE_NM = f'{uuid4().__str__()}.mp4'
         
-    streams_n_output = []
-    streams_n_output.append(ff_in(video_path)['v'])
-    streams_n_output.append(ff_in(audio_path)['a'])
+    streams_n_output = [ff_in(video_path)['v'], ff_in(audio_path)['a']]
     if subtitle_path is not None and do_embed_sub:
       streams_n_output.append(ff_in(subtitle_path)['s'])
     streams_n_output.append(f'{TEMP_FOLDER_PATH}/{MERGE_NM}')
@@ -300,7 +299,7 @@ class DownloadSection (Section) :
         kwargs['vcodec'] = 'libx264'
         kwargs['acodec'] = 'aac'
 
-    self._run_ffmpeg(streams_n_output, kwargs)
+    run_ffmpeg(streams_n_output, kwargs)
     
     return MERGE_NM
   
@@ -316,17 +315,3 @@ class DownloadSection (Section) :
     
     move_file(f'{TEMP_FOLDER_PATH}/{temp_nm}', f'{out_dir}/{output_nm}')
     self.logger.info(f'Temp file is moved from {TEMP_FOLDER_PATH}/{temp_nm} to {out_dir}/{output_nm}')
-    
-  def _run_ffmpeg (self, stream_n_output : list, kwargs : dict):
-    """ Run ffmpeg with the specified streams and options """
-    try:
-      ff_out(*stream_n_output, **kwargs).run(cmd=f'{FFMPEG_FOLDER_PATH}\\ffmpeg')
-    except ff_Error:
-      raise Exception('ffmpeg failed')
-    
-  def _get_audio_sample_rate (self, file_path : str) -> int:
-    """ Get the sample rate of the audio file """
-    for stream in FFProbe(file_path).streams:
-      if not stream.is_audio():
-        continue
-      return int(stream.sample_rate)
