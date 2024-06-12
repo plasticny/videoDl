@@ -33,6 +33,15 @@ def test_debug (debug_mock : Mock, get_dir_mock : Mock):
   logger.debug('debug message')
   assert debug_mock.call_count == 1
   assert debug_mock.call_args[0][0] == 'debug message'
+  
+@patch('src.service.logger.Logger._get_dir')
+@patch('src.service.logger.logging.error')
+def test_debug (error_mock : Mock, get_dir_mock : Mock):
+  get_dir_mock.return_value = OUTPUT_FOLDER_PATH
+  logger = Logger()
+  logger.error('error message')
+  assert error_mock.call_count == 1
+  assert error_mock.call_args[0][0] == 'error message'
 
 @patch('src.service.logger.Logger._get_dir')
 @patch('src.service.logger.json_dump')
