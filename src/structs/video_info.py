@@ -82,3 +82,16 @@ class BiliBiliSubtitle(Subtitle):
   def isAutoGen(self) -> bool:
     return self.ai_status != 0
 # ============ subtitle ============ #
+
+
+# ============ stream ============ #
+class Stream:
+  """ re-implementation of FFStream in ffprobe-python module """
+  def __init__ (self, data_lines : list[bytes]):
+    for line in data_lines:
+      self.__dict__.update({key: value for key, value, *_ in [line.strip().split('=')]})
+      
+  @property
+  def is_audio (self) -> bool:
+    return self.__dict__.get('codec_type', None) == 'audio'
+# ============ stream ============ #

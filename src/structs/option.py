@@ -1,8 +1,11 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
-from typing import TypedDict
+from typing import TypedDict, Literal
 from typing_extensions import Self
 from copy import deepcopy
+
+# download meida type options
+MediaType = Literal['Video', 'Audio']
 
 class TOpt (TypedDict):
   cookiefile : str

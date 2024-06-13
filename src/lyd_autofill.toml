@@ -10,6 +10,12 @@ enable = false # do auto-fill login option
   # priority from top to bottom
   bilibili = ''
 
+# media
+[media]
+enable = false
+# 0: video, 1: audio
+val = 0
+
 # format
 [format]
 enable = false

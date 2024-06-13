@@ -1,16 +1,16 @@
 from __future__ import annotations
 from yt_dlp import YoutubeDL
 from uuid import uuid4
-from ffmpeg import input as ff_in, output as ff_out, Error as ff_Error
 from os import listdir
 from shutil import move as move_file
+from typing import Literal
 
 from src.section.Section import Section
 
-from src.service.fileHelper import TEMP_FOLDER_PATH, FFMPEG_FOLDER_PATH
-from src.service.logger import Logger
+from src.service.fileHelper import TEMP_FOLDER_PATH
+from src.service.ffmpeg_helper import ff_in, run_ffmpeg, get_audio_sample_rate
 
-from src.structs.option import IOpt, TOpt
+from src.structs.option import IOpt, TOpt, MediaType
 from src.structs.video_info import Subtitle, BundledFormat
 
 
@@ -125,6 +125,8 @@ class DownloadOpt (IOpt):
     # output
     self.output_nm : str = None
     self.output_dir : str = None
+    # media
+    self.media : MediaType = None
     # format
     # if it is a string, only download the requested format
     # if it is a BundledFormat, download the video and audio, and merge them
@@ -136,6 +138,8 @@ class DownloadOpt (IOpt):
     self.burn_sub : bool = False
   
   # === some setter functions === #
+  def set_media (self, val : MediaType):
+    self.media = val
   def set_format (self, val : str | BundledFormat):
     self.format = val
   def set_subtitle (self, sub : Subtitle, do_embed : bool, do_burn : bool):
@@ -159,8 +163,15 @@ class DownloadSection (Section) :
     return super().run(self.__main, opts=opts, retry=retry)
         
   def __main (self, opts : DownloadOpt, retry:int):
-    URL = opts.url
+    if opts.media == 'Video':
+      self._download_video(opts, retry)
+    elif opts.media == 'Audio':
+      self._download_audio(opts, retry)
+    else:
+      raise Exception('Invalid media type')
 
+  def _download_video (self, opts:DownloadOpt, retry:int) -> str:
+    """ Handle download when the media is video """
     dl_opts = DownloadOpt.to_ytdlp_dl_opt(opts)
     sub_opts = DownloadOpt.to_ytdlp_sub_opt(opts)
     
@@ -168,27 +179,20 @@ class DownloadSection (Section) :
     has_sub = len(sub_opts['subtitleslangs']) > 0
     
     if is_bundle:
-      video_name = self._download_item(URL, dl_opts.video, retry)
-      audio_name = self._download_item(URL, dl_opts.audio, retry)
+      video_name = self._download_item(opts.url, dl_opts.video, retry)
+      audio_name = self._download_item(opts.url, dl_opts.audio, retry)
     else:
-      video_name = self._download_item(URL, dl_opts, retry)
+      video_name = self._download_item(opts.url, dl_opts, retry)
       audio_name = video_name
 
-    if has_sub:
-      subtitle_name = self._download_item(URL, sub_opts, retry)
-    else:
-      subtitle_name = None
-      
+    subtitle_name = self._download_item(opts.url, sub_opts, retry) if has_sub else None
+  
     # merge if needed (bundle format or has subtitle)
     if is_bundle or has_sub:
       # get file paths
       video_path = f'{TEMP_FOLDER_PATH}/{video_name}'
       audio_path = f'{TEMP_FOLDER_PATH}/{audio_name}'
-
-      if has_sub:
-        subtitle_path = f'{TEMP_FOLDER_PATH}/{subtitle_name}'
-      else:
-        subtitle_path = None
+      subtitle_path = f'{TEMP_FOLDER_PATH}/{subtitle_name}' if has_sub else None
 
       temp_name = self._merge(
         video_path=video_path, audio_path=audio_path, subtitle_path=subtitle_path,
@@ -200,6 +204,33 @@ class DownloadSection (Section) :
     # rename and move to the output dir
     out_nm = f'{opts.output_nm}.mp4'
     self._move_temp_file(temp_name, out_dir=opts.output_dir, out_nm=out_nm)
+  
+  def _download_audio (self, opts:DownloadOpt, retry:int):
+    """ Handle download when the media is audio"""
+    dl_opts = DownloadOpt.to_ytdlp_dl_opt(opts)
+    
+    item_nm : str = self._download_item(opts.url, dl_opts, retry)
+    item_path : str = f'{TEMP_FOLDER_PATH}/{item_nm}'
+
+    sample_rate = get_audio_sample_rate(item_path)
+    if sample_rate is None:
+      raise Exception('No audio stream found')
+    
+    # convert the download item to flac
+    temp_nm = f'{uuid4().__str__()}.flac'
+    streams_n_output = [
+      ff_in(item_path)['a'],
+      f'{TEMP_FOLDER_PATH}/{temp_nm}'
+    ]
+    kwargs = {
+      'acodec': 'flac',
+      'ar': sample_rate,
+      'loglevel': 'quiet'
+    }
+    run_ffmpeg(streams_n_output, kwargs)
+  
+    # move the temp file to the output directory
+    self._move_temp_file(temp_nm, out_dir=opts.output_dir, out_nm=f'{opts.output_nm}.flac')
 
   def _download_item (self, url:str, opts:TDownloadOpt | TDlSubtitleOpt, retry:int) -> str:  
     """ Return: the name of the downloaded file """
@@ -229,7 +260,7 @@ class DownloadSection (Section) :
       self,
       video_path:str, audio_path:str, subtitle_path:str,
       do_embed_sub:bool=False, do_burn_sub:bool=False,
-      ffmpeg_location:str=FFMPEG_FOLDER_PATH, quiet:bool=False
+      quiet:bool=False
     ):
     """
       Merge video, audio and subtitles\n      
@@ -237,9 +268,7 @@ class DownloadSection (Section) :
     """
     MERGE_NM = f'{uuid4().__str__()}.mp4'
         
-    streams_n_output = []
-    streams_n_output.append(ff_in(video_path)['v'])
-    streams_n_output.append(ff_in(audio_path)['a'])
+    streams_n_output = [ff_in(video_path)['v'], ff_in(audio_path)['a']]
     if subtitle_path is not None and do_embed_sub:
       streams_n_output.append(ff_in(subtitle_path)['s'])
     streams_n_output.append(f'{TEMP_FOLDER_PATH}/{MERGE_NM}')
@@ -270,10 +299,7 @@ class DownloadSection (Section) :
         kwargs['vcodec'] = 'libx264'
         kwargs['acodec'] = 'aac'
 
-    try:
-      ff_out(*streams_n_output,**kwargs).run(cmd=f'{ffmpeg_location}\\ffmpeg')
-    except ff_Error:
-      raise Exception('Merge failed')
+    run_ffmpeg(streams_n_output, kwargs)
     
     return MERGE_NM
   

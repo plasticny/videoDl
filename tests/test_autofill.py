@@ -1,7 +1,8 @@
+from unittest.mock import patch
+from dataclasses import dataclass
+
 import src.service.autofill as autofill
 from src.service.autofill import *
-
-from unittest.mock import patch
 
 def test_get_login_autofill ():
   # [(do_enable, url, autofill_value)]
@@ -31,7 +32,35 @@ def test_get_login_autofill ():
     fake_config['login']['enable'] = do_enable
     with patch.object(autofill, 'lyd_autofill_config', fake_config):
       assert get_login_autofill(url) == autofill_value
+
+def test_get_lyd_media_autofill ():
+  @dataclass
+  class Case:
+    do_enable: bool
+    val: int
+    autofill_value: Union[int, None]
     
+  case_ls = [
+    Case(False, 0, None),
+    Case(True, 0, 0),
+    Case(True, 1, 1),
+    Case(True, 2, None)
+  ]
+  
+  fake_config = {
+    'media': {
+      'enable': False,
+      'val': 0
+    }
+  }
+  
+  for case in case_ls:
+    print('testing', case)
+    fake_config['media']['enable'] = case.do_enable
+    fake_config['media']['val'] = case.val
+    with patch.object(autofill, 'lyd_autofill_config', fake_config):
+      assert get_lyd_media_autofill() == case.autofill_value
+
 def test_get_lyd_format_autofill ():
   # [(do_enable, prefered_format, autofill_value)]
   case_ls : list[tuple[bool, int, int]] = [
