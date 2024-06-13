@@ -14,11 +14,13 @@ class UrlSource (Enum):
   PINTEREST = 6
   PIN_IT = 7
   YOUTUBE_LS = 8
+  YOUTUBE_SHORT = 9
 
 class SourcePrefix (Enum):
   YOUTUBE = ['www.youtube.com']
   YOUTU_BE = ['youtu.be']
   YOUTUBE_LS = ['www.youtube.com/playlist']
+  YOUTUBE_SHORT = ['youtube.com/shorts/']
   BILIBILI = ['www.bilibili.com/video/']
   PORNHUB = ['pornhub.com/view_video.php']
   FACEBOOK = ['www.facebook.com'] 
@@ -40,8 +42,9 @@ def getSource (url : str) -> UrlSource:
     return False
   
   prefix_url_map : dict[SourcePrefix, UrlSource] = {
-    # youtube ls should always be checked before youtube
     SourcePrefix.YOUTUBE_LS : UrlSource.YOUTUBE_LS,
+    SourcePrefix.YOUTUBE_SHORT : UrlSource.YOUTUBE_SHORT,
+    # normal youtube url should be the last to check since it has the most common prefix
     SourcePrefix.YOUTUBE : UrlSource.YOUTUBE,
     SourcePrefix.YOUTU_BE : UrlSource.YOUTU_BE,
     SourcePrefix.BILIBILI : UrlSource.BILIBILI,
