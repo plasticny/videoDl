@@ -308,7 +308,7 @@ class DownloadSection (Section) :
     assert out_nm is not None
     
     # escape special characters in the output name
-    ESCAPE_CHAR = {'"', '*', ':', '<', '>', '?', '|', '/'}
+    ESCAPE_CHAR = {'"', '*', ':', '<', '>', '?', '|', '/', '\r'}
     output_nm = ''
     for c in out_nm:
       output_nm += '' if c in ESCAPE_CHAR else c
