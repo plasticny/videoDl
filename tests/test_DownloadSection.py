@@ -1,18 +1,23 @@
 from sys import path
 from pathlib import Path
+
+from src.structs.option import IOpt
 path.append(Path('..').resolve().as_posix())
 
 from unittest.mock import patch, Mock, call as mock_call
 from pytest import raises as pytest_raises
 from os.path import exists
 from uuid import uuid4
-from typing_extensions import Union
+from typing_extensions import Union, Literal
+from dataclasses import dataclass
+from random import randint
 
 from tests.helpers import prepare_output_folder, OUTPUT_FOLDER_PATH
 
 from src.section.DownloadSection import DownloadSection, DownloadOpt, BundledTDownloadOpt
 from src.service.fileHelper import TEMP_FOLDER_PATH, perpare_temp_folder, clear_temp_folder
 from src.structs.video_info import Subtitle, BundledFormat
+from src.structs.option import MediaType
 
 
 @patch('src.section.DownloadSection.YoutubeDL.download')
@@ -26,12 +31,48 @@ def test_with_fail_download(download_mock):
   # check if download is called 3 times
   assert download_mock.call_count == 3
 
+@patch('src.section.DownloadSection.DownloadSection._download_audio')
+@patch('src.section.DownloadSection.DownloadSection._download_video')
+def test_main (video_mock : Mock, audio_mock : Mock):
+  @dataclass
+  class Case:
+    media : MediaType
+    video_called : bool
+    audio_called : bool
+    @property
+    def opt (self):
+      res = DownloadOpt()
+      res.media = self.media
+      return res
+    
+  video_mock.return_value = None
+  audio_mock.return_value = None
+    
+  case_ls : list[Case] = [
+    Case('Video', video_called=True, audio_called=False),
+    Case('Audio', video_called=False, audio_called=True)
+  ]
+  for case in case_ls:
+    print('testing', case.media)
+    
+    video_mock.reset_mock()
+    audio_mock.reset_mock()
+    
+    DownloadSection().run(case.opt)
+    
+    assert video_mock.called == case.video_called
+    assert audio_mock.called == case.audio_called
+
+    mock_called = video_mock if video_mock.called else audio_mock
+    assert mock_called.call_args[0][0].media == case.media
+    assert mock_called.call_args[0][1] == 0
+
 @patch('src.section.DownloadSection.DownloadSection._move_temp_file')
 @patch('src.section.DownloadSection.DownloadSection._merge')
 @patch('src.section.DownloadSection.DownloadSection._download_item')
 @patch('src.section.DownloadSection.DownloadOpt.to_ytdlp_sub_opt')
 @patch('src.section.DownloadSection.DownloadOpt.to_ytdlp_dl_opt')
-def test_main_flow(
+def test_download_video(
   to_dl_opt_mock:Mock, to_sub_opt_mock:Mock,
   download_mock:Mock, merge_mock:Mock, move_mock:Mock
 ):
@@ -71,6 +112,7 @@ def test_main_flow(
     # reset mock
     download_mock.reset_mock()
     merge_mock.reset_mock()
+    move_mock.reset_mock()
     
     # mock
     download_mock.return_value = fake_downloaded_file_nm
@@ -94,7 +136,7 @@ def test_main_flow(
     if has_sub:
       expected_download_calls.append(mock_call(fake_url, case_sub_opt, 0))
 
-    DownloadSection().run(opts, retry=0)
+    DownloadSection()._download_video(opts, retry=0)
 
     download_calls = download_mock.mock_calls.copy()
     assert len(download_calls) == len(expected_download_calls)
@@ -103,6 +145,47 @@ def test_main_flow(
 
     if is_bundle or has_sub:
       assert merge_mock.call_count == 1
+      
+    move_mock.assert_called()
+
+@patch('src.section.DownloadSection.DownloadSection._move_temp_file')
+@patch('src.section.DownloadSection.run_ffmpeg')
+@patch('src.section.DownloadSection.get_audio_sample_rate')
+@patch('src.section.DownloadSection.DownloadSection._download_item')
+@patch('src.section.DownloadSection.DownloadOpt.to_ytdlp_dl_opt')
+def test_download_audio (
+  opt_mock : Mock,
+  download_mock : Mock, audio_sample_mock : Mock,
+  ffmpeg_mock : Mock, move_mock : Mock
+):
+  class fake_DownloadOpt (DownloadOpt):
+    def __init__(self, url : str):
+      self._url = url
+      self.output_dir = uuid4().__str__()
+      self.output_nm = uuid4().__str__()
+    @property
+    def url (self):
+      return self._url
+  
+  fake_opts = fake_DownloadOpt(url = uuid4().__str__())
+  fake_retry = randint(0, 10)
+  fake_dl_opt = Mock()
+  fake_item_nm = uuid4().__str__()
+  fake_sample_rate = randint(0, 90000)
+  
+  opt_mock.return_value = fake_dl_opt
+  download_mock.return_value = fake_item_nm
+  audio_sample_mock.return_value = fake_sample_rate
+  ffmpeg_mock.return_value = None
+  move_mock.return_value = None
+  
+  DownloadSection()._download_audio(fake_opts, fake_retry)
+  
+  assert download_mock.mock_calls == [mock_call(fake_opts.url, fake_dl_opt, fake_retry)]
+  assert audio_sample_mock.mock_calls == [mock_call(f'{TEMP_FOLDER_PATH}/{fake_item_nm}')]
+  assert ffmpeg_mock.called
+  assert move_mock.call_args.kwargs['out_dir'] == fake_opts.output_dir
+  assert f'{fake_opts.output_nm}.' in move_mock.call_args.kwargs['out_nm']
 
 @patch('src.section.DownloadSection.YoutubeDL')
 def test_download_item (ytdl_mock:Mock):
@@ -125,21 +208,18 @@ def test_download_item (ytdl_mock:Mock):
   ret_name =  DownloadSection()._download_item('url', fake_opts, retry=0)
   assert ret_name == f'{temp_nm}.mp4'
   
-@patch('src.section.DownloadSection.ff_out')
+@patch('src.section.DownloadSection.run_ffmpeg')
 @patch('src.section.DownloadSection.ff_in')
-def test_merge_subtitle(ffin_mock:Mock, ffout_mock:Mock):
+def test_merge_subtitle(ffin_mock:Mock, run_ffmpeg_mock:Mock):
   """test subtitle feature of merge function"""
-  # fake returned ffmpeg object of ffout_mock
-  class FakeFfmpeg:
-    def run(*args, **kwargs):
-      pass
-
-  fake_ff_in_v = { 'v': '' }
-  fake_ff_in_a = { 'a': '' }
-  fake_ff_in_s = { 's': '' }
+  fake_ff_in_v = {'v': ''}
+  fake_ff_in_a = {'a': ''}
+  fake_ff_in_s = {'s': ''}
   fake_video_path = 'in.mp4'
   fake_audio_path = 'in.m4a'
   fake_subtitle_path = 'in.vtt'
+  
+  run_ffmpeg_mock.return_value = None
   
   # [(list of ff_in return, do_embed_sub, do_burn_sub, expected key of kwargs in ff_out call)]
   case_ls : list[tuple[list[dict], bool, bool, list[str]]] = [
@@ -156,19 +236,17 @@ def test_merge_subtitle(ffin_mock:Mock, ffout_mock:Mock):
     case_ff_in_side_effect, case_do_embed_sub, case_do_burn_sub, case_expected_keys = case
     
     ffin_mock.reset_mock()
-    ffout_mock.reset_mock()
+    run_ffmpeg_mock.reset_mock()
     
-    ffout_mock.return_value = FakeFfmpeg()
     ffin_mock.side_effect = case_ff_in_side_effect
     
     DownloadSection()._merge(
       fake_video_path, fake_audio_path, fake_subtitle_path,
       do_embed_sub=case_do_embed_sub, do_burn_sub=case_do_burn_sub
     )
-
-    kwargs = ffout_mock.call_args.kwargs
+    
     for key in case_expected_keys:
-      assert key in kwargs
+      assert key in run_ffmpeg_mock.call_args[0][1]
   
 def test_move_temp_file():
   """
