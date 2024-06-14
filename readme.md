@@ -13,24 +13,23 @@
 </p>
 
 ## Features
-There are two tools in this project.
 
-### lyd.bat (lazy youtube download)
+### lazy youtube download
 This tool tries to minimize the setting during download video<br/>
 <ul>
   <li>Enter url to download</li>
-  <li>Download best quality automatically</li>
+  <li>Select download video or audio</li>
+  <li>Select download quality</li>
   <li>Select subtitle if any and hard-burn/soft-embed into the video</li>
-  <li>Login with cookie file if the site requires to login. See readme.md in cookie folder for more instructions.</li>
+  <li>Login with cookie file if the site requires. See readme.md in cookie folder for more instructions.</li>
   <li>Download playlist if the url links to a playlist</li>
   <li>Pre-set downlaod settings with a toml file (the file in /src/lyd_autofill.toml)</li>
 </ul>
-Execute lyd.bat to run this tool.
+To use this tool:</br>
+Download from release and run LazyYtDownload.exe, or</br>
+Download source code and run lyd.bat
 
-### download.bat
-This tool provide interface of basic setting when using ytp-dlp to downlaod video.<br/>
-Execute download.bat to run this tool.</br>
-<b>However, this tool current not work well and is used as a debug helper. So use lyd instead.</b>
+### download.bat (DO NOT USE)
 
 ## Tested sites
 This tool is tested to be able to:</br>
