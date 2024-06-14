@@ -29,6 +29,9 @@ class Logger:
   def debug (self, message : str):
     logging.debug(message)
     
+  def error (self, message : str):
+    logging.error(message)
+    
   def dump_dict (self, d : dict, name : str = None) -> str:
     """ return name of saved json file """
     if name is None:

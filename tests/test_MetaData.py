@@ -1,9 +1,12 @@
 from unittest.mock import patch, Mock
 
 from json import loads as jsonLoads
-from typing import Literal
+from typing import Literal, Union, TypedDict
+from dataclasses import dataclass
+from uuid import uuid4
 
 from src.service.MetaData import fetchMetaData, MetaDataOpt
+from src.service.MetaData import MetaData
 from src.service.MetaData import VideoMetaData, BiliBiliVideoMetaData, FacebookVideoMetaData, IGVideoMetaData
 from src.service.MetaData import PlaylistMetaData, BiliBiliPlaylistMetaData
 from src.service.MetaData import TMdFormats
@@ -52,26 +55,40 @@ def test_fetchMetaData_type(
   playlist_md_mock.return_value = fake_playlist_md()
   bili_playlist_md_mock.return_value = fake_bili_playlist_md()
 
-  # test cases [(extract metadata returned type, url source, expected metadata type)]
-  case_ls : list[tuple[Literal['video', 'playlist'], str, type]] = [
-    ('video', 'fake source', VideoMetaData),
-    ('video', UrlSource.BILIBILI, BiliBiliVideoMetaData),
-    ('video', UrlSource.FACEBOOK, FacebookVideoMetaData),
-    ('video', UrlSource.IG, IGVideoMetaData),
-    ('playlist', 'fake source', PlaylistMetaData),
-    ('playlist', UrlSource.BILIBILI, BiliBiliPlaylistMetaData)  
+  @dataclass
+  class Case:
+    md_type : Literal['video', 'playlist']
+    do_error : bool
+    source : str
+    expected : Union[MetaData, None]
+    
+  case_ls : list[Case] = [
+    Case('video', False, 'fake source', fake_video_md),
+    Case('video', False, UrlSource.BILIBILI, fake_bili_video_md),
+    Case('video', False, UrlSource.FACEBOOK, fake_facebook_video_md),
+    Case('video', False, UrlSource.IG, fake_ig_video_md),
+    Case('playlist', False, 'fake source', fake_playlist_md),
+    Case('playlist', False, UrlSource.BILIBILI, fake_bili_playlist_md),
+    Case('video', True, 'fake source', None)
   ]
   
-  for case in case_ls:
-    print('testing', case)
-    case_metadata_type, case_source, case_expected_ret_type = case
+  for idx, case in enumerate(case_ls):
+    print('testing case', idx + 1)
     
     extract_metadata_mock.reset_mock()
     getSource_mock.reset_mock()
     
-    extract_metadata_mock.return_value = { '_type': case_metadata_type }
-    getSource_mock.return_value = case_source
-    assert isinstance(fetchMetaData(MetaDataOpt()), case_expected_ret_type)
+    if case.do_error:
+      extract_metadata_mock.side_effect = Exception('error')
+    else:
+      extract_metadata_mock.return_value = { '_type': case.md_type }
+    getSource_mock.return_value = case.source
+    
+    md = fetchMetaData(MetaDataOpt())
+    if case.expected is None:
+      assert md is None
+    else:
+      assert isinstance(md, case.expected)
 
 def test_videoMd_getSubtitles():
   """test getSubtitles method of VideoMetaData"""
@@ -260,3 +277,65 @@ def test_fetch_bili_ls():
   for idx, v in enumerate(md.videos):
     assert isinstance(v, VideoMetaData)
     assert v.title == expected['entries'][idx]['title']
+
+@patch('src.service.MetaData.fetchMetaData')
+def test_fetch_playlist_videos (fetch_md_mock : Mock):
+  """ test fetchVideoMd of PlaylistMetaData class """
+  class fake_Entry (TypedDict):
+    url : str
+  
+  class fake_MetaDataOpt (MetaDataOpt):
+    def __init__(self) -> None:
+      self.url = None
+    def copy (self):
+      return fake_MetaDataOpt()
+    
+  class fake_VideoMetaData (VideoMetaData):
+    def __init__(self):
+      pass
+    def isPlaylist (self) -> bool:
+      return False
+  
+  @dataclass
+  class Case:
+    entry_ls : list[fake_Entry]
+    fetch_res_ls : list[Union[VideoMetaData, None]]
+    expected : list[VideoMetaData]
+    @property
+    def metadata (self) -> dict:
+      return {
+        'entries': self.entry_ls,
+        'playlist_count': len(self.entry_ls)
+      }
+  
+  fake_entry1 = fake_Entry(url=uuid4().__str__())
+  fake_entry2 = fake_Entry(url=uuid4().__str__())
+  
+  fake_video_md1 = fake_VideoMetaData()
+  fake_video_md2 = fake_VideoMetaData()
+  
+  case_ls : list[Case] = [
+    Case(
+      entry_ls=[fake_entry1, fake_entry1, fake_entry2],
+      fetch_res_ls = [fake_video_md1, None, fake_video_md2],
+      expected=[fake_video_md1, fake_video_md2]
+    )
+  ]
+  
+  for idx, case in enumerate(case_ls):
+    print('testing case', idx + 1)
+    
+    fetch_md_mock.reset_mock()
+    fetch_md_mock.side_effect = case.fetch_res_ls
+    
+    # fetchVideoMd is called in the constructor
+    md = PlaylistMetaData(case.metadata, fake_MetaDataOpt())
+    
+    assert fetch_md_mock.call_count == len(case.entry_ls)
+    for call, entry in zip(fetch_md_mock.call_args_list, case.entry_ls):
+      assert call[0][0].url == entry['url']
+      
+    assert len(md.videos) == len(case.expected)
+    for actual, expected in zip(md.videos, case.expected):
+      assert actual == expected
+    
