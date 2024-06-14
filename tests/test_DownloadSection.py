@@ -264,7 +264,7 @@ def test_move_temp_file():
   temp_nm = f'{uuid4().__str__()}'
   open(f'{TEMP_FOLDER_PATH}/{temp_nm}', 'w')
 
-  out_nm = '"*:<>?|test'
+  out_nm = '"*:<>?|test\r'
   expected_name = 'test'
   DownloadSection()._move_temp_file(
     temp_nm=temp_nm,
