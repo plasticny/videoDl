@@ -6,9 +6,11 @@ def test_isValid():
   # test cases [(url, expected_result)]
   case_ls : list[tuple[str, bool]] = [
     ("https://www.youtube.com/watch?v=dQw4w9WgXcQ", True),
+    ("https://youtube.com/watch?v=dQw4w9WgXcQ", True),
     ("https://youtu.be/dQw4w9WgXcQ", True),
     ("https://www.youtube.com/playlist?list=PLD7UlE9Qf9UZMMwF6XLyWRUJF8koJ3igJ", True),
     ("https://www.youtube.com/shorts/rzV4tZWhqW4", True),
+    ("https://youtube.com/playlist?list=PLD7UlE9Qf9UZMMwF6XLyWRUJF8koJ3igJ", True),
     ("https://www.bilibili.com/video/BV1Kb411W75N", True),
     ("https://www.facebook.com/watch/?v=10158340980295851", True),
     ("https://www.instagram.com/p/CP9QqZ0nZ6I/", True),
@@ -29,9 +31,11 @@ def test_getSource():
   # test cases [(url, expected_source)]
   case_ls : list[tuple[str, UrlSource]] = [
     ('https://www.youtube.com/watch?v=dQw4w9WgXcQ', UrlSource.YOUTUBE),
+    ('https://youtube.com/watch?v=dQw4w9WgXcQ', UrlSource.YOUTUBE),
     ('https://youtu.be/dQw4w9WgXcQ', UrlSource.YOUTU_BE),
     ('https://www.youtube.com/playlist?list=PLD7UlE9Qf9UZMMwF6XLyWRUJF8koJ3igJ', UrlSource.YOUTUBE_LS),
     ('https://www.youtube.com/shorts/rzV4tZWhqW4', UrlSource.YOUTUBE_SHORT),
+    ('https://youtube.com/playlist?list=PLD7UlE9Qf9UZMMwF6XLyWRUJF8koJ3igJ', UrlSource.YOUTUBE_LS),
     ('https://www.bilibili.com/video/BV1Kb411W75N', UrlSource.BILIBILI),
     ('https://www.facebook.com/watch/?v=10158340980295851', UrlSource.FACEBOOK),
     ('https://www.instagram.com/p/CP9QqZ0nZ6I/', UrlSource.IG),

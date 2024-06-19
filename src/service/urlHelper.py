@@ -17,15 +17,15 @@ class UrlSource (Enum):
   YOUTUBE_SHORT = 9
 
 class SourcePrefix (Enum):
-  YOUTUBE = ['www.youtube.com']
+  YOUTUBE = ['youtube.com']
   YOUTU_BE = ['youtu.be']
-  YOUTUBE_LS = ['www.youtube.com/playlist']
+  YOUTUBE_LS = ['youtube.com/playlist']
   YOUTUBE_SHORT = ['youtube.com/shorts/']
-  BILIBILI = ['www.bilibili.com/video/']
+  BILIBILI = ['bilibili.com/video/']
   PORNHUB = ['pornhub.com/view_video.php']
-  FACEBOOK = ['www.facebook.com'] 
-  IG = ['www.instagram.com']
-  PINTEREST = ['www.pinterest.com/pin/']
+  FACEBOOK = ['facebook.com'] 
+  IG = ['instagram.com']
+  PINTEREST = ['pinterest.com/pin/']
   PIN_IT = ['pin.it']
 
 # error message
