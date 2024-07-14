@@ -1,14 +1,13 @@
 from sys import path
 from pathlib import Path
 
-from src.structs.option import IOpt
 path.append(Path('..').resolve().as_posix())
 
 from unittest.mock import patch, Mock, call as mock_call
 from pytest import raises as pytest_raises
 from os.path import exists
 from uuid import uuid4
-from typing_extensions import Union, Literal
+from typing_extensions import Union
 from dataclasses import dataclass
 from random import randint
 
@@ -20,7 +19,7 @@ from src.structs.video_info import Subtitle, BundledFormat
 from src.structs.option import MediaType
 
 
-@patch('src.section.DownloadSection.YoutubeDL.download')
+@patch('src.section.DownloadSection.Ytdlp.download')
 def test_with_fail_download(download_mock):
   # make download fail
   download_mock.side_effect = Exception()
@@ -187,7 +186,7 @@ def test_download_audio (
   assert move_mock.call_args.kwargs['out_dir'] == fake_opts.output_dir
   assert f'{fake_opts.output_nm}.' in move_mock.call_args.kwargs['out_nm']
 
-@patch('src.section.DownloadSection.YoutubeDL')
+@patch('src.section.DownloadSection.Ytdlp')
 def test_download_item (ytdl_mock:Mock):
   """ test the function return the file full name """
   prepare_output_folder()

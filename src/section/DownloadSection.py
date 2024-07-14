@@ -1,14 +1,13 @@
 from __future__ import annotations
-from yt_dlp import YoutubeDL
 from uuid import uuid4
 from os import listdir
 from shutil import move as move_file
-from typing import Literal
 
 from src.section.Section import Section
 
 from src.service.fileHelper import TEMP_FOLDER_PATH
 from src.service.ffmpeg_helper import ff_in, run_ffmpeg, get_audio_sample_rate
+from src.service.ytdlp import Ytdlp
 
 from src.structs.option import IOpt, TOpt, MediaType
 from src.structs.video_info import Subtitle, BundledFormat
@@ -238,15 +237,14 @@ class DownloadSection (Section) :
     while True:
       try:
         # NOTE: add .copy(), else the download function change the value of opts
-        YoutubeDL(opts.copy()).download([url])
-        # YoutubeDL(opts.copy()).download_with_info_file(info_filename=info_path)
+        Ytdlp(opts.copy()).download(url)
         break
       except Exception as e:
         tryCnt += 1
         if tryCnt > retry:
           raise Exception('Download failed', e)
         print(f'Retry {tryCnt} times')
-        
+      
     # get the file full name (with extension)
     output_dir = opts['paths']['home']
     output_nm = opts['outtmpl'][:36] # len of uuid4 is 36
@@ -254,7 +252,7 @@ class DownloadSection (Section) :
       if file_nm.startswith(output_nm):
         return file_nm
     # the file should be found
-    raise Exception('Download failed')
+    raise Exception('Download failed, file not found')
   
   def _merge (
       self,
