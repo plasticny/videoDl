@@ -43,12 +43,8 @@ class Ytdlp:
     run_cmd(f'{EXE_NM} -U')
   
   def __init__ (self, opt: IOpt = {}) -> None:
-    self.params: _Params = {}
-    for k, v in opt.items():
-      self.params[k] = v
-    
+    self.params: _Params = opt.copy()
     self.base_cmd = self._build_base_cmd()
-    
     self.logger = Logger()
       
   def _build_base_cmd (self) -> str:
