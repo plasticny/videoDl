@@ -1,16 +1,34 @@
 """
   Custom fetchers for getting info that is not provided or not easy to get from yt-dlp
 """
-from urllib.request import build_opener, HTTPCookieProcessor
-from json import loads as json_loads
-from yt_dlp.cookies import load_cookies
 from colorama import Fore, Style
+from json import loads as json_loads
+from os import access as os_access, R_OK as OS_R_OK
+from typing import Optional
+from urllib.request import build_opener, HTTPCookieProcessor
+
+from src.service.ytdlp import YoutubeDLCookieJar
 
 from src.structs.video_info import Subtitle, BiliBiliSubtitle
 
-def _fetch (url : str, cookie_file_path : str = None) -> dict:
+def _get_cookie_jar (cookie_file_path : Optional[str] = None) -> YoutubeDLCookieJar:
+  """ simulate yt-dlp's load_cookies """
+  if cookie_file_path is None:
+    return YoutubeDLCookieJar()
+  
+  is_filename = YoutubeDLCookieJar.is_path_like(cookie_file_path)
+  if is_filename:
+    cookie_file_path = YoutubeDLCookieJar.expand_path(cookie_file_path)
+
+  cookiejar = YoutubeDLCookieJar(cookie_file_path)
+  if not is_filename or os_access(cookie_file_path, OS_R_OK):
+    cookiejar.load()
+    
+  return cookiejar
+
+def _fetch (url : str, cookie_file_path : Optional[str] = None) -> dict:
   """ Return fetch result in json format """
-  cookiejar = load_cookies(cookie_file_path, None, None)
+  cookiejar = _get_cookie_jar(cookie_file_path)
   
   opener = build_opener(HTTPCookieProcessor(cookiejar))
   opener.addheaders = [
