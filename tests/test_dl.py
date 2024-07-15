@@ -98,9 +98,7 @@ def test_run(url_mock:Mock, login_mock:Mock, setup_mock:Mock):
 @patch('src.dl.OutputSection.run')
 @patch('src.dl.SubTitleSection.run')
 @patch('src.dl.FormatSection.run')
-@patch('src.dl.ListFormatSection.run')
-def test_setup (lsf_mock:Mock, format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
-  lsf_mock.return_value = None
+def test_setup (format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
   format_mock.return_value = 'mp4'
   
   ret_subtitle : TSubtitleSectionRet = {

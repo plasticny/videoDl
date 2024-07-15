@@ -7,7 +7,6 @@ from colorama import Fore, Style
 from src.section.Section import Section, HeaderType
 from src.section.UrlSection import UrlSection
 from src.section.LoginSection import LoginSection
-from src.section.ListFormatSection import ListFormatSection
 from src.section.DownloadSection import DownloadSection, DownloadOpt
 from src.section.SubTitleSection import SubTitleSection
 from src.section.FormatSection import FormatSection
@@ -89,9 +88,6 @@ class Dl:
   def setup(self, md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     opt_ls = [DownloadOpt(md.opts) for md in md_ls]
         
-    # list format
-    ListFormatSection(title='List Format', headerType=HeaderType.SUB_HEADER).run(opt_ls[0])
-
     # format
     selected_format = FormatSection(
       title='Format',
