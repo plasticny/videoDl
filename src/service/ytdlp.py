@@ -40,9 +40,9 @@ class _Params (TypedDict):
 class Ytdlp:
   @staticmethod
   def upgrade () -> None:
-    popen(f'{EXE_NM} -U')
+    run_cmd(f'{EXE_NM} -U')
   
-  def __init__ (self, opt: IOpt) -> None:
+  def __init__ (self, opt: IOpt = {}) -> None:
     self.params: _Params = {}
     for k, v in opt.items():
       self.params[k] = v
