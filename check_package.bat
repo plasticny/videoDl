@@ -1,1 +1,0 @@
-echo Checking installed packages... && python -m pip install -r requirements.txt --quiet

@@ -9,9 +9,6 @@ from abc import ABCMeta, abstractmethod
 from sys import path as sysPath
 sysPath.append('src')
 
-from yt_dlp import YoutubeDL
-from contextlib import redirect_stdout
-from io import StringIO
 from functools import cmp_to_key
 from colorama import Fore, Style
 from typing import Union
@@ -19,6 +16,7 @@ from typing import Union
 from src.service.urlHelper import getSource, UrlSource
 from src.service.bilibili import get_bili_subs, get_bili_page_cids, bvid_2_aid
 from src.service.logger import Logger
+from src.service.ytdlp import Ytdlp
 
 from src.structs.option import IOpt, TOpt
 from src.structs.video_info import TFormatVideo, TFormatAudio, TFormatBoth, Subtitle
@@ -26,17 +24,7 @@ from src.structs.video_info import TFormatVideo, TFormatAudio, TFormatBoth, Subt
 LOGGER = Logger()
 
 def ytdlp_extract_metadata (opts:MetaDataOpt):
-  # quiet=True also print subtitle, redirect stdout to hide it
-  with redirect_stdout(StringIO()), YoutubeDL(MetaDataOpt.to_ytdlp_opt(opts)) as ydl:
-    # download basic metadata using yt-dlp
-    metadata = ydl.extract_info(opts.url, download = False)
-    metadata : dict = ydl.sanitize_info(metadata)
-
-    json_name = LOGGER.dump_dict(metadata)
-    LOGGER.debug(f'Metadata of {opts.url} has been saved to {json_name}.json')
-  
-  return metadata
-
+  return Ytdlp(MetaDataOpt.to_ytdlp_opt(opts)).extract_info(opts.url)
 
 """ ========================= funcitons for get the metadata ========================= """
 def fetchMetaData(opts:MetaDataOpt) -> Union[MetaData, None]:

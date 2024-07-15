@@ -14,16 +14,21 @@ from src.section.OutputSection import OutputSection
 
 from src.service.MetaData import fetchMetaData, VideoMetaData, MetaDataOpt
 from src.service.fileHelper import perpare_temp_folder, clear_temp_folder
-from src.service.check_update import check_update
 from src.service.logger import Logger
+from src.service.ytdlp import Ytdlp
 
 
 class Dl:
-  def __init__ (self, do_check_update : bool = False):
+  def __init__ (self, check_upgrade = False):
     self.logger = Logger()
     self.title = 'Download'
-    if do_check_update:
-      check_update()
+    if check_upgrade:
+      self.upgrade()
+      
+  def upgrade(self):
+    print(f'{Fore.CYAN}Checking for updates...{Style.RESET_ALL}')
+    Ytdlp.upgrade()
+    print()
   
   # main process
   def run (self, loop=True):
@@ -120,7 +125,6 @@ class Dl:
 
     return opt_ls
 
-
 """ Entry """
 if __name__ == "__main__":
-  Dl(do_check_update=True).run()
+  Dl(check_upgrade=True).run()
