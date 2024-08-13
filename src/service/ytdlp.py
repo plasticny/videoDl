@@ -99,10 +99,8 @@ class YoutubeDLCookieJar(MozillaCookieJar):
     ('domain_name', 'include_subdomains', 'path', 'https_only', 'expires_at', 'name', 'value'))
 
   def __init__(self, filename=None, *args, **kwargs):
-    print(1, filename)
     if self.is_path_like(filename):
       filename = fspath(filename)
-    print(2, filename)
     super().__init__(filename, *args, **kwargs)    
 
   @staticmethod
