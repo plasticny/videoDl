@@ -99,7 +99,7 @@ def test_setup (format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
 
 @patch('src.lazyYtDownload.lazyYtDownload.setup')
 @patch('src.dl.UrlSection.run')
-def test_download_yt_video(url_mock:Mock, setup_mock:Mock):
+def test_download_yt_video_ng_(url_mock:Mock, setup_mock:Mock):
   prepare_output_folder()
 
   url_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
@@ -132,7 +132,7 @@ def test_download_yt_video(url_mock:Mock, setup_mock:Mock):
 @patch('src.lazyYtDownload.lazyYtDownload.setup')
 @patch('src.lazyYtDownload.lazyYtDownload.login')
 @patch('src.dl.UrlSection.run')
-def test_download_bili_video(url_mock:Mock, login_mock:Mock, setup_mock:Mock):
+def test_download_bili_video_ng_(url_mock:Mock, login_mock:Mock, setup_mock:Mock):
   prepare_output_folder()
 
   url_mock.return_value = 'https://www.bilibili.com/video/BV1154y1T765'

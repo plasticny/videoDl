@@ -22,7 +22,7 @@ def test_subtitle():
   assert sub1 != 'not a subtitle'
   assert sub1 != None
 
-def test_bilibili_subtitle():
+def test_bilibili_subtitle_ng_():
   """Test bilibili subtitle structure"""
   # Test __eq__
   sub1 = BiliBiliSubtitle('en', 'English', 0)

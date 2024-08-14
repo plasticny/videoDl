@@ -7,7 +7,7 @@ def test_fetch ():
   _fetch('https://api.bilibili.com/x/web-interface/view?bvid=BV1mj411E7eB')
 
 @patch('src.service.bilibili._fetch')
-def test_get_bili_page_cids(fetch_mock:Mock):  
+def test_get_bili_page_cids_ng_(fetch_mock:Mock):  
   expected_cids = [1331616732, 1331635717, 1331635546, 1331635521]
   fetch_mock.return_value = {
     'code': 0,
@@ -20,7 +20,7 @@ def test_get_bili_page_cids(fetch_mock:Mock):
   assert cids == expected_cids
 
 @patch('src.service.bilibili._fetch')
-def test_bili_bvid_2_aid(fetch_mock:Mock):
+def test_bili_bvid_2_aid_ng_(fetch_mock:Mock):
   expected_aid = 1331616732
   fetch_mock.return_value = {
     'code': 0,
@@ -35,7 +35,7 @@ def test_bili_bvid_2_aid(fetch_mock:Mock):
   assert aid == expected_aid
 
 @patch('src.service.bilibili._fetch')
-def test_fetch_bili_subtitle(fetch_mock:Mock):
+def test_fetch_bili_subtitle_ng_(fetch_mock:Mock):
   fake_sub1 = {'lan': 'zh-Hans', 'lan_doc': 'Chinese', 'ai_status': 0}
   fake_sub2 = {'lan': 'ja', 'lan_doc': 'Japanese', 'ai_status': 1}
 
