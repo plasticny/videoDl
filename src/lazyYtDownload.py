@@ -15,8 +15,8 @@ from src.dl import Dl
 
 
 class lazyYtDownload(Dl):
-  def __init__(self, do_check_update : bool = False):
-    super().__init__(do_check_update)
+  def __init__(self, check_upgrade : bool = False):
+    super().__init__(check_upgrade)
     self.title = 'LYD'
 
   def login(self, url:str) -> str:
@@ -75,4 +75,4 @@ class lazyYtDownload(Dl):
 
 """ Entry """
 if __name__ == "__main__":
-  lazyYtDownload(do_check_update=True).run()
+  lazyYtDownload(check_upgrade=True).run()

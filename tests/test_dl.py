@@ -76,7 +76,7 @@ def test_download_call_count(
 @patch('src.dl.Dl.setup')
 @patch('src.dl.LoginSection.run')
 @patch('src.dl.UrlSection.run')
-def test_run(url_mock:Mock, login_mock:Mock, setup_mock:Mock):
+def test_run_ng_(url_mock:Mock, login_mock:Mock, setup_mock:Mock):
   """ test by a real run """
   def fake_setup(md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     dl_opt = DownloadOpt(md_ls[0].opts)

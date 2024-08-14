@@ -4,15 +4,15 @@ from os import mkdir, remove, listdir, environ
 ENV = environ['RUNTIME_ENV'] if 'RUNTIME_ENV' in environ else 'dev'
 
 if ENV == 'dev':
-  ROOT_PATH = dirname(abspath(__file__)).split('\service')[0]
-  TEMP_FOLDER_PATH = f'{ROOT_PATH}/../temp'
-  FFMPEG_FOLDER_PATH = f'{ROOT_PATH}/ffmpeg'
+  ROOT_PATH = dirname(abspath(__file__)).split('\\service')[0]
+  TEMP_FOLDER_PATH = f'{ROOT_PATH}\\..\\temp'
+  FFMPEG_FOLDER_PATH = f'{ROOT_PATH}\\ffmpeg'
 elif ENV == 'prod':
-  ROOT_PATH = dirname(abspath(__file__)).split('\src')[0]
-  TEMP_FOLDER_PATH = f'{ROOT_PATH}/temp'
+  ROOT_PATH = dirname(abspath(__file__)).split('\\src')[0]
+  TEMP_FOLDER_PATH = f'{ROOT_PATH}\\temp'
   FFMPEG_FOLDER_PATH = f'{ROOT_PATH}'
   
-LYD_AUTOFILL_TOML_PATH = f'{ROOT_PATH}/lyd_autofill.toml'
+LYD_AUTOFILL_TOML_PATH = f'{ROOT_PATH}\\lyd_autofill.toml'
 
 
 def perpare_temp_folder():

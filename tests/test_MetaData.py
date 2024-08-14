@@ -240,8 +240,11 @@ def test_MetadataOpt_to_ytdlp_opt(get_source_mock:Mock):
   get_source_mock.return_value = UrlSource.BILIBILI
   assert MetaDataOpt.to_ytdlp_opt(opt)['listsubtitles'] == False
 
-def test_fetch_yt_video():
-  """test fetch metadata of a real youtube video with url"""
+def test_fetch_yt_video_ng_():
+  """
+  test fetch metadata of a real youtube video with url
+  this test might failed if there are changes in the video
+  """
   opt = MetaDataOpt()
   opt.url = 'https://www.youtube.com/watch?v=zKAxWU4odvE'
   md = fetchMetaData(opt)
@@ -256,7 +259,7 @@ def test_fetch_yt_video():
   assert len(md.subtitles) == len(expected['subtitles'])
   assert len(md.autoSubtitles) == len(expected['automatic_captions'])
 
-def test_fetch_bili_ls():
+def test_fetch_bili_ls_ng_():
   """test fetch metadata of a real bilibili playlist with config object"""
   url = 'https://www.bilibili.com/video/BV1bN411s7VT'
   opt = MetaDataOpt()
