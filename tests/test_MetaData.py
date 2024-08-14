@@ -241,7 +241,10 @@ def test_MetadataOpt_to_ytdlp_opt(get_source_mock:Mock):
   assert MetaDataOpt.to_ytdlp_opt(opt)['listsubtitles'] == False
 
 def test_fetch_yt_video():
-  """test fetch metadata of a real youtube video with url"""
+  """
+  test fetch metadata of a real youtube video with url
+  this test might failed if there are changes in the video
+  """
   opt = MetaDataOpt()
   opt.url = 'https://www.youtube.com/watch?v=zKAxWU4odvE'
   md = fetchMetaData(opt)
