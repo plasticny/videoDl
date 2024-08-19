@@ -62,31 +62,28 @@ def test_get_lyd_media_autofill ():
       assert get_lyd_media_autofill() == case.autofill_value
 
 def test_get_lyd_format_autofill ():
-  # [(do_enable, prefered_format, autofill_value)]
-  case_ls : list[tuple[bool, int, int]] = [
-    # when not enable
-    (False, 0, None),
-    # when enable and prefered format is available
-    (True, 0, 0),
-    (True, 1, 1),
-    (True, 2, 2),
-    # when the prefered format is not available
-    (True, 3, None)
-  ]
+  @dataclass
+  class Case:
+    do_enable: bool
+    expected_ret: Optional[dict]
+
   fake_config = {
-    'format': {
+    'format_option': {
       'enable': False,
-      'prefered_format': 0
+      'option': False
     }
   }
+
+  case_ls: list[Case] = [
+    Case(False, None),
+    Case(True, { 'option': False })
+  ]
   
   for case in case_ls:
     print('testing', case)
-    do_enable, prefered_format, autofill_value = case
-    fake_config['format']['enable'] = do_enable
-    fake_config['format']['prefered_format'] = prefered_format
+    fake_config['format_option']['enable'] = case.do_enable
     with patch.object(autofill, 'lyd_autofill_config', fake_config):
-      assert get_lyd_format_autofill() == autofill_value
+      assert get_lyd_format_option_autofill() == case.expected_ret
     
 def test_get_do_write_subtitle_autofill ():
   # [(do_enable, val, autofill_value)]
@@ -205,7 +202,7 @@ def test_get_output_dir_autofill ():
 def test_all_disabled ():
   """ Check if all autofill is disabled before upload to git """
   assert get_login_autofill('url') is None
-  assert get_lyd_format_autofill() is None
+  assert get_lyd_format_option_autofill() is None
   assert get_do_write_subtitle_autofill() is None
   assert get_sub_lang_autofill() is None
   assert get_sub_write_mode_autofill() is None

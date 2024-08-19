@@ -1,14 +1,17 @@
-from inquirer import prompt as inq_prompt, List as inq_List
+from __future__ import annotations
+
+from inquirer import prompt as inq_prompt, List as inq_List, Checkbox as inq_Checkbox
 from colorama import Fore, Style
-from typing import Union, Literal
+from typing import Union, Optional
 from enum import Enum
 from dataclasses import dataclass
+from inquirer.render.console import ConsoleRender
 
 from src.section.Section import Section
 from src.section.DownloadSection import BundledFormat
 
-from src.service.MetaData import VideoMetaData
-from src.service.autofill import get_lyd_format_autofill, get_lyd_media_autofill
+from src.service.MetaData import VideoMetaData, TFormatVideo
+from src.service.autofill import get_lyd_media_autofill, get_lyd_format_option_autofill
 
 from src.structs.option import MediaType
   
@@ -32,11 +35,6 @@ class LazyMediaType (Enum):
   VIDEO = 'Video'
   AUDIO = 'Audio'
 
-class LazyFormatType (Enum):
-  BEST_QUALITY = 'Best quality' # download best quality
-  BEST_QUALITY_LOW_SIZE = 'Best quality lowest size' # download the lowest size of the best quality
-  QUALITY_EFFICIENT = 'Quality-efficient balance' # download best quality, but avoid video editing
-
 class LazyFormatSection (Section):
   """
     Select format with some default options
@@ -49,21 +47,27 @@ class LazyFormatSection (Section):
     media_option : str = LazyMediaSelector()._ask_media(md_ls)
     self.logger.info(f'Media option selected: {media_option}')
     
-    format_option : str = LazyFormatSelector()._ask_format_option(md_ls, media_option)
-    self.logger.info(f'Format option selected: {format_option}')
-  
+    format_option_res: LazyFormatSelector.SelectRes = LazyFormatSelector()._ask_format_option(md_ls, media_option)
+    self.logger.info(f'Format option selected: {", ".join([k for k, v in format_option_res.__dict__.items() if v])}')
+
     format_ls : list[Union[str, BundledFormat]] = []
     for md in md_ls:
-      # audio
+      audio_format = self._best_audio(md, format_option_res)
+
+      # download audio only
       if media_option == LazyMediaType.AUDIO.value:
-        selected_format = self._best_audio(md)
+        if audio_format is None:
+          raise ValueError('No audio available')
+        selected_format = audio_format
       # video
-      elif format_option == LazyFormatType.QUALITY_EFFICIENT.value:
-        selected_format = self._quality_efficient(md)
-      elif format_option in [LazyFormatType.BEST_QUALITY.value, LazyFormatType.BEST_QUALITY_LOW_SIZE.value]:
-        selected_format = self._best_quality(md, format_option)
       else:
-        raise ValueError(f'Invalid format option: {format_option}')
+        video_format = self._select_video_format(md, format_option_res)
+        if video_format is None:
+          raise ValueError('No video available')
+        if audio_format is None:
+          selected_format = video_format
+        else:
+          selected_format = BundledFormat(audio=audio_format, video=video_format)
 
       self.logger.info(
         '[{}] selected format: {}'.format(
@@ -75,46 +79,43 @@ class LazyFormatSection (Section):
 
     return LazyFormatSectionRet(media=media_option, format_ls=format_ls)
 
-  def _best_audio (self, md:VideoMetaData) -> str:
+  def _best_audio (self, md:VideoMetaData, format_option_res: LazyFormatSelector.SelectRes) -> Optional[str]:
     if len(md.formats['audio']) != 0:
-      return md.formats['audio'][0]['format_id']
-    elif len(md.formats['both']) != 0:
-      return md.formats['both'][0]['audio']['format_id']
-    else:
-      raise ValueError('No audio available')
-  
-  def _quality_efficient (self, md:VideoMetaData) -> Union[str, BundledFormat]:
-    if len(md.formats['both']) > 0:
-      return md.formats['both'][0]['format_id']
-    elif len(md.formats['audio']) == 0:
-      return md.formats['video'][0]['format_id']
-    else:
-      v = md.formats['video'][0]['format_id']
-      a = md.formats['audio'][0]['format_id']
-      return BundledFormat(video = v, audio = a)
-  
-  def _best_quality (self, md:VideoMetaData, format_option : str) -> Union[str, BundledFormat]:
-    """ Best quality or best quality lowest size """
-    # best quality and best quality smallest size
-    video_format = md.formats['video'][0]
-    if format_option == LazyFormatType.BEST_QUALITY_LOW_SIZE.value:
-      # select a format with same resolution but smallest size
-      # format is supposed to be sorted by quality first and size second
-      for f in md.formats['video'][1:]:
-        if f['width'] == video_format['width'] and f['height'] == video_format['height']:
-          video_format = f
-        else:
-          break
-    video = video_format['format_id']
+      for f in md.formats['audio']:
+        if format_option_res.WIN and 'opus' in f['codec']:
+          continue
+        return f['format_id']
+    
+    if len(md.formats['both']) != 0:
+      for f in md.formats['both']:
+        if format_option_res.WIN and 'opus' in f['audio']['codec']:
+          continue
+        return f['audio']['format_id']
 
-    if len(md.formats['audio']) == 0:
-      # url doesn't support audio, download video only
-      return video
-    else:
-      # Add as a bundled format for merging after download
-      audio = md.formats['audio'][0]['format_id']
-      return BundledFormat(video = video, audio = audio)
+    return None
   
+  def _select_video_format (self, md: VideoMetaData, format_option_res: LazyFormatSelector.SelectRes) -> Optional[str]:
+    """ Select the video format with the best resolution and fulfill the format option """
+    # format is supposed to be sorted by quality first and size second
+    selected_format: Optional[TFormatVideo] = None
+    for f in md.formats['video']:
+      # avoid format that might not play on Windows player
+      if format_option_res.WIN and ('hev' in f['codec'] or 'av01' in f['codec']):
+        continue
+
+      # first format
+      if selected_format is None:
+        selected_format = f
+      # highest resolution lowest size
+      elif format_option_res.HRLS and f['width'] == selected_format['width'] and f['height'] == selected_format['height']:
+        selected_format = f
+      else:
+        break
+
+    if selected_format is None:
+      return None
+    return selected_format['format_id']
+
 class LazyMediaSelector:
   """ select the media to be downloaded """
   def _ask_media (self, md_ls:list[VideoMetaData]) -> str:
@@ -159,50 +160,58 @@ class LazyMediaSelector:
     return options
   
 class LazyFormatSelector:
-  """ select quality of the media to be downloaded """
-  def _ask_format_option(self, md_ls:list[VideoMetaData], media : str) -> str:
-    """
-      Ask user to select format option if there are multiple options available
-    """
-    # if media is audio, select best quality
+  """ Some specific options for the download format """
+  @dataclass
+  class Option:
+    name: str
+    desc: str
+
+  @dataclass
+  class SelectRes:
+    HRLS: bool = False
+    WIN: bool = False
+
+  OPTIONS: dict[str, Option] = {
+    'HRLS': Option('Highest resolution lowest size', 'Download the highest resolution with the lowest size'),
+    'WIN': Option('Make sure it plays on Windows', 'Avoid format that might not play on Windows player')
+  }
+
+  class QueryRender (ConsoleRender):
+    def _print_options(self, render):
+      for idx, (option, symbol, color) in enumerate(render.get_options()):
+        if idx == render.current:
+          message = f"{option.name} ({option.desc})"
+        else:
+          message = f"{option.name}"
+        self.print_line(" {color}{s} {m}{t.normal}", m=message, color=color, s=symbol)
+
+  def _ask_format_option(self, md_ls:list[VideoMetaData], media : str) -> SelectRes:
+    """ Ask the user to select the option for choosing the format """
+
+    # no specific format option for audio
     if media == LazyMediaType.AUDIO.value:
-      return LazyFormatType.BEST_QUALITY.value
+      return LazyFormatSelector.SelectRes()
     
     options = self._get_options(md_ls)
-    if len(options) == 1:
-      print('Only one format option available, select it automatically')
-      print(f'Selected option: {Fore.CYAN}{options[0]}{Style.RESET_ALL}')
-      return options[0]
+    if len(options) == 0:
+      return LazyFormatSelector.SelectRes()
     
-    autofill_selection = get_lyd_format_autofill()
-    if autofill_selection is not None:
-      print('Format autofill found')
-      print(f'Selected option: {Fore.CYAN}{options[autofill_selection]}{Style.RESET_ALL}')
-      return options[autofill_selection]
-    
-    return inq_prompt([
-      inq_List(
-        'format_option', message=f'{Fore.CYAN}Select the video format{Style.RESET_ALL}', 
-        choices=options, default=options[0]
-      )
-    ])['format_option']
-                      
-  def _get_options(self, md_ls:list[VideoMetaData]) -> list[str]:
-    option_best_avaialble = True
-    option_both_available = True
-    for md in md_ls:
-      if not option_both_available and not option_best_avaialble:
-        break
-      if len(md.formats['video']) == 0:
-        option_best_avaialble = False
-      if len(md.formats['both']) == 0:
-        option_both_available = False
+    default = []
+    autofill = get_lyd_format_option_autofill()
+    if autofill is not None:
+      default = [self.OPTIONS[k] for k, v in autofill.items() if v]
 
-    options = []
-    if option_best_avaialble:
-      options.append(LazyFormatType.BEST_QUALITY.value)
-      options.append(LazyFormatType.BEST_QUALITY_LOW_SIZE.value)
-    if option_both_available:
-      options.append(LazyFormatType.QUALITY_EFFICIENT.value)
-    return options
+    selected_options = inq_prompt(
+      [inq_Checkbox('format_option', message=f'{Fore.CYAN}Select format option(s){Style.RESET_ALL}', choices=options, default=default)],
+      render=self.QueryRender()
+    )['format_option']
+
+    res = LazyFormatSelector.SelectRes()
+    for k in self.OPTIONS.keys():
+      if self.OPTIONS[k] in selected_options:
+        setattr(res, k, True)
+    return res
+                      
+  def _get_options(self, md_ls:list[VideoMetaData]) -> list[Option]:
+    return [ v for v in LazyFormatSelector.OPTIONS.values() ]
 # ============== lazy format selection ============== #

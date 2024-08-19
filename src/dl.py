@@ -54,7 +54,12 @@ class Dl:
         continue
 
       # subtitle, format, output dir
-      opts_ls : list[DownloadOpt] = Section(title='Set up download').run(self.setup, md_ls=md_ls)
+      try:
+        opts_ls : list[DownloadOpt] = Section(title='Set up download').run(self.setup, md_ls=md_ls)
+      except Exception as e:
+        print(f'\n{Fore.RED}{str(e)}{Style.RESET_ALL}\n')
+        self.logger.error(str(e))
+        continue
 
       # download all video in the url
       for idx, opts in enumerate(opts_ls):

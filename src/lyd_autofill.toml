@@ -22,6 +22,12 @@ enable = false
 # 0: best quality, 1: best quality lowest size 2: quality-efficent balance
 prefered_format = 1
 
+# format option
+[format_option]
+enable = false
+HRLS = false # high resolution lowest size
+WIN = true # make the video play in window
+
 # subtitle
 [subtitle]
   [subtitle.do_write_subtitle]
