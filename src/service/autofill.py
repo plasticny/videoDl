@@ -1,5 +1,5 @@
 from toml import load as toml_load
-from typing import TypedDict, Union
+from typing import TypedDict, Union, Optional
 
 from src.service.fileHelper import LYD_AUTOFILL_TOML_PATH
 
@@ -14,9 +14,11 @@ class TMediaConfig(TypedDict):
   enable: bool
   val: int
 
-class TFormatConfig(TypedDict):
+class TFormatOptionConfig(TypedDict):
   enable: bool
-  prefered_format: int
+  HRLS: bool
+  AHEV: bool
+  AAV1: bool
   
 class TDoWriteSubtitle(TypedDict):
   enable: bool
@@ -42,7 +44,7 @@ class TDownloadConfig(TypedDict):
 class TLydAutofillConfig(TypedDict):  
   login: TLoginConfig
   media: TMediaConfig
-  format: TFormatConfig
+  format_option: TFormatOptionConfig
   subtitle: TSubtitleConfig
   download: TDownloadConfig
 # ============== toml structure ============== #
@@ -65,14 +67,13 @@ def get_lyd_media_autofill () -> Union[str, None]:
   val = config['val']
   return val if config['enable'] and val in [0, 1] else None
 
-def get_lyd_format_autofill () -> int:
-  if not lyd_autofill_config['format']['enable']:
+def get_lyd_format_option_autofill () -> Optional[dict]:
+  if not lyd_autofill_config['format_option']['enable']:
     return None
   
-  prefered_format = lyd_autofill_config['format']['prefered_format']
-  if prefered_format in [0, 1, 2]:
-    return prefered_format
-  return None
+  res = lyd_autofill_config['format_option'].copy()
+  res.pop('enable')
+  return res
 
 def get_do_write_subtitle_autofill () -> bool:
   config = lyd_autofill_config['subtitle']['do_write_subtitle']
