@@ -22,7 +22,7 @@ from src.structs.option import IOpt
 
 _T = TypeVar('_T')
 _V = Union[_T, None]
-EXE_NM = 'src\\yt-dlp_min.exe'
+EXE_NM = 'src\\yt-dlp.exe'
 
 class _Params (TypedDict):
   cookiefile: _V[str]
