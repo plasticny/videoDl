@@ -10,7 +10,7 @@ def test_build_base_cmd ():
   # empty opt
   ytdlp = Ytdlp()
   cmd_comp = ytdlp.base_cmd.split(' ')
-  assert len(cmd_comp) == 2
+  assert len(cmd_comp) == 4
   assert EXE_NM in cmd_comp
   
   # with opt, but all negative value
@@ -28,7 +28,7 @@ def test_build_base_cmd ():
     'outtmpl': None
   })
   cmd_comp = ytdlp.base_cmd.split(' ')
-  assert len(cmd_comp) == 2
+  assert len(cmd_comp) == 4
   assert EXE_NM in cmd_comp
   
   # with opt
