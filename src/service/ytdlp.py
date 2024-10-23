@@ -17,6 +17,7 @@ from time import time
 from typing import TypedDict, TypeVar, Union, Callable
 
 from src.service.logger import Logger
+from src.service.fileHelper import FFMPEG_FOLDER_PATH
 
 from src.structs.option import IOpt
 
@@ -50,9 +51,10 @@ class Ytdlp:
   def _build_base_cmd (self) -> str:
     has_value : Callable[[str], bool] = lambda x : self.params.get(x, None) is not None
     is_true : Callable[[str], bool] = lambda x : self.params.get(x, False)
-    
+
     return \
       f'{EXE_NM} ' + \
+      f'--ffmpeg-location {FFMPEG_FOLDER_PATH} ' + \
       (f'--cookies {self.params["cookiefile"]} '                 if has_value('cookiefile') else '') + \
       (f'--flat-playlist '                                       if is_true('extract_flat') else '') + \
       (f'--format {self.params["format"]} '                      if has_value('format') else '') + \
