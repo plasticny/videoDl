@@ -49,8 +49,9 @@ class Dl:
 
       try:
         md_ls = self.get_metadata(URL, COOKIE_FILE_PATH)
-      except:
+      except Exception as e:
         print(f'\n{Fore.RED}Download Failed, error on getting url info{Style.RESET_ALL}\n')
+        self.logger.error(str(e))
         continue
 
       # subtitle, format, output dir
