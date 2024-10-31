@@ -16,6 +16,7 @@ def test_isValid():
     ("https://www.instagram.com/p/CP9QqZ0nZ6I/", True),
     ("https://www.pinterest.com/pin/123456789012345678/", True),
     ("https://pin.it/5hI35yyC9", True),
+    ("https://x.com/hanae0626/status/1851961991243686380", True),
     ("https://example.com", False),
     ("not a valid url", False)
   ]
@@ -41,6 +42,7 @@ def test_getSource():
     ('https://www.instagram.com/p/CP9QqZ0nZ6I/', UrlSource.IG),
     ('https://www.pinterest.com/pin/123456789012345678/', UrlSource.PINTEREST),
     ('https://pin.it/5hI35yyC9', UrlSource.PIN_IT),
+    ('https://x.com/hanae0626/status/1851961991243686380', UrlSource.X),
     ('https://example.com', UrlSource.NOT_DEFINED)
   ]
   
@@ -74,6 +76,7 @@ def test_redirect ():
     ("https://www.facebook.com/watch/?v=10158340980295851", "https://www.facebook.com/watch/?v=10158340980295851"),
     ("https://www.instagram.com/p/CP9QqZ0nZ6I/", "https://www.instagram.com/p/CP9QqZ0nZ6I/"),
     ("https://www.pinterest.com/pin/123456789012345678/", "https://www.pinterest.com/pin/123456789012345678/"),
+    ("https://x.com/hanae0626/status/1851961991243686380", "https://x.com/hanae0626/status/1851961991243686380"),
     ("https://pin.it/5hI35yyC9", "https://www.pinterest.com/pin/979532987693940546")
   ]
   
