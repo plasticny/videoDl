@@ -235,28 +235,33 @@ class VideoMetaData (MetaData):
         return -1
       return b['tbr'] - a['tbr']
     
-    sorted_raw_formats = sorted(self.metadata['formats'], key=cmp_to_key(__compare))
+    sorted_raw_formats: list[dict] = sorted(self.metadata['formats'], key=cmp_to_key(__compare))
     # remove format that has no tsr
-    while len(sorted_raw_formats) > 0 and 'tbr' not in sorted_raw_formats[-1]:
-      sorted_raw_formats.pop()
+    # while len(sorted_raw_formats) > 0 and 'tbr' not in sorted_raw_formats[-1]:
+    #   sorted_raw_formats.pop()
     
     # extract formats
     formats : TMdFormats = { 'audio': [], 'video': [], 'both': [] }
     for format in sorted_raw_formats:
-      has_audio = 'acodec' in format and format['acodec'] != 'none'
-      has_video = 'vcodec' in format and format['vcodec'] != 'none'
+      has_audio = format.get('acodec', 'none') != 'none' or format.get('format_note', '') == 'Audio'
+      has_video = format.get('vcodec', 'none') != 'none'
       
       # for video, only accept mp4
       if has_video and format['ext'] != 'mp4':
+        LOGGER.debug(f'format {format["format_id"]} skipped, not mp4')
         continue
       
+      if 'tbr' not in format:
+        LOGGER.debug(f'format {format["format_id"]} skipped, no tbr')
+        continue
+
       basic_info = {
         'format_id': format['format_id'],
         'tbr': format['tbr']
       }
       audio : TFormatAudio = {
         **basic_info,
-        'codec': format["acodec"],
+        'codec': format.get('acodec', 'none'),
         'ext': format['audio_ext']
       } if has_audio else None
       video : TFormatVideo = {
@@ -268,12 +273,17 @@ class VideoMetaData (MetaData):
       } if has_video else None
       
       if has_audio and has_video:
+        LOGGER.debug(f'format {format["format_id"]} added to both')
         formats['both'].append({**basic_info, 'audio': audio, 'video': video})
       if has_audio and not has_video:
         # only accept format that has audio only
+        LOGGER.debug(f'format {format["format_id"]} added to audio')
         formats['audio'].append(audio)  
       if has_video:
+        LOGGER.debug(f'format {format["format_id"]} added to video')
         formats['video'].append(video)
+      if not has_audio and not has_video:
+        LOGGER.debug(f'format {format["format_id"]} skipped, no audio and video')
 
     # log extracted formats
     LOGGER.debug(f'Extracted audio formats: {formats["audio"]}')

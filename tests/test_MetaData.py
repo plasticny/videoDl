@@ -150,12 +150,13 @@ def test_videoMd_extract_format():
       self.metadata = metadata
   
   fake_metadata = {'formats': [
-    {}, # some format without audio or video
+    { 'format_id': 0 }, # some format without audio or video
     { 'tbr': 1, 'format_id': '1', 'acodec': 'm4a', 'vcodec': 'mp4', 'ext': 'mp4', 'audio_ext': 'm4a', 'video_ext': 'mp4', 'resolution': '720x720' },
     { 'tbr': 3, 'format_id': '2', 'acodec': 'none', 'vcodec': 'avi', 'ext': 'avi', 'audio_ext': 'none', 'video_ext': 'avi', 'resolution': '720x720' },
     { 'tbr': 4, 'format_id': '3', 'acodec': 'mp3', 'vcodec': 'none', 'ext': 'mp3', 'audio_ext': 'mp3', 'video_ext': 'none' },
     { 'tbr': 2, 'format_id': '4', 'acodec': 'none', 'vcodec': 'mp4', 'ext': 'mp4', 'audio_ext': 'none', 'video_ext': 'mp4', 'resolution': '720x720' },
-    { 'tbr': 5, 'format_id': '5', 'acodec': 'none', 'vcodec': 'mp4', 'ext': 'mp4', 'audio_ext': 'none', 'video_ext': 'mp4', 'resolution': '360x360' }
+    { 'tbr': 5, 'format_id': '5', 'acodec': 'none', 'vcodec': 'mp4', 'ext': 'mp4', 'audio_ext': 'none', 'video_ext': 'mp4', 'resolution': '360x360' },
+    { 'tbr': 4, 'format_id': '6', 'format_note': 'Audio', 'vcodec': 'none', 'audio_ext': 'mp4', 'video_ext': 'none' },
   ]}
   
   expected_result : TMdFormats = {
@@ -167,7 +168,8 @@ def test_videoMd_extract_format():
       }
     ],
     'audio': [
-      { 'tbr': 4, 'format_id': '3', 'codec': 'mp3', 'ext': 'mp3' }
+      { 'tbr': 4, 'format_id': '3', 'codec': 'mp3', 'ext': 'mp3' },
+      { 'tbr': 4, 'format_id': '6', 'codec': 'none', 'ext': 'mp4' }
     ],
     'video': [
       { 'tbr': 2, 'format_id': '4', 'codec': 'mp4', 'ext': 'mp4', 'height': 720, 'width': 720 },

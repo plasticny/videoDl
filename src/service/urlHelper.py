@@ -15,6 +15,7 @@ class UrlSource (Enum):
   PIN_IT = 7
   YOUTUBE_LS = 8
   YOUTUBE_SHORT = 9
+  X = 10
 
 class SourcePrefix (Enum):
   YOUTUBE = ['youtube.com']
@@ -27,6 +28,7 @@ class SourcePrefix (Enum):
   IG = ['instagram.com']
   PINTEREST = ['pinterest.com/pin/']
   PIN_IT = ['pin.it']
+  X = ['x.com']
 
 # error message
 class ErrMessage (Enum):
@@ -52,7 +54,8 @@ def getSource (url : str) -> UrlSource:
     SourcePrefix.FACEBOOK : UrlSource.FACEBOOK,
     SourcePrefix.IG : UrlSource.IG,
     SourcePrefix.PINTEREST : UrlSource.PINTEREST,
-    SourcePrefix.PIN_IT : UrlSource.PIN_IT
+    SourcePrefix.PIN_IT : UrlSource.PIN_IT,
+    SourcePrefix.X : UrlSource.X
   }
   for prefix, source in prefix_url_map.items():
     if __check(url, prefix):
