@@ -17,13 +17,12 @@ from time import time
 from typing import TypedDict, TypeVar, Union, Callable
 
 from src.service.logger import Logger
-from src.service.fileHelper import FFMPEG_FOLDER_PATH
+from src.service.fileHelper import FFMPEG_FOLDER_PATH, YT_DLP_PATH
 
 from src.structs.option import IOpt
 
 _T = TypeVar('_T')
 _V = Union[_T, None]
-EXE_NM = 'src\\yt-dlp.exe'
 
 class _Params (TypedDict):
   cookiefile: _V[str]
@@ -41,7 +40,7 @@ class _Params (TypedDict):
 class Ytdlp:
   @staticmethod
   def upgrade () -> None:
-    run_cmd(f'{EXE_NM} -U')
+    run_cmd(f'{YT_DLP_PATH} -U')
   
   def __init__ (self, opt: IOpt = {}) -> None:
     self.params: _Params = opt.copy()
@@ -53,7 +52,7 @@ class Ytdlp:
     is_true : Callable[[str], bool] = lambda x : self.params.get(x, False)
 
     return \
-      f'{EXE_NM} ' + \
+      f'{YT_DLP_PATH} ' + \
       f'--ffmpeg-location {FFMPEG_FOLDER_PATH} ' + \
       (f'--cookies {self.params["cookiefile"]} '                 if has_value('cookiefile') else '') + \
       (f'--flat-playlist '                                       if is_true('extract_flat') else '') + \

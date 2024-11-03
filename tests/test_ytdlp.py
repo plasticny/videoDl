@@ -1,10 +1,7 @@
-from dataclasses import dataclass
 from unittest.mock import patch, Mock
 from uuid import uuid4
 
-from src.service.ytdlp import Ytdlp, EXE_NM
-
-from src.structs.option import IOpt
+from src.service.ytdlp import Ytdlp, YT_DLP_PATH as EXE_NM
 
 def test_build_base_cmd ():
   # empty opt
