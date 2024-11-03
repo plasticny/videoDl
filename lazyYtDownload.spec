@@ -1,11 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import copy_metadata
+
+datas = [('src\\lyd_autofill.toml', '.')]
+datas += copy_metadata('inquirer', recursive=True)
 
 a = Analysis(
     ['src\\lazyYtDownload.py'],
     pathex=['src'],
-    binaries=[('src\\ffmpeg', '.')],
-    datas=[('src\\lyd_autofill.toml', '.')],
+    binaries=[('src\\ffmpeg', '.'), ('src\\yt-dlp.exe', '.')],
+    datas=datas,
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -13,6 +17,7 @@ a = Analysis(
     excludes=[],
     noarchive=False,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -32,6 +37,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+
 coll = COLLECT(
     exe,
     a.binaries,
