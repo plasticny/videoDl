@@ -2,13 +2,7 @@
 # login
 [login]
 enable = false # do auto-fill login option
-
-  [login.cookie_path]
-  # the path is used if the url contains the key
-  # no cookie will be used if all keys are not found
-  # cookie will not be used if the path is empty
-  # priority from top to bottom
-  bilibili = ''
+cookie_path = '' # path to cookie file
 
 # media
 [media]

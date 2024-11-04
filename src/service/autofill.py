@@ -8,7 +8,7 @@ from src.service.fileHelper import LYD_AUTOFILL_TOML_PATH
 
 class TLoginConfig(TypedDict):
   enable: bool
-  cookie_path : dict[str, str]
+  cookie_path : str
 
 class TMediaConfig(TypedDict):
   enable: bool
@@ -51,15 +51,11 @@ class TLydAutofillConfig(TypedDict):
 with open(LYD_AUTOFILL_TOML_PATH, 'r') as f:
   lyd_autofill_config : TLydAutofillConfig = toml_load(f)
 
-def get_login_autofill (url:str) -> str:
+def get_login_autofill () -> str:
   config = lyd_autofill_config['login']
-  if not config['enable']:
+  if not config['enable'] or config['cookie_path'] == '':
     return None
-  
-  for key, value in config['cookie_path'].items():
-    if key in url and value != '':
-      return value
-  return None
+  return config['cookie_path']
 
 def get_lyd_media_autofill () -> Union[str, None]:
   config = lyd_autofill_config['media']
