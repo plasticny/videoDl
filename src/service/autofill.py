@@ -17,8 +17,7 @@ class TMediaConfig(TypedDict):
 class TFormatOptionConfig(TypedDict):
   enable: bool
   HRLS: bool
-  AHEV: bool
-  AAV1: bool
+  WIN: bool
   
 class TDoWriteSubtitle(TypedDict):
   enable: bool

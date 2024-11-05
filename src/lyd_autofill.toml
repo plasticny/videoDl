@@ -16,12 +16,6 @@ enable = false
 # 0: video, 1: audio
 val = 0
 
-# format
-[format]
-enable = false
-# 0: best quality, 1: best quality lowest size 2: quality-efficent balance
-prefered_format = 1
-
 # format option
 [format_option]
 enable = false
