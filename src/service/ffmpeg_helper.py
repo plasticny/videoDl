@@ -5,16 +5,23 @@ from subprocess import check_call, Popen, PIPE
 from typing import Union, Iterator
 
 from src.service.fileHelper import FFMPEG_FOLDER_PATH
+from src.service.logger import Logger
 from src.structs.video_info import Stream
 
 # export some functions of ffmpeg module
 ff_in = _input
 ff_Error = _Error
 
+LOGGER = Logger()
+
 def run_ffmpeg (stream_n_output : list, kwargs : dict):
   """ Run ffmpeg with the specified streams and options """
   FFMPEG_PATH = f'{FFMPEG_FOLDER_PATH}\\ffmpeg'
-  
+
+  LOGGER.debug(f'Running ffmpeg with streams: {stream_n_output}')
+  LOGGER.debug(f'Running ffmpeg with ffmpeg options: {kwargs}')
+  LOGGER.debug(f'Running ffmpeg with ffmpeg path: {FFMPEG_PATH}')
+
   try:
     ff_out(*stream_n_output, **kwargs).run(cmd=FFMPEG_PATH)
   except ff_Error:
