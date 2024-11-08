@@ -1,37 +1,32 @@
 from unittest.mock import patch
 from dataclasses import dataclass
+from uuid import uuid4
 
 import src.service.autofill as autofill
 from src.service.autofill import *
 
 def test_get_login_autofill ():
-  # [(do_enable, url, autofill_value)]
-  case_ls : list[tuple[bool, str, str]] = [
-    # when not enable
-    (False, 'url', None),
-    # when enable and key found
-    (True, 'url a', 'value'),
-    # when enable and key found but value is empty
-    (True, 'url b', None),
-    # when enable and key not found
-    (True, 'url c', None)
-  ]
+  @dataclass
+  class Case:
+    do_enable: bool
+    expected_autofill_value: Optional[str]
+
   fake_config = {
     'login': {
       'enable': False,
-      'cookie_path': {
-        'a': 'value',
-        'b': ''
-      }
+      'cookie_path': str(uuid4())
     }
   }
+  case_ls : list[Case] = [
+    Case(False, None),
+    Case(True, fake_config['login']['cookie_path']),
+  ]
   
   for case in case_ls:
     print('testing', case)
-    do_enable, url, autofill_value = case
-    fake_config['login']['enable'] = do_enable
+    fake_config['login']['enable'] = case.do_enable
     with patch.object(autofill, 'lyd_autofill_config', fake_config):
-      assert get_login_autofill(url) == autofill_value
+      assert get_login_autofill() == case.expected_autofill_value
 
 def test_get_lyd_media_autofill ():
   @dataclass
@@ -201,7 +196,7 @@ def test_get_output_dir_autofill ():
 
 def test_all_disabled ():
   """ Check if all autofill is disabled before upload to git """
-  assert get_login_autofill('url') is None
+  assert get_login_autofill() is None
   assert get_lyd_format_option_autofill() is None
   assert get_do_write_subtitle_autofill() is None
   assert get_sub_lang_autofill() is None

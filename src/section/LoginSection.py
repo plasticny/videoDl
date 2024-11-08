@@ -22,9 +22,8 @@ class LoginSection(Section):
     return super().run(self._login, url=url)
   
   def _login(self, url:str) -> str:    
-    autofill_res = get_login_autofill(url)
+    autofill_res = get_login_autofill()
     if autofill_res is not None:
-      print('Cookie found in config file')
       print(f'Cookie path: {autofill_res}')
       return autofill_res
     
