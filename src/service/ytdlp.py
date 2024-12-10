@@ -28,6 +28,7 @@ class _Params (TypedDict):
   cookiefile: _V[str]
   extract_flat: _V[bool]
   format: _V[str]
+  login_browser: _V[str]
   outtmpl: _V[str]
   overwrites: _V[bool]
   paths: _V[dict[str, str]]
@@ -55,6 +56,7 @@ class Ytdlp:
       f'{YT_DLP_PATH} ' + \
       f'--ffmpeg-location {FFMPEG_FOLDER_PATH} ' + \
       (f'--cookies {self.params["cookiefile"]} '                 if has_value('cookiefile') else '') + \
+      (f'--cookies-from-browser {self.params["login_browser"]} ' if has_value('login_browser') else '') + \
       (f'--flat-playlist '                                       if is_true('extract_flat') else '') + \
       (f'--format {self.params["format"]} '                      if has_value('format') else '') + \
       (f'--force-overwrite '                                     if is_true('overwrites') else '') + \

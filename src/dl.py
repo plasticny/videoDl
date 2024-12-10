@@ -6,7 +6,7 @@ from colorama import Fore, Style
 
 from src.section.Section import Section, HeaderType
 from src.section.UrlSection import UrlSection
-from src.section.LoginSection import LoginSection
+from src.section.LoginSection import LoginSection, LoginSectionRet
 from src.section.DownloadSection import DownloadSection, DownloadOpt
 from src.section.SubTitleSection import SubTitleSection
 from src.section.FormatSection import FormatSection
@@ -45,10 +45,20 @@ class Dl:
       is_first_started = True
       
       URL = UrlSection(title='Url').run()
-      COOKIE_FILE_PATH = self.login(URL)
+      login_ret = self.login(URL)
+
+      # option for get metadata
+      # the info stored in this opt object suppose will be used in the future
+      md_opt: MetaDataOpt = MetaDataOpt()
+      md_opt.url = URL
+      if login_ret.do_login:
+        if login_ret.cookie_file_path is not None:
+          md_opt.cookie_file_path = login_ret.cookie_file_path
+        else:
+          md_opt.login_browser = login_ret.browser
 
       try:
-        md_ls = self.get_metadata(URL, COOKIE_FILE_PATH)
+        md_ls = self.get_metadata(md_opt)
       except Exception as e:
         print(f'\n{Fore.RED}Download Failed, error on getting url info{Style.RESET_ALL}\n')
         self.logger.error(str(e))
@@ -74,19 +84,15 @@ class Dl:
         finally:
           clear_temp_folder()
 
-  def login(self, url:str):
+  def login(self, url: str) -> LoginSectionRet:
     """ return cookie file path """
     return LoginSection(title='Login').run(url)
   
-  def get_metadata(self, url:str, cookie_file_path:str) -> list[VideoMetaData]:
+  def get_metadata(self, opt: MetaDataOpt) -> list[VideoMetaData]:
     """
       get metadata of the url\n
       raise exception if fetch metadata failed
     """
-    opt : MetaDataOpt = MetaDataOpt()
-    opt.url = url
-    opt.cookie_file_path = cookie_file_path
-    
     print('Getting download informaton...', end='\n\n')      
     md = fetchMetaData(opt)
     
