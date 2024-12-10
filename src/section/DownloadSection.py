@@ -310,6 +310,8 @@ class DownloadSection (Section) :
     output_nm = ''
     for c in out_nm:
       output_nm += '' if c in ESCAPE_CHAR else c
+    if len(output_nm) > 100:
+      output_nm = output_nm[:100] + '.mp4'
     
     move_file(f'{TEMP_FOLDER_PATH}/{temp_nm}', f'{out_dir}/{output_nm}')
     self.logger.info(f'Temp file is moved from {TEMP_FOLDER_PATH}/{temp_nm} to {out_dir}/{output_nm}')

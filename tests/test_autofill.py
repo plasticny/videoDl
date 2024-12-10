@@ -1,25 +1,29 @@
 from unittest.mock import patch
 from dataclasses import dataclass
 from uuid import uuid4
+from typing import Optional
 
 import src.service.autofill as autofill
 from src.service.autofill import *
 
-def test_get_login_autofill ():
+def test_get_login_autofill (): 
   @dataclass
   class Case:
     do_enable: bool
     expected_autofill_value: Optional[str]
 
+  fake_cookie_path = str(uuid4())
+  fake_browser = str(uuid4())
   fake_config = {
     'login': {
       'enable': False,
-      'cookie_path': str(uuid4())
+      'cookie_path': fake_cookie_path,
+      'login_browser': fake_browser
     }
   }
   case_ls : list[Case] = [
     Case(False, None),
-    Case(True, fake_config['login']['cookie_path']),
+    Case(True, (fake_cookie_path, fake_browser)),
   ]
   
   for case in case_ls:
@@ -33,7 +37,7 @@ def test_get_lyd_media_autofill ():
   class Case:
     do_enable: bool
     val: int
-    autofill_value: Union[int, None]
+    autofill_value: Optional[int]
     
   case_ls = [
     Case(False, 0, None),

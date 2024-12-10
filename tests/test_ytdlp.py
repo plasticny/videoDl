@@ -13,6 +13,7 @@ def test_build_base_cmd ():
   # with opt, but all negative value
   ytdlp = Ytdlp({
     'cookiefile': None,
+    'login_browser': None,
     'extract_flat': False,
     'format': None,
     'overwrites': False,
@@ -31,6 +32,7 @@ def test_build_base_cmd ():
   # with opt
   opt = {
     'cookiefile': str(uuid4()),
+    'login_browser': str(uuid4()),
     'extract_flat': True,
     'format': str(uuid4()),
     'overwrites': True,
@@ -45,6 +47,7 @@ def test_build_base_cmd ():
   ytdlp = Ytdlp(opt)
   assert EXE_NM in ytdlp.base_cmd
   assert f'--cookies {opt["cookiefile"]}' in ytdlp.base_cmd
+  assert f'--cookies-from-browser {opt["login_browser"]}' in ytdlp.base_cmd
   assert '--flat-playlist' in ytdlp.base_cmd
   assert f'--format {opt["format"]}' in ytdlp.base_cmd
   assert '--force-overwrite' in ytdlp.base_cmd

@@ -16,6 +16,7 @@ from src.section.SubTitleSection import TSubtitleSectionRet
 from src.section.OutputSection import TOutputSectionRet
 from src.section.DownloadSection import DownloadOpt
 from src.section.FormatSection import LazyFormatSectionRet
+from src.section.LoginSection import LoginSectionRet
 from src.structs.video_info import Subtitle
 from src.structs.option import MediaType
 
@@ -83,7 +84,7 @@ def test_download_yt_video_ng_(url_mock:Mock, setup_mock:Mock, login_mock:Mock):
   prepare_output_folder()
 
   url_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
-  login_mock.return_value = None
+  login_mock.return_value = LoginSectionRet(False)
 
   def fake_setup (md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     dl_opt = DownloadOpt(md_ls[0].opts)
@@ -117,7 +118,7 @@ def test_download_bili_video_ng_(url_mock:Mock, login_mock:Mock, setup_mock:Mock
   prepare_output_folder()
 
   url_mock.return_value = 'https://www.bilibili.com/video/BV1154y1T765'
-  login_mock.return_value = None
+  login_mock.return_value = LoginSectionRet(False)
 
   def fake_setup (md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     dl_opt = DownloadOpt(md_ls[0].opts)

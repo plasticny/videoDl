@@ -1,5 +1,5 @@
 from toml import load as toml_load
-from typing import TypedDict, Union, Optional
+from typing import TypedDict, Optional
 
 from src.service.fileHelper import LYD_AUTOFILL_TOML_PATH
 
@@ -51,13 +51,15 @@ class TLydAutofillConfig(TypedDict):
 with open(LYD_AUTOFILL_TOML_PATH, 'r') as f:
   lyd_autofill_config : TLydAutofillConfig = toml_load(f)
 
-def get_login_autofill () -> str:
+def get_login_autofill () -> Optional[tuple[str, str]]:
+  # return none if not enable or field is empty
+  # else return (cookie_path, login_browser)
   config = lyd_autofill_config['login']
-  if not config['enable'] or config['cookie_path'] == '':
+  if not config['enable'] or (config['cookie_path'] == '' and config['login_browser'] == ''):
     return None
-  return config['cookie_path']
+  return (config['cookie_path'], config['login_browser'])
 
-def get_lyd_media_autofill () -> Union[str, None]:
+def get_lyd_media_autofill () -> Optional[str]:
   config = lyd_autofill_config['media']
   val = config['val']
   return val if config['enable'] and val in [0, 1] else None

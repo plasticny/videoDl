@@ -3,6 +3,7 @@
 [login]
 enable = false # do auto-fill login option
 cookie_path = '' # path to cookie file
+login_browser = 'firefox' # use browser to login
 
 # media
 [media]
