@@ -46,38 +46,56 @@ class LazyFormatSection (Section):
   def __main(self, md_ls:list[VideoMetaData]) -> list[Union[str, BundledFormat]]:
     media_option : str = LazyMediaSelector()._ask_media(md_ls)
     self.logger.info(f'Media option selected: {media_option}')
-    
-    format_option_res: LazyFormatSelector.SelectRes = LazyFormatSelector()._ask_format_option(md_ls, media_option)
-    self.logger.info(f'Format option selected: {", ".join([k for k, v in format_option_res.__dict__.items() if v])}')
 
-    format_ls : list[Union[str, BundledFormat]] = []
-    for md in md_ls:
-      audio_format = self._best_audio(md, format_option_res)
+    while True:
+      format_option_res: LazyFormatSelector.SelectRes = LazyFormatSelector()._ask_format_option(md_ls, media_option)
+      self.logger.info(f'Format option selected: {", ".join([k for k, v in format_option_res.__dict__.items() if v])}')
 
-      # download audio only
-      if media_option == LazyMediaType.AUDIO.value:
-        if audio_format is None:
-          raise ValueError('No audio available')
-        selected_format = audio_format
-      # video
-      else:
-        video_format = self._select_video_format(md, format_option_res)
-        if video_format is None:
-          raise ValueError('No video available')
-        if audio_format is None:
-          selected_format = video_format
-        else:
-          selected_format = BundledFormat(audio=audio_format, video=video_format)
+      do_format_not_found = False
+      format_ls : list[Union[str, BundledFormat]] = []
+      for md in md_ls:
+        selected_format = self._assgin_format(md, media_option, format_option_res)
 
-      self.logger.info(
-        '[{}] selected format: {}'.format(
-          md.title,
-          f'{selected_format.video} + {selected_format.audio}' if isinstance(selected_format, BundledFormat) else selected_format
+        # no format found
+        if selected_format is None:
+          do_format_not_found = True
+          break
+
+        self.logger.info(
+          '[{}] selected format: {}'.format(
+            md.title,
+            f'{selected_format.video} + {selected_format.audio}' if isinstance(selected_format, BundledFormat) else selected_format
+          )
         )
-      )
-      format_ls.append(selected_format)
+        format_ls.append(selected_format)
+
+      if do_format_not_found:
+        print(f'{Fore.YELLOW}Some video is not available with the selection format option')
+        print(f'Please select another format option{Style.RESET_ALL}')
+        continue
+      else:
+        break
 
     return LazyFormatSectionRet(media=media_option, format_ls=format_ls)
+
+  def _assgin_format (
+    self,
+    md: VideoMetaData,
+    media_option: str,
+    format_option_res: LazyFormatSelector.SelectRes
+  ) -> Optional[Union[str, BundledFormat]]:
+    # audio only
+    audio_format = self._best_audio(md, format_option_res)
+    if media_option == LazyMediaType.AUDIO.value:
+      return audio_format
+    
+    # video
+    video_format = self._select_video_format(md, format_option_res)
+    if video_format is None:
+      return None
+    if audio_format is None:
+      return video_format
+    return BundledFormat(audio=audio_format, video=video_format)
 
   def _best_audio (self, md:VideoMetaData, format_option_res: LazyFormatSelector.SelectRes) -> Optional[str]:
     if len(md.formats['audio']) != 0:
