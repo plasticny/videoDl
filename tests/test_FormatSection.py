@@ -54,84 +54,132 @@ def test_format(input_mock:Mock):
     input_mock.return_value = input_mock_ret
     assert FormatSection().run() == exepected_ret
 
-@patch('src.section.FormatSection.LazyFormatSection._best_audio')
-@patch('src.section.FormatSection.LazyFormatSection._select_video_format')
-@patch('src.section.FormatSection.LazyMediaSelector._ask_media')
+@patch('src.section.FormatSection.LazyFormatSection._assgin_format')
 @patch('src.section.FormatSection.LazyFormatSelector._ask_format_option')
-def test_lazy_format_main(
-    ask_format_mock: Mock, ask_media_mock: Mock,
-    select_video_format_mock: Mock, best_audio_mock: Mock
-  ):
+@patch('src.section.FormatSection.LazyMediaSelector._ask_media')
+def test_lazy_format_main(ask_media_mock: Mock, ask_option_mock: Mock, assign_format_mock: Mock):
   @dataclass
   class Case:
+    # mock
+    media_mock_ret: str
+    option_mock_ret: LazyFormatSelector.SelectRes
+    format_mock_ret: list[Optional[Union[str, BundledFormat]]]
+    # args
     md_ls : list[VideoMetaData]
-    media : str
-    audio_format: Optional[str]
-    video_format: Optional[str]
-    expected_media_ret: str
-    expected_format_ret: Union[str, BundledFormat, None]
-    expected_err_raised: Optional[Exception] = None
-  
-  select_video_format_ret = 'v1'
-  best_audio_ret = 'a1'
+    # return
+    expected_ret: LazyFormatSectionRet
+    expected_ask_option_called_cnt: int
+    expected_assign_format_called_cnt: int
   
   fake_md = fake_videoMd()
-  video = LazyMediaType.VIDEO.value
-  audio = LazyMediaType.AUDIO.value
-  
+  fake_format = BundledFormat('v1', 'a1')
+  fake_format_option = LazyFormatSelector.SelectRes()
+
   case_ls : list[Case] = [
-    # video
-    # normal case
+    # single md
     Case(
-      md_ls=[fake_md], media=video,
-      audio_format=best_audio_ret, video_format=select_video_format_ret,
-      expected_media_ret=video,
-      expected_format_ret=BundledFormat(select_video_format_ret, best_audio_ret)
+      media_mock_ret=LazyMediaType.VIDEO.value,
+      format_mock_ret=[fake_format], option_mock_ret=fake_format_option,
+      md_ls=[fake_md],
+      expected_ret=LazyFormatSectionRet(LazyMediaType.VIDEO.value, [fake_format]),
+      expected_ask_option_called_cnt=1, expected_assign_format_called_cnt=1
     ),
-    # no video
+    # multiple md
     Case(
-      md_ls=[fake_md], media=video,
-      audio_format=None, video_format=None,
-      expected_media_ret=video, expected_format_ret=None,
-      expected_err_raised=ValueError
+      media_mock_ret=LazyMediaType.VIDEO.value,
+      format_mock_ret=[fake_format, fake_format], option_mock_ret=fake_format_option,
+      md_ls=[fake_md, fake_md],
+      expected_ret=LazyFormatSectionRet(LazyMediaType.VIDEO.value, [fake_format, fake_format]),
+      expected_ask_option_called_cnt=1, expected_assign_format_called_cnt=2
     ),
-    # audio
-    # normal case
+    # test no format found
     Case(
-      md_ls=[fake_md], media=audio,
-      audio_format=best_audio_ret, video_format=None,
-      expected_media_ret=audio, expected_format_ret=best_audio_ret
-    ),
-    # no audio
-    Case(
-      md_ls=[fake_md], media=audio,
-      audio_format=None, video_format=None,
-      expected_media_ret=audio, expected_format_ret=None,
-      expected_err_raised=ValueError
+      media_mock_ret=LazyMediaType.VIDEO.value,
+      format_mock_ret=[None, fake_format], option_mock_ret=fake_format_option,
+      md_ls=[fake_md],
+      expected_ret=LazyFormatSectionRet(LazyMediaType.VIDEO.value, [fake_format]),
+      expected_ask_option_called_cnt=2, expected_assign_format_called_cnt=2
     )
   ]
   
-  for case in case_ls:
-    print('testing', case)
-    
-    ask_format_mock.reset_mock()
+  for idx, case in enumerate(case_ls):
+    print('testing', idx)
+
     ask_media_mock.reset_mock()
-    ask_format_mock.return_value = LazyFormatSelector.SelectRes()
-    ask_media_mock.return_value = case.media
+    ask_option_mock.reset_mock()
+    assign_format_mock.reset_mock()
+    ask_media_mock.return_value = case.media_mock_ret
+    ask_option_mock.return_value = case.option_mock_ret
+    assign_format_mock.side_effect = case.format_mock_ret
 
-    select_video_format_mock.return_value = case.video_format
-    best_audio_mock.return_value = case.audio_format
+    actual = LazyFormatSection().run(case.md_ls)
+    assert actual == case.expected_ret
+    assert ask_option_mock.call_count == case.expected_ask_option_called_cnt
+    assert assign_format_mock.call_count == case.expected_assign_format_called_cnt
 
-    # if the case expected error raised
-    if case.expected_err_raised is not None:
-      with assert_raises(case.expected_err_raised):
-        LazyFormatSection().run(case.md_ls)
-      continue
+@patch('src.section.FormatSection.LazyFormatSection._select_video_format')
+@patch('src.section.FormatSection.LazyFormatSection._best_audio')
+def test_lazy_format_assgin_format (best_audio_mock: Mock, select_video_format_mock: Mock):
+  @dataclass
+  class Case:
+    # mock
+    audio_mock_ret: Optional[str]
+    video_mock_ret: Optional[str]
+    # args
+    md: VideoMetaData
+    media: str
+    format_option_res: LazyFormatSelector.SelectRes
+    # return
+    expected_ret: Union[str, BundledFormat, None]
 
-    # if the case expected no error
-    ret : LazyFormatSectionRet = LazyFormatSection().run(case.md_ls)
-    assert ret.media == case.expected_media_ret
-    assert ret.format_ls == [case.expected_format_ret]
+  fake_md = fake_videoMd()
+  fake_audio_format = 'a1'
+  fake_video_format = 'v1'
+  fake_format_option = LazyFormatSelector.SelectRes()
+
+  case_ls : list[Case] = [
+    # choose video, video and audio available
+    Case(
+      audio_mock_ret=fake_audio_format, video_mock_ret=fake_video_format,
+      md=fake_md, media=LazyMediaType.VIDEO.value, format_option_res=fake_format_option,
+      expected_ret=BundledFormat(fake_video_format, fake_audio_format)
+    ),
+    # choose video, audio not available
+    Case(
+      audio_mock_ret=None, video_mock_ret=fake_video_format,
+      md=fake_md, media=LazyMediaType.VIDEO.value, format_option_res=fake_format_option,
+      expected_ret=fake_video_format
+    ),
+    # choose video, both are not available
+    Case(
+      audio_mock_ret=None, video_mock_ret=None,
+      md=fake_md, media=LazyMediaType.VIDEO.value, format_option_res=fake_format_option,
+      expected_ret=None
+    ),
+    # choose audio, video and audio available
+    Case(
+      audio_mock_ret=fake_audio_format, video_mock_ret=fake_video_format,
+      md=fake_md, media=LazyMediaType.AUDIO.value, format_option_res=fake_format_option,
+      expected_ret=fake_audio_format
+    ),
+    # choose audio, audio not available
+    Case(
+      audio_mock_ret=None, video_mock_ret=fake_video_format,
+      md=fake_md, media=LazyMediaType.AUDIO.value, format_option_res=fake_format_option,
+      expected_ret=None
+    )
+  ]
+
+  for idx, case in enumerate(case_ls):
+    print('testing', idx)
+
+    best_audio_mock.reset_mock()
+    select_video_format_mock.reset_mock()
+    best_audio_mock.return_value = case.audio_mock_ret
+    select_video_format_mock.return_value = case.video_mock_ret
+
+    actual = LazyFormatSection()._assgin_format(case.md, case.media, case.format_option_res)
+    assert actual == case.expected_ret
 
 def test_lazy_format_best_audio ():
   @dataclass
