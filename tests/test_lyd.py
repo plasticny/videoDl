@@ -7,7 +7,6 @@ from unittest.mock import patch, Mock
 from os.path import exists
 from pymediainfo import MediaInfo
 from dataclasses import dataclass
-from typing import Literal
 
 from tests.helpers import prepare_output_folder, OUTPUT_FOLDER_PATH
 
@@ -17,28 +16,9 @@ from src.section.SubTitleSection import TSubtitleSectionRet
 from src.section.OutputSection import TOutputSectionRet
 from src.section.DownloadSection import DownloadOpt
 from src.section.FormatSection import LazyFormatSectionRet
+from src.section.LoginSection import LoginSectionRet
 from src.structs.video_info import Subtitle
 from src.structs.option import MediaType
-
-# test login function
-@patch('src.dl.LoginSection.run')
-def test_login(login_mock:Mock):
-  # [(url, expected do login called)]
-  case_ls : list[tuple[str, bool]] = [
-    ('https://www.youtube.com/watch?v=JMu9kdGHU3A', False),
-    ('https://www.bilibili.com/video/BV1QK4y1d7dQ', True),
-    ('other', False)
-  ]
-  
-  for case in case_ls:
-    print('testing', case)
-    case_url, expected_login_called = case
-    
-    login_mock.reset_mock()
-    
-    lazyYtDownload().login(case_url)
-    
-    assert login_mock.called == expected_login_called
 
 @patch('src.lazyYtDownload.OutputSection.run')
 @patch('src.lazyYtDownload.SubTitleSection.run')
@@ -97,12 +77,14 @@ def test_setup (format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
     assert dl_opt.output_dir == OUTPUT_FOLDER_PATH
     assert dl_opt.output_nm == md.title
 
+@patch('src.section.LoginSection.LoginSection.run')
 @patch('src.lazyYtDownload.lazyYtDownload.setup')
 @patch('src.dl.UrlSection.run')
-def test_download_yt_video_ng_(url_mock:Mock, setup_mock:Mock):
+def test_download_yt_video_ng_(url_mock:Mock, setup_mock:Mock, login_mock:Mock):
   prepare_output_folder()
 
   url_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
+  login_mock.return_value = LoginSectionRet(False)
 
   def fake_setup (md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     dl_opt = DownloadOpt(md_ls[0].opts)
@@ -136,7 +118,7 @@ def test_download_bili_video_ng_(url_mock:Mock, login_mock:Mock, setup_mock:Mock
   prepare_output_folder()
 
   url_mock.return_value = 'https://www.bilibili.com/video/BV1154y1T765'
-  login_mock.return_value = None
+  login_mock.return_value = LoginSectionRet(False)
 
   def fake_setup (md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     dl_opt = DownloadOpt(md_ls[0].opts)

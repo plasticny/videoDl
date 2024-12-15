@@ -18,7 +18,7 @@ from src.service.bilibili import get_bili_subs, get_bili_page_cids, bvid_2_aid
 from src.service.logger import Logger
 from src.service.ytdlp import Ytdlp
 
-from src.structs.option import IOpt, TOpt
+from src.structs.option import Opt, TOpt
 from src.structs.video_info import TFormatVideo, TFormatAudio, TFormatBoth, Subtitle
 
 LOGGER = Logger()
@@ -37,7 +37,7 @@ def fetchMetaData(opts:MetaDataOpt) -> Union[MetaData, None]:
   try:
     metadata = ytdlp_extract_metadata(opts)
   except Exception as e:
-    LOGGER.error(f'Error when getting metadata: {e}')
+    LOGGER.error(f'Error when getting metadata: {e.with_traceback(None)}')
     return None
   
   # instantiate the metadata
@@ -80,12 +80,12 @@ class TMdFormats (TypedDict):
 
 
 # ========================= options ========================= #
-class MetaDataOpt (IOpt):
+class MetaDataOpt (Opt):
   """ Necessary options for fetching MetaData """
   @staticmethod
   def to_ytdlp_opt(obj : MetaDataOpt) -> TMetaDataOpt:
     return {
-      **IOpt.to_ytdlp_opt(obj),
+      **Opt.to_ytdlp_opt(obj),
       'quiet': True,
       'extract_flat': True,
       # use bilibili api to get bilibili subtitles

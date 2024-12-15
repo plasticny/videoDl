@@ -2,7 +2,6 @@ from sys import path
 from pathlib import Path
 path.append(Path('.').resolve().as_posix())
 
-from src.service.urlHelper import getSource, UrlSource
 from src.service.MetaData import VideoMetaData
 
 from src.section.Section import HeaderType
@@ -18,15 +17,6 @@ class lazyYtDownload(Dl):
   def __init__(self, check_upgrade : bool = False):
     super().__init__(check_upgrade)
     self.title = 'LYD'
-
-  def login(self, url:str) -> str:
-    """
-      Overwirte Dl.login\n
-      Only ask login if the url is from bilibili
-    """
-    if getSource(url) == UrlSource.BILIBILI:
-      return super().login(url)
-    return None
 
   def setup(self, md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     """
