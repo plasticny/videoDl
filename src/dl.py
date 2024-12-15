@@ -61,7 +61,7 @@ class Dl:
         md_ls = self.get_metadata(md_opt)
       except Exception as e:
         print(f'\n{Fore.RED}Download Failed, error on getting url info{Style.RESET_ALL}\n')
-        self.logger.error(str(e))
+        self.logger.error(str(e.with_traceback(None)))
         continue
 
       # subtitle, format, output dir

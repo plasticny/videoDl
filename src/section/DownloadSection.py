@@ -9,7 +9,7 @@ from src.service.fileHelper import TEMP_FOLDER_PATH
 from src.service.ffmpeg_helper import ff_in, run_ffmpeg, get_audio_sample_rate
 from src.service.ytdlp import Ytdlp
 
-from src.structs.option import IOpt, TOpt, MediaType
+from src.structs.option import Opt, TOpt, MediaType
 from src.structs.video_info import Subtitle, BundledFormat
 
 
@@ -41,7 +41,7 @@ class BundledTDownloadOpt ():
 
 
 # ============== option ============== #
-class DownloadOpt (IOpt):
+class DownloadOpt (Opt):
   @staticmethod
   def to_ytdlp_opt():
     """
@@ -108,18 +108,8 @@ class DownloadOpt (IOpt):
         'skip_download': True
       }
 
-  def __init__(self, iIOpt : IOpt = None):
-    """
-      Args:
-        iIOpt: IOpt. If it is not None, copy the value from it
-    """
-    super().__init__()
-    
-    # copy from iIOpt
-    if iIOpt is not None:
-      assert isinstance(iIOpt, IOpt)
-      self.url = iIOpt.url
-      self.cookie_file_path = iIOpt.cookie_file_path
+  def __init__(self, other : Opt = None):
+    super().__init__(other)
     
     # output
     self.output_nm : str = None
@@ -135,7 +125,7 @@ class DownloadOpt (IOpt):
     self.subtitle : Subtitle = None
     self.embed_sub : bool = False
     self.burn_sub : bool = False
-  
+
   # === some setter functions === #
   def set_media (self, val : MediaType):
     self.media = val
@@ -236,8 +226,7 @@ class DownloadSection (Section) :
     tryCnt = 0
     while True:
       try:
-        # NOTE: add .copy(), else the download function change the value of opts
-        Ytdlp(opts.copy()).download(url)
+        Ytdlp(opts).download(url)
         break
       except Exception as e:
         tryCnt += 1

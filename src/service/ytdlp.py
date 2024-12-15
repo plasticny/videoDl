@@ -19,7 +19,7 @@ from typing import TypedDict, TypeVar, Union, Callable
 from src.service.logger import Logger
 from src.service.fileHelper import FFMPEG_FOLDER_PATH, YT_DLP_PATH
 
-from src.structs.option import IOpt
+from src.structs.option import Opt
 
 _T = TypeVar('_T')
 _V = Union[_T, None]
@@ -43,7 +43,7 @@ class Ytdlp:
   def upgrade () -> None:
     run_cmd(f'{YT_DLP_PATH} -U')
   
-  def __init__ (self, opt: IOpt = {}) -> None:
+  def __init__ (self, opt: Opt = {}) -> None:
     self.params: _Params = opt.copy()
     self.base_cmd = self._build_base_cmd()
     self.logger = Logger()
