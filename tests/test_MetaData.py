@@ -7,14 +7,13 @@ from uuid import uuid4
 
 from src.service.MetaData import fetchMetaData, MetaDataOpt
 from src.service.MetaData import MetaData
-from src.service.MetaData import VideoMetaData, BiliBiliVideoMetaData, FacebookVideoMetaData, IGVideoMetaData
+from src.service.MetaData import VideoMetaData, BiliBiliVideoMetaData, FacebookVideoMetaData
 from src.service.MetaData import PlaylistMetaData, BiliBiliPlaylistMetaData
 from src.service.MetaData import TMdFormats
 from src.service.urlHelper import UrlSource
 
 from src.structs.video_info import Subtitle
 
-@patch('src.service.MetaData.IGVideoMetaData')
 @patch('src.service.MetaData.FacebookVideoMetaData')
 @patch('src.service.MetaData.BiliBiliPlaylistMetaData')
 @patch('src.service.MetaData.BiliBiliVideoMetaData')
@@ -26,7 +25,7 @@ def test_fetchMetaData_type(
   extract_metadata_mock:Mock, getSource_mock:Mock,
   video_md_mock:Mock, playlist_md_mock:Mock,
   bili_video_md_mock:Mock, bili_playlist_md_mock:Mock,
-  fb_video_md_mock:Mock, ig_video_md_mock:Mock
+  fb_video_md_mock:Mock
 ):
   """ Test the type of metadata returned by fetchMetaData """
   class fake_video_md (VideoMetaData):
@@ -36,9 +35,6 @@ def test_fetchMetaData_type(
     def __init__(self, *args, **kwargs):
       pass
   class fake_facebook_video_md (FacebookVideoMetaData):
-    def __init__(self, *args, **kwargs):
-      pass
-  class fake_ig_video_md (IGVideoMetaData):
     def __init__(self, *args, **kwargs):
       pass
   class fake_playlist_md (PlaylistMetaData):
@@ -51,7 +47,6 @@ def test_fetchMetaData_type(
   video_md_mock.return_value = fake_video_md()
   bili_video_md_mock.return_value = fake_bili_video_md()
   fb_video_md_mock.return_value = fake_facebook_video_md()
-  ig_video_md_mock.return_value = fake_ig_video_md()
   playlist_md_mock.return_value = fake_playlist_md()
   bili_playlist_md_mock.return_value = fake_bili_playlist_md()
 
@@ -66,7 +61,7 @@ def test_fetchMetaData_type(
     Case('video', False, 'fake source', fake_video_md),
     Case('video', False, UrlSource.BILIBILI, fake_bili_video_md),
     Case('video', False, UrlSource.FACEBOOK, fake_facebook_video_md),
-    Case('video', False, UrlSource.IG, fake_ig_video_md),
+    Case('video', False, UrlSource.IG, fake_video_md),
     Case('playlist', False, 'fake source', fake_playlist_md),
     Case('playlist', False, UrlSource.BILIBILI, fake_bili_playlist_md),
     Case('video', True, 'fake source', None)
@@ -211,20 +206,6 @@ def test_fb_videoMd_extract_format (video_md_extract_format_mock:Mock):
     for ret_format, expected_format in zip(formats['both'], case_expected_both):
       assert ret_format['format_id'] == expected_format['format_id']
   
-def test_ig_videoMd_extract_format ():
-  class fake_ig_video_md (IGVideoMetaData):
-    def __init__ (self, formats, *args, **kwargs):
-      self.metadata = { 'formats': formats }
-  
-  f1 = { 'format_id': '1', 'height': 720, 'width': 720 }
-  f2 = { 'format_id': '2', 'height': 1280, 'width': 1280 }
-  
-  # hd
-  formats = fake_ig_video_md([f1, f2])._extract_format()
-  assert len(formats['both']) == 2
-  assert formats['both'][0]['format_id'] == '2'
-  assert formats['both'][1]['format_id'] == '1'
-
 @patch('src.service.MetaData.getSource')
 def test_MetadataOpt_to_ytdlp_opt(get_source_mock:Mock):
   """

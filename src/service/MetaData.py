@@ -54,8 +54,6 @@ def fetchMetaData(opts:MetaDataOpt) -> Union[MetaData, None]:
       return BiliBiliVideoMetaData(metadata, opts)
     elif source is UrlSource.FACEBOOK:
       return FacebookVideoMetaData(metadata, opts)
-    elif source is UrlSource.IG:
-      return IGVideoMetaData(metadata, opts)
     else:
       return VideoMetaData(metadata, opts)
     
@@ -186,9 +184,12 @@ class VideoMetaData (MetaData):
     sub, auto_sub = self._getSubtitles()
     self.subtitles = sub
     self.autoSubtitles = auto_sub
+    LOGGER.info(f'Extracted subtitles: {self.subtitles}')
+    LOGGER.info(f'Extracted automatic subtitles: {self.autoSubtitles}')
 
     # format
     self._format = self._extract_format()
+    LOGGER.info(f'Extracted formats: {self._format}')
     
   def _getSubtitles(self) -> tuple[list[Subtitle], list[Subtitle]]:
     def __restruct_sub_info(sub_info:dict, isAuto:bool=False):
@@ -215,27 +216,27 @@ class VideoMetaData (MetaData):
       
     return sub, auto_sub
       
-  def _extract_format (self) -> TMdFormats:    
-    def __compare(a, b):
-      # If a and b is video in the format, compare by resolution first
-      IS_VIDEO = lambda x: 'vcodec' in x and x['vcodec'] != 'none'
-      if IS_VIDEO(a) and IS_VIDEO(b) and a['resolution'] != b['resolution']:
-        a_res = a['resolution'].split('x')
-        b_res = b['resolution'].split('x')
-        if a_res[0] != b_res[0]:
-          return int(b_res[0]) - int(a_res[0])
-        if a_res[1] != b_res[1]:
-          return int(b_res[1]) - int(a_res[1])
+  def _compare_format(self, a, b):
+    # If a and b is video in the format, compare by resolution first
+    IS_VIDEO = lambda x: 'vcodec' in x and x['vcodec'] != 'none'
+    if IS_VIDEO(a) and IS_VIDEO(b) and a['resolution'] != b['resolution']:
+      a_res = a['resolution'].split('x')
+      b_res = b['resolution'].split('x')
+      if a_res[0] != b_res[0]:
+        return int(b_res[0]) - int(a_res[0])
+      if a_res[1] != b_res[1]:
+        return int(b_res[1]) - int(a_res[1])
 
-      # Compare two formats by tsr, from high to low
-      # If the format has no tsr, it will be placed at the end
-      if 'tbr' not in a or a['tbr'] is None:
-        return 1
-      if 'tbr' not in b or b['tbr'] is None:
-        return -1
-      return b['tbr'] - a['tbr']
-    
-    sorted_raw_formats: list[dict] = sorted(self.metadata['formats'], key=cmp_to_key(__compare))
+    # Compare two formats by tsr, from high to low
+    # If the format has no tsr, it will be placed at the end
+    if 'tbr' not in a or a['tbr'] is None:
+      return 1
+    if 'tbr' not in b or b['tbr'] is None:
+      return -1
+    return b['tbr'] - a['tbr']
+
+  def _extract_format (self) -> TMdFormats:    
+    sorted_raw_formats: list[dict] = sorted(self.metadata['formats'], key=cmp_to_key(self._compare_format))
     # remove format that has no tsr
     # while len(sorted_raw_formats) > 0 and 'tbr' not in sorted_raw_formats[-1]:
     #   sorted_raw_formats.pop()
@@ -322,27 +323,6 @@ class FacebookVideoMetaData (VideoMetaData):
         'audio': { 'codec': 'avc', 'ext': 'avc' },
         'video': { 'codec': 'aac', 'ext': 'aac' }
       })
-    
-    return formats
-  
-class IGVideoMetaData (VideoMetaData):
-  def _extract_format(self) -> TMdFormats:
-    def __compare(a, b):
-      a_res = a['height'] * a['width']
-      b_res = b['height'] * b['width']
-      return b_res - a_res
-    
-    sorted_raw_formats = sorted(self.metadata['formats'], key=cmp_to_key(__compare))
-    
-    formats : TMdFormats = {
-      'audio': [], 'video': [],
-      'both': [{
-        'format_id': f['format_id'],
-        'audio': { 'codec': 'aac', 'ext': 'aac' },
-        'video': { 'codec': 'mp4', 'ext': 'mp4' }
-      } for f in sorted_raw_formats]
-    }
-    assert len(formats['both']) > 0  
     
     return formats
 # ========================== End Video ========================= #
