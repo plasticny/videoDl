@@ -16,7 +16,7 @@ from src.dl import Dl
 class lazyYtDownload(Dl):
   def __init__(self, check_upgrade : bool = False):
     super().__init__(check_upgrade)
-    self.title = 'LYD'
+    self.title = f'LYD 0.65'
 
   def setup(self, md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     """
