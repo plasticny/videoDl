@@ -70,7 +70,7 @@ class Ytdlp:
       
   def extract_info (self, url: str) -> dict:
     # if no --list-subs, it cannot find some subtitles
-    cmd = f'{self.base_cmd} -J --list-subs -q {url}'
+    cmd = f'{self.base_cmd} -J --list-subs {url}'
     self.logger.debug(f"Running command: {cmd}")
     
     # since --list-subs is used, only the last line of the output is the metadata (\n is the last char)

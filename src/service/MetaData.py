@@ -245,12 +245,7 @@ class VideoMetaData (MetaData):
     for format in sorted_raw_formats:
       has_audio = format.get('acodec', 'none') != 'none' or format.get('format_note', '') == 'Audio'
       has_video = format.get('vcodec', 'none') != 'none'
-      
-      # for video, only accept mp4
-      if has_video and format['ext'] != 'mp4':
-        LOGGER.debug(f'format {format["format_id"]} skipped, not mp4')
-        continue
-      
+            
       if 'tbr' not in format:
         LOGGER.debug(f'format {format["format_id"]} skipped, no tbr')
         continue

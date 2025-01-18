@@ -80,11 +80,10 @@ def test_extract_info (base_cmd_mock: Mock, popen_mock: Mock, loads_mock: Mock):
   
   cmd: str = popen_mock.call_args[0][0]
   cmd_comp = cmd.split(' ')
-  assert len(cmd_comp) == 5
+  assert len(cmd_comp) == 4
   assert base_cmd in cmd_comp
   assert '-J' in cmd_comp
   assert '--list-subs' in cmd_comp
-  assert '-q' in cmd_comp
   assert url in cmd_comp
 
 @patch('src.service.ytdlp.run_cmd')
