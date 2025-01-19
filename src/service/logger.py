@@ -37,7 +37,6 @@ class Logger:
     return name
   
   def clear (self):
-    self.info('Clear log files')
     if (not exists(LOG_FOLDER_PATH)):
       return
     for file_nm in listdir(LOG_FOLDER_PATH):
