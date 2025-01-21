@@ -19,7 +19,7 @@ from typing import TypedDict, TypeVar, Union, Callable
 from src.service.logger import Logger
 from src.service.fileHelper import FFMPEG_FOLDER_PATH, YT_DLP_PATH
 
-from src.structs.option import IOpt
+from src.structs.option import Opt
 
 _T = TypeVar('_T')
 _V = Union[_T, None]
@@ -28,6 +28,7 @@ class _Params (TypedDict):
   cookiefile: _V[str]
   extract_flat: _V[bool]
   format: _V[str]
+  login_browser: _V[str]
   outtmpl: _V[str]
   overwrites: _V[bool]
   paths: _V[dict[str, str]]
@@ -42,7 +43,7 @@ class Ytdlp:
   def upgrade () -> None:
     run_cmd(f'{YT_DLP_PATH} -U')
   
-  def __init__ (self, opt: IOpt = {}) -> None:
+  def __init__ (self, opt: Opt = {}) -> None:
     self.params: _Params = opt.copy()
     self.base_cmd = self._build_base_cmd()
     self.logger = Logger()
@@ -55,6 +56,7 @@ class Ytdlp:
       f'{YT_DLP_PATH} ' + \
       f'--ffmpeg-location {FFMPEG_FOLDER_PATH} ' + \
       (f'--cookies {self.params["cookiefile"]} '                 if has_value('cookiefile') else '') + \
+      (f'--cookies-from-browser {self.params["login_browser"]} ' if has_value('login_browser') else '') + \
       (f'--flat-playlist '                                       if is_true('extract_flat') else '') + \
       (f'--format {self.params["format"]} '                      if has_value('format') else '') + \
       (f'--force-overwrite '                                     if is_true('overwrites') else '') + \
@@ -68,7 +70,7 @@ class Ytdlp:
       
   def extract_info (self, url: str) -> dict:
     # if no --list-subs, it cannot find some subtitles
-    cmd = f'{self.base_cmd} -J --list-subs -q {url}'
+    cmd = f'{self.base_cmd} -J --list-subs {url}'
     self.logger.debug(f"Running command: {cmd}")
     
     # since --list-subs is used, only the last line of the output is the metadata (\n is the last char)

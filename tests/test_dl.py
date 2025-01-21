@@ -17,6 +17,7 @@ from src.section.UrlSection import UrlSection
 from src.section.DownloadSection import DownloadOpt
 from src.section.SubTitleSection import TSubtitleSectionRet
 from src.section.OutputSection import TOutputSectionRet
+from src.section.LoginSection import LoginSectionRet
 from src.structs.video_info import Subtitle
 
 
@@ -48,7 +49,7 @@ def test_download_call_count(
   video_md = fake_videoMd()
   
   url_mock.return_value = fake_UrlSection()
-  login_mock.return_value = ''
+  login_mock.return_value = LoginSectionRet(False)
   setup_mock.side_effect = lambda md_ls : [DownloadOpt() for _ in md_ls]
   
   case_ls : list[Case] = [
@@ -87,7 +88,7 @@ def test_run_ng_(url_mock:Mock, login_mock:Mock, setup_mock:Mock):
     return [ dl_opt ]
 
   url_mock.return_value = 'https://www.youtube.com/watch?v=JMu9kdGHU3A'
-  login_mock.return_value = None
+  login_mock.return_value = LoginSectionRet(False)
   setup_mock.side_effect = fake_setup
 
   prepare_output_folder()
@@ -160,17 +161,21 @@ def test_get_metadata (fetch_md_mock:Mock):
   ]
   
   for idx, case in enumerate(case_ls):
-    print('testing case', idx + 1)
+    print('testing case', idx)
     
     fetch_md_mock.reset_mock()
     fetch_md_mock.return_value = case.fetched_md
-    
+
+    opt = MetaDataOpt()
+    opt.url = url
+    opt.cookie_file_path = cookie_file_path
+
     if case.fetched_md is None:
       with pytest_raises(Exception) as e_info:
-        Dl().get_metadata(url, cookie_file_path)
+        Dl().get_metadata(opt)
         assert str(e_info.value) == 'Failed to get video metadata'
     else:
-      md_ls = Dl().get_metadata(url, cookie_file_path)
+      md_ls = Dl().get_metadata(opt)
       assert md_ls == case.expected
     
     # check fetchMetaData call
