@@ -11,10 +11,14 @@ from re import match as re_match, sub as re_sub
 from os import popen, fspath, environ as os_environ
 from os import PathLike
 from os import name as os_name
-from os.path import expandvars as os_expandvars, expanduser as os_expanduser, join as join_path, dirname
+from os.path import\
+  expandvars as os_expandvars, expanduser as os_expanduser, join as join_path,\
+  dirname, exists
 from subprocess import run as run_cmd
 from time import time
 from typing import TypedDict, TypeVar, Union, Callable
+from requests import get
+from colorama import Fore, Style
 
 from src.service.logger import Logger
 from src.service.fileHelper import FFMPEG_FOLDER_PATH, YT_DLP_PATH
@@ -23,6 +27,7 @@ from src.structs.option import Opt
 
 _T = TypeVar('_T')
 _V = Union[_T, None]
+YT_DLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
 
 class _Params (TypedDict):
   cookiefile: _V[str]
@@ -40,9 +45,23 @@ class _Params (TypedDict):
 
 class Ytdlp:
   @staticmethod
+  def ensure_installed () -> None:
+    if exists(YT_DLP_PATH):
+      return
+    
+    print(f'{Fore.CYAN}Downloading ytdlp...{Style.RESET_ALL}')
+
+    res = get(YT_DLP_URL)
+    if res.status_code != 200:
+      raise ValueError('Failed to download yt-dlp')
+    
+    with open(YT_DLP_PATH, 'wb') as f:
+      f.write(res.content)
+
+  @staticmethod
   def upgrade () -> None:
     run_cmd(f'{YT_DLP_PATH} -U')
-  
+
   def __init__ (self, opt: Opt = {}) -> None:
     self.params: _Params = opt.copy()
     self.base_cmd = self._build_base_cmd()
