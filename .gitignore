@@ -3,6 +3,7 @@
 
 __pycache__
 /src/model
+/src/yt-dlp.exe
 /src/*.exe.old
 /src/draft.py
 /src/logs

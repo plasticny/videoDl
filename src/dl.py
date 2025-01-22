@@ -22,6 +22,7 @@ class Dl:
   def __init__ (self, check_upgrade = False):
     self.logger = Logger()
     self.title = 'Download'
+    Ytdlp.ensure_installed()
     if check_upgrade:
       self.upgrade()
       
