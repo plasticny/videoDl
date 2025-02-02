@@ -10,7 +10,7 @@ from inquirer.render.console import ConsoleRender
 from src.section.Section import Section
 from src.section.DownloadSection import BundledFormat
 
-from src.service.MetaData import VideoMetaData, TFormatVideo
+from src.service.MetaData import VideoMetaData
 from src.service.autofill import get_lyd_media_autofill, get_lyd_format_option_autofill
 
 from src.structs.option import MediaType
@@ -26,10 +26,13 @@ class FormatSection (Section):
 
 
 # ============== lazy format selection ============== #
+
+# ==== Section return ==== #
 @dataclass
 class LazyFormatSectionRet:
   media : MediaType
   format_ls : list[Union[str, BundledFormat]]
+  sort_ls: list[Optional[str]] # not a sorted list, but a list of Sorting Formats string for ytdlp
 
 class LazyMediaType (Enum):
   VIDEO = 'Video'
@@ -50,71 +53,54 @@ class LazyFormatSection (Section):
     format_option_res: LazyFormatSelector.SelectRes = LazyFormatSelector()._ask_format_option(md_ls, media_option)
     self.logger.info(f'Format option selected: {", ".join([k for k, v in format_option_res.__dict__.items() if v])}')
 
-    format_ls : list[Union[str, BundledFormat]] = []
+    format_ls: list[Union[str, BundledFormat]] = []
+    sort_ls: list[Optional[str]] = []
     for md in md_ls:
-      audio_format = self._best_audio(md, format_option_res)
+      format_str = self._format_str(media_option, format_option_res)
+      sort_str = self._sort_str(media_option, format_option_res)
 
-      # download audio only
-      if media_option == LazyMediaType.AUDIO.value:
-        if audio_format is None:
-          raise ValueError('No audio available')
-        selected_format = audio_format
-      # video
-      else:
-        video_format = self._select_video_format(md, format_option_res)
-        if video_format is None:
-          raise ValueError('No video available')
-        if audio_format is None:
-          selected_format = video_format
-        else:
-          selected_format = BundledFormat(audio=audio_format, video=video_format)
+      self.logger.info(f'[{md.title}] format_str: {format_str}')
+      self.logger.info(f'[{md.title}] sort_str: {sort_str}')
 
-      self.logger.info(
-        '[{}] selected format: {}'.format(
-          md.title,
-          f'{selected_format.video} + {selected_format.audio}' if isinstance(selected_format, BundledFormat) else selected_format
-        )
-      )
-      format_ls.append(selected_format)
+      format_ls.append(format_str)
+      sort_ls.append(sort_str)
 
-    return LazyFormatSectionRet(media=media_option, format_ls=format_ls)
+    return LazyFormatSectionRet(media=media_option, format_ls=format_ls, sort_ls=sort_ls)
 
-  def _best_audio (self, md:VideoMetaData, format_option_res: LazyFormatSelector.SelectRes) -> Optional[str]:
-    if len(md.formats['audio']) != 0:
-      for f in md.formats['audio']:
-        if format_option_res.WIN and 'opus' in f['codec']:
-          continue
-        return f['format_id']
+  def _format_str (self, media_option: str, format_option: LazyFormatSelector.SelectRes) -> str:
+    WIN_VCODEC_REGEX_FILTER = "[vcodec~='^(?!.*(hev|av01)).*$']"
+    WIN_ACODEC_REGEX_FILTER = "[acodec~='^(?!.*opus).*$']"
+
+    # both
+    both_format_str = 'b'
+    if format_option.WIN:
+      if media_option == LazyMediaType.VIDEO.value:
+        both_format_str += WIN_VCODEC_REGEX_FILTER
+      both_format_str += WIN_ACODEC_REGEX_FILTER
+
+    # audio
+    audio_format_str = 'ba'
+    if format_option.WIN:
+      audio_format_str += WIN_ACODEC_REGEX_FILTER
+    if media_option == LazyMediaType.AUDIO.value:
+      # download audio only,
+      # or audio with video if no audio only format (audio will be extracted in DownloadSection)
+      return f"{audio_format_str}/{both_format_str}"
     
-    if len(md.formats['both']) != 0:
-      for f in md.formats['both']:
-        if format_option_res.WIN and 'opus' in f['audio']['codec']:
-          continue
-        return f['audio']['format_id']
-
-    return None
+    # video
+    video_format_str = 'bv*'
+    if format_option.WIN:
+      video_format_str += WIN_VCODEC_REGEX_FILTER
+    # download best video only, best audio only, and merge them
+    # or download best format that has both video and audio
+    return f'{video_format_str}+{audio_format_str}/{both_format_str}'
   
-  def _select_video_format (self, md: VideoMetaData, format_option_res: LazyFormatSelector.SelectRes) -> Optional[str]:
-    """ Select the video format with the best resolution and fulfill the format option """
-    # format is supposed to be sorted by quality first and size second
-    selected_format: Optional[TFormatVideo] = None
-    for f in md.formats['video']:
-      # avoid format that might not play on Windows player
-      if format_option_res.WIN and ('hev' in f['codec'] or 'av01' in f['codec']):
-        continue
-
-      # first format
-      if selected_format is None:
-        selected_format = f
-      # highest resolution lowest size
-      elif format_option_res.HRLS and f['width'] == selected_format['width'] and f['height'] == selected_format['height']:
-        selected_format = f
-      else:
-        break
-
-    if selected_format is None:
+  def _sort_str (self, media_option: str, format_option: LazyFormatSelector.SelectRes) -> Optional[str]:
+    if not format_option.HRLS:
       return None
-    return selected_format['format_id']
+    if media_option == LazyMediaType.AUDIO.value:
+      return 'asr,+size'
+    return 'res,+size'
 
 class LazyMediaSelector:
   """ select the media to be downloaded """

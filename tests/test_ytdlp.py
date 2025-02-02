@@ -16,6 +16,7 @@ def test_build_base_cmd ():
     'login_browser': None,
     'extract_flat': False,
     'format': None,
+    'sorting': None,
     'overwrites': False,
     'quiet': False,
     'skip_download': False,
@@ -35,6 +36,7 @@ def test_build_base_cmd ():
     'login_browser': str(uuid4()),
     'extract_flat': True,
     'format': str(uuid4()),
+    'sorting': str(uuid4()),
     'overwrites': True,
     'quiet': True,
     'skip_download': True,
@@ -50,6 +52,7 @@ def test_build_base_cmd ():
   assert f'--cookies-from-browser {opt["login_browser"]}' in ytdlp.base_cmd
   assert '--flat-playlist' in ytdlp.base_cmd
   assert f'--format {opt["format"]}' in ytdlp.base_cmd
+  assert f'-S {opt["sorting"]}' in ytdlp.base_cmd
   assert '--force-overwrite' in ytdlp.base_cmd
   assert '-q' in ytdlp.base_cmd
   assert '--skip-download' in ytdlp.base_cmd

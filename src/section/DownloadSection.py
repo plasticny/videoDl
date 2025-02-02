@@ -2,6 +2,7 @@ from __future__ import annotations
 from uuid import uuid4
 from os import listdir
 from shutil import move as move_file
+from typing import Optional
 
 from src.section.Section import Section
 
@@ -32,6 +33,7 @@ class TDlSubtitleOpt (TDownloadOptBase):
 class TDownloadOpt (TDownloadOptBase):
   """ additional options for downloading video or audio """
   format: str
+  sorting: Optional[str]
 
 class BundledTDownloadOpt ():
   def __init__(self, video:TDownloadOpt, audio:TDownloadOpt):
@@ -72,16 +74,19 @@ class DownloadOpt (Opt):
         video={
           **DownloadOpt.to_ytdlp_base_opt(obj),
           'format': obj.format.video,
+          'sorting': obj.sorting
         },
         audio={
           **DownloadOpt.to_ytdlp_base_opt(obj),
           'format': obj.format.audio,
+          'sorting': obj.sorting
         }
       )
     else:
       res : TDownloadOpt = {
         **DownloadOpt.to_ytdlp_base_opt(obj),
-        'format': obj.format
+        'format': obj.format,
+        'sorting': obj.sorting
       }
       return res
 
@@ -112,26 +117,30 @@ class DownloadOpt (Opt):
     super().__init__(other)
     
     # output
-    self.output_nm : str = None
-    self.output_dir : str = None
+    self.output_nm: str = None
+    self.output_dir: str = None
     # media
     self.media : MediaType = None
     # format
     # if it is a string, only download the requested format
-    # if it is a BundledFormat, download the video and audio, and merge them
-    self.format : str | BundledFormat = None
+    # if it is a BundledFormat, download the video and audio, and merge them (deprecated)
+    self.format: str | BundledFormat = None
+    # sorting format
+    self.sorting: Optional[str] = None
     # subtitle
     # this section will write the subtitle if `subtitle` is not None
-    self.subtitle : Subtitle = None
-    self.embed_sub : bool = False
-    self.burn_sub : bool = False
+    self.subtitle: Optional[Subtitle] = None
+    self.embed_sub: bool = False
+    self.burn_sub: bool = False
 
   # === some setter functions === #
-  def set_media (self, val : MediaType):
+  def set_media (self, val: MediaType):
     self.media = val
-  def set_format (self, val : str | BundledFormat):
+  def set_format (self, val: str | BundledFormat):
     self.format = val
-  def set_subtitle (self, sub : Subtitle, do_embed : bool, do_burn : bool):
+  def set_sorting (self, val: str):
+    self.sorting = val
+  def set_subtitle (self, sub: Subtitle, do_embed : bool, do_burn : bool):
     self.subtitle = sub
     self.embed_sub = do_embed
     self.burn_sub = do_burn

@@ -7,6 +7,8 @@ from unittest.mock import patch, Mock
 from os.path import exists
 from pymediainfo import MediaInfo
 from dataclasses import dataclass
+from uuid import uuid4
+from typing import Optional
 
 from tests.helpers import prepare_output_folder, OUTPUT_FOLDER_PATH
 
@@ -24,29 +26,55 @@ from src.structs.option import MediaType
 @patch('src.lazyYtDownload.SubTitleSection.run')
 @patch('src.lazyYtDownload.LazyFormatSection.run')
 def test_setup (format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
+  def random_str ():
+    return str(uuid4())
+
   class fake_md (VideoMetaData):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, title, *args, **kwargs):
       self.opts = MetaDataOpt()
+      self._title = title
     @property
     def title(self):
-      return 'test title'
+      return self._title
 
   @dataclass
   class Case:
+    # input
+    md_ls: list[VideoMetaData]
+    # mock format select
     media : MediaType
     format_ls : list[str]
+    sort_ls: list[Optional[str]]
+    # mock subtitle select
     do_write_subtitle : bool
     subtitle_ls : list[Subtitle]
     do_embed : bool
     do_burn : bool
-    
+
+  md1 = fake_md('test1')
+  md2 = fake_md('test2')
+  format_str1 = random_str()
+  format_str2 = random_str()
+  sort_str1 = random_str()
+  sort_str2 = random_str()
+  sub1 = Subtitle(random_str(), random_str(), False)
+  sub2 = Subtitle(random_str(), random_str(), False)
+
   case_ls : list[Case] = [
-    Case('Video', ['mp4'], True, [Subtitle('en', 'en', False)], True, False),
-    Case('Audio', ['mp3'], False, [], False, False)
+    Case(
+      [md1, md2],
+      'Video', [format_str1, format_str2], [sort_str1, sort_str2],
+      True, [sub1, sub2], True, False
+    ),
+    Case(
+      [md1],
+      'Audio', [format_str1], [None],
+      False, [], False, False
+    )
   ]
   
-  for idx, case in enumerate(case_ls):
-    print('testing case', idx)
+  for case_idx, case in enumerate(case_ls):
+    print('testing case', case_idx)
     
     sub_ret :TSubtitleSectionRet = {
       'do_write_subtitle': case.do_write_subtitle,
@@ -54,28 +82,27 @@ def test_setup (format_mock:Mock, subtitle_mock:Mock, output_mock:Mock):
       'do_embed': case.do_embed,
       'do_burn': case.do_burn
     }
-    output_ret :TOutputSectionRet = { 'dir': OUTPUT_FOLDER_PATH }
+    output_ret :TOutputSectionRet = { 'dir': random_str() }
     
-    format_mock.return_value = LazyFormatSectionRet(case.media, case.format_ls)
+    format_mock.return_value = LazyFormatSectionRet(case.media, case.format_ls, case.sort_ls)
     subtitle_mock.return_value = sub_ret
     output_mock.return_value = output_ret
 
-    md = fake_md()  
-    setup_res = lazyYtDownload().setup([md])
+    setup_res = lazyYtDownload().setup(case.md_ls)
     
-    assert len(setup_res) == 1
-    
-    dl_opt = setup_res[0]
-    assert dl_opt.media == case.media
-    assert dl_opt.format == case.format_ls[0]
-    if len(case.subtitle_ls) > 0:
-      assert dl_opt.subtitle == case.subtitle_ls[0]
-    else:
-      assert dl_opt.subtitle is None
-    assert dl_opt.embed_sub == case.do_embed
-    assert dl_opt.burn_sub == case.do_burn
-    assert dl_opt.output_dir == OUTPUT_FOLDER_PATH
-    assert dl_opt.output_nm == md.title
+    assert len(setup_res) == len(case.md_ls)
+    for ret_idx, ret in enumerate(setup_res):
+      assert ret.media == case.media
+      assert ret.format == case.format_ls[ret_idx]
+      assert ret.sorting == case.sort_ls[ret_idx]
+      if len(case.subtitle_ls) > 0:
+        assert ret.subtitle == case.subtitle_ls[ret_idx]
+      else:
+        assert ret.subtitle is None
+      assert ret.embed_sub == case.do_embed
+      assert ret.burn_sub == case.do_burn
+      assert ret.output_dir == output_ret['dir']
+      assert ret.output_nm == case.md_ls[ret_idx].title
 
 @patch('src.section.LoginSection.LoginSection.run')
 @patch('src.lazyYtDownload.lazyYtDownload.setup')

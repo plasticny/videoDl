@@ -28,6 +28,7 @@ class _Params (TypedDict):
   cookiefile: _V[str]
   extract_flat: _V[bool]
   format: _V[str]
+  sorting: _V[str]
   login_browser: _V[str]
   outtmpl: _V[str]
   overwrites: _V[bool]
@@ -44,9 +45,12 @@ class Ytdlp:
     run_cmd(f'{YT_DLP_PATH} -U')
   
   def __init__ (self, opt: Opt = {}) -> None:
+    self.logger = Logger()
     self.params: _Params = opt.copy()
     self.base_cmd = self._build_base_cmd()
-    self.logger = Logger()
+
+    self.logger.info(f'Ytdlp instance created')
+    self.logger.info(f'params: {self.params}')
       
   def _build_base_cmd (self) -> str:
     has_value : Callable[[str], bool] = lambda x : self.params.get(x, None) is not None
@@ -59,6 +63,7 @@ class Ytdlp:
       (f'--cookies-from-browser {self.params["login_browser"]} ' if has_value('login_browser') else '') + \
       (f'--flat-playlist '                                       if is_true('extract_flat') else '') + \
       (f'--format {self.params["format"]} '                      if has_value('format') else '') + \
+      (f'-S {self.params["sorting"]} '                            if has_value('sorting') else '') + \
       (f'--force-overwrite '                                     if is_true('overwrites') else '') + \
       (f'-q '                                                    if is_true('quiet') else '') + \
       (f'--skip-download '                                       if is_true('skip_download') else '') + \

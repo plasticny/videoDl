@@ -6,6 +6,8 @@ from unittest.mock import patch, Mock
 from typing_extensions import Union, Optional, TypedDict
 from dataclasses import dataclass
 from pytest import raises as assert_raises
+from uuid import uuid4
+from random import choice
 
 from src.section.FormatSection import FormatSection
 from src.section.FormatSection import LazyFormatSection, LazyFormatSelector, LazyMediaSelector
@@ -54,197 +56,72 @@ def test_format(input_mock:Mock):
     input_mock.return_value = input_mock_ret
     assert FormatSection().run() == exepected_ret
 
-@patch('src.section.FormatSection.LazyFormatSection._best_audio')
-@patch('src.section.FormatSection.LazyFormatSection._select_video_format')
+@patch('src.section.FormatSection.LazyFormatSection._sort_str')
+@patch('src.section.FormatSection.LazyFormatSection._format_str')
 @patch('src.section.FormatSection.LazyMediaSelector._ask_media')
 @patch('src.section.FormatSection.LazyFormatSelector._ask_format_option')
 def test_lazy_format_main(
     ask_format_mock: Mock, ask_media_mock: Mock,
-    select_video_format_mock: Mock, best_audio_mock: Mock
+    format_str_mock: Mock, sort_str_mock: Mock
   ):
-  @dataclass
-  class Case:
-    md_ls : list[VideoMetaData]
-    media : str
-    audio_format: Optional[str]
-    video_format: Optional[str]
-    expected_media_ret: str
-    expected_format_ret: Union[str, BundledFormat, None]
-    expected_err_raised: Optional[Exception] = None
-  
-  select_video_format_ret = 'v1'
-  best_audio_ret = 'a1'
+  format_str_ret = str(uuid4())
+  sort_str_ret = str(uuid4())
   
   fake_md = fake_videoMd()
+  media_ret = choice([LazyMediaType.VIDEO.value, LazyMediaType.AUDIO.value])
+  
+  ask_format_mock.return_value = LazyFormatSelector.SelectRes()
+  ask_media_mock.return_value = media_ret
+  format_str_mock.return_value = format_str_ret
+  sort_str_mock.return_value = sort_str_ret
+
+  ret: LazyFormatSectionRet = LazyFormatSection().run([fake_md])
+  assert ret.media == media_ret
+  assert ret.format_ls == [format_str_ret]
+  assert ret.sort_ls == [sort_str_ret]
+
+def test_lazy_format_format_str ():
+  @dataclass
+  class Case:
+    meida: str
+    format_option_win: bool
+    expected_ret: str
+
   video = LazyMediaType.VIDEO.value
   audio = LazyMediaType.AUDIO.value
-  
-  case_ls : list[Case] = [
-    # video
-    # normal case
-    Case(
-      md_ls=[fake_md], media=video,
-      audio_format=best_audio_ret, video_format=select_video_format_ret,
-      expected_media_ret=video,
-      expected_format_ret=BundledFormat(select_video_format_ret, best_audio_ret)
-    ),
-    # no video
-    Case(
-      md_ls=[fake_md], media=video,
-      audio_format=None, video_format=None,
-      expected_media_ret=video, expected_format_ret=None,
-      expected_err_raised=ValueError
-    ),
-    # audio
-    # normal case
-    Case(
-      md_ls=[fake_md], media=audio,
-      audio_format=best_audio_ret, video_format=None,
-      expected_media_ret=audio, expected_format_ret=best_audio_ret
-    ),
-    # no audio
-    Case(
-      md_ls=[fake_md], media=audio,
-      audio_format=None, video_format=None,
-      expected_media_ret=audio, expected_format_ret=None,
-      expected_err_raised=ValueError
-    )
-  ]
-  
-  for case in case_ls:
-    print('testing', case)
-    
-    ask_format_mock.reset_mock()
-    ask_media_mock.reset_mock()
-    ask_format_mock.return_value = LazyFormatSelector.SelectRes()
-    ask_media_mock.return_value = case.media
 
-    select_video_format_mock.return_value = case.video_format
-    best_audio_mock.return_value = case.audio_format
-
-    # if the case expected error raised
-    if case.expected_err_raised is not None:
-      with assert_raises(case.expected_err_raised):
-        LazyFormatSection().run(case.md_ls)
-      continue
-
-    # if the case expected no error
-    ret : LazyFormatSectionRet = LazyFormatSection().run(case.md_ls)
-    assert ret.media == case.expected_media_ret
-    assert ret.format_ls == [case.expected_format_ret]
-
-def test_lazy_format_best_audio ():
-  @dataclass
-  class FileFormat:
-    codec: str
-    format_id: str
-    def to_both_dict (self):
-      return { 'audio': self.__dict__ }
-
-  @dataclass
-  class Case:
-    format_option: LazyFormatSelector.SelectRes
-    audio_formats: list[FileFormat]
-    both_formats: list[FileFormat]
-    expectret_ret: Union[str, None]
-
-  a1 = FileFormat('opus', 'a1')
-  a2 = FileFormat('aac', 'a2')
+  WIN_VCODEC_REGEX_FILTER = "[vcodec~='^(?!.*(hev|av01)).*$']"
+  WIN_ACODEC_REGEX_FILTER = "[acodec~='^(?!.*opus).*$']"
 
   case_ls: list[Case] = [
-    # the format in audio formats
-    Case(
-      format_option=LazyFormatSelector.SelectRes(WIN=False),
-      audio_formats=[a1], both_formats=[],
-      expectret_ret=a1.format_id
-    ),
-    # the format in both formats
-    Case(
-      format_option=LazyFormatSelector.SelectRes(WIN=False),
-      audio_formats=[], both_formats=[a1],
-      expectret_ret=a1.format_id
-    ),
-    # win, the format in both formats
-    Case(
-      format_option=LazyFormatSelector.SelectRes(WIN=True),
-      audio_formats=[a1], both_formats=[a2],
-      expectret_ret=a2.format_id
-    ),
-    # no available format
-    Case(
-      format_option=LazyFormatSelector.SelectRes(WIN=True),
-      audio_formats=[a1], both_formats=[a1],
-      expectret_ret=None
-    )
+    Case(video, False, "bv*+ba/b"),
+    Case(video, True, f'bv*{WIN_VCODEC_REGEX_FILTER}+ba{WIN_ACODEC_REGEX_FILTER}/b{WIN_VCODEC_REGEX_FILTER}{WIN_ACODEC_REGEX_FILTER}'),
+    Case(audio, False, f'ba/b'),
+    Case(audio, True, f'ba{WIN_ACODEC_REGEX_FILTER}/b{WIN_ACODEC_REGEX_FILTER}')
   ]
 
   for case in case_ls:
-    audio_ls = [f.__dict__ for f in case.audio_formats]
-    both_ls = [f.to_both_dict() for f in case.both_formats]
-    md = fake_videoMd(audio_ls=audio_ls, both_ls=both_ls)
+    format_option = LazyFormatSelector.SelectRes(WIN=case.format_option_win)
+    assert LazyFormatSection()._format_str(case.meida, format_option) == case.expected_ret
 
-    ret = LazyFormatSection()._best_audio(md, case.format_option)
-    assert ret == case.expectret_ret
-
-def test_lazy_format_select_video_format ():
-  @dataclass
-  class FileFormat:
-    format_id: str
-    codec: str
-    width: int
-    height: int
-
+def test_lazy_format_sort_str ():
   @dataclass
   class Case:
-    format_option: LazyFormatSelector.SelectRes
-    video_formats: list[FileFormat]
-    expectret_ret: Union[str, None]
-
-  v1 = FileFormat('v1', 'avc', 1920, 1080)
-  v2 = FileFormat('v2', 'avc', 1920, 1080)
-  v3 = FileFormat('v3', 'hev', 1920, 1080)
-  v4 = FileFormat('v4', 'av01', 1920, 1080)
-  v5 = FileFormat('v5', 'avc', 720, 480)
+    media: str
+    format_option_hrls: bool
+    expected_ret: Optional[str]
 
   case_ls: list[Case] = [
-    # normal case
-    Case(
-      format_option=LazyFormatSelector.SelectRes(),
-      video_formats=[v1, v2, v3],
-      expectret_ret=v1.format_id
-    ),
-    # hrls
-    Case(
-      format_option=LazyFormatSelector.SelectRes(HRLS=True),
-      video_formats=[v1, v2, v3, v5],
-      expectret_ret=v3.format_id
-    ),
-    # win
-    Case(
-      format_option=LazyFormatSelector.SelectRes(WIN=True),
-      video_formats=[v3, v4, v1],
-      expectret_ret=v1.format_id
-    ),
-    # hrls + win
-    Case(
-      format_option=LazyFormatSelector.SelectRes(HRLS=True, WIN=True),
-      video_formats=[v1, v3, v4, v2, v5],
-      expectret_ret=v2.format_id
-    ),
-    # no available format
-    Case(
-      format_option=LazyFormatSelector.SelectRes(WIN=True),
-      video_formats=[v3, v4],
-      expectret_ret=None
-    )
+    Case(LazyMediaType.VIDEO.value, False, None),
+    Case(LazyMediaType.VIDEO.value, True, 'res,+size'),
+    Case(LazyMediaType.AUDIO.value, False, None),
+    Case(LazyMediaType.AUDIO.value, True, 'asr,+size')
   ]
 
   for case in case_ls:
-    video_ls = [f.__dict__ for f in case.video_formats]
-    md = fake_videoMd(video_ls=video_ls)
-    ret = LazyFormatSection()._select_video_format(md, case.format_option)
-    assert ret == case.expectret_ret
-  
+    format_option = LazyFormatSelector.SelectRes(HRLS=case.format_option_hrls)
+    assert LazyFormatSection()._sort_str(case.media, format_option) == case.expected_ret
+
 # ======================== LazyFormatSelector ======================== #
 @patch('src.section.FormatSection.inq_prompt')
 @patch('src.section.FormatSection.LazyFormatSelector._get_options')

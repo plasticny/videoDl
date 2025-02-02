@@ -1,6 +1,10 @@
 """
   MetaData of the video or playlist to be downloaded.
   Use MetaData.fetchMetaData to get the metadata of the video or playlist.
+
+  2025/02/01 [use ytdlp's format selector]:
+  - extracted format of metadata is now only used for determining there is audio or video or both
+  - but keep code of extracting all formats for possible future use
 """
 from __future__ import annotations
 from typing import TypedDict
@@ -184,8 +188,9 @@ class VideoMetaData (MetaData):
     sub, auto_sub = self._getSubtitles()
     self.subtitles = sub
     self.autoSubtitles = auto_sub
-    LOGGER.info(f'Extracted subtitles: {self.subtitles}')
-    LOGGER.info(f'Extracted automatic subtitles: {self.autoSubtitles}')
+
+    LOGGER.info(f'Extracted subtitles: {list(map(lambda s: s.name, self.subtitles))}')
+    LOGGER.info(f'Extracted automatic subtitles: {list(map(lambda s: s.name, self.autoSubtitles))}')
 
     # format
     self._format = self._extract_format()
