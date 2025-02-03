@@ -15,7 +15,7 @@ sysPath.append('src')
 
 from functools import cmp_to_key
 from colorama import Fore, Style
-from typing import Union
+from typing import Any, Callable, Optional, Union
 
 from src.service.urlHelper import getSource, UrlSource
 from src.service.bilibili import get_bili_subs, get_bili_page_cids, bvid_2_aid
@@ -28,10 +28,11 @@ from src.structs.video_info import TFormatVideo, TFormatAudio, TFormatBoth, Subt
 LOGGER = Logger()
 
 def ytdlp_extract_metadata (opts:MetaDataOpt):
+  assert opts.url is not None
   return Ytdlp(MetaDataOpt.to_ytdlp_opt(opts)).extract_info(opts.url)
 
 """ ========================= funcitons for get the metadata ========================= """
-def fetchMetaData(opts:MetaDataOpt) -> Union[MetaData, None]:
+def fetchMetaData(opts:MetaDataOpt) -> Union[VideoMetaData, PlaylistMetaData]:
   """
     Fetch metadata of the video or playlist to be downloaded\n
     Better use this function to get metadata instead of instantiating the metadata directly
@@ -42,9 +43,10 @@ def fetchMetaData(opts:MetaDataOpt) -> Union[MetaData, None]:
     metadata = ytdlp_extract_metadata(opts)
   except Exception as e:
     LOGGER.error(f'Error when getting metadata: {e.with_traceback(None)}')
-    return None
+    raise e
   
   # instantiate the metadata
+  assert opts.url is not None
   source = getSource(opts.url)
   LOGGER.debug(f'Getting metadata from {source}')
   
@@ -61,8 +63,9 @@ def fetchMetaData(opts:MetaDataOpt) -> Union[MetaData, None]:
     else:
       return VideoMetaData(metadata, opts)
     
-def fetch_bili_page_metadata (opts:MetaData, cid:str) -> BiliBiliVideoMetaData:
+def fetch_bili_page_metadata (opts: MetaDataOpt, cid: int) -> BiliBiliVideoMetaData:
   assert isinstance(opts, MetaDataOpt)
+  assert opts.url is not None
   assert getSource(opts.url) is UrlSource.BILIBILI
   return BiliBiliVideoMetaData(ytdlp_extract_metadata(opts), opts, cid)
 """ ========================= funcitons for get the metadata ========================= """
@@ -85,7 +88,9 @@ class TMdFormats (TypedDict):
 class MetaDataOpt (Opt):
   """ Necessary options for fetching MetaData """
   @staticmethod
-  def to_ytdlp_opt(obj : MetaDataOpt) -> TMetaDataOpt:
+  def to_ytdlp_opt(obj: Opt) -> TMetaDataOpt:
+    assert isinstance(obj, MetaDataOpt), 'obj is not an instance of MetaDataOpt'
+    assert obj.url is not None, 'url is not set'
     return {
       **Opt.to_ytdlp_opt(obj),
       'quiet': True,
@@ -112,7 +117,7 @@ class MetaData (metaclass = ABCMeta):
     return self.metadata['id']
   
   @abstractmethod
-  def __init__ (self, metadata : dict, opts : MetaDataOpt):
+  def __init__ (self, metadata: dict[str, Any], opts : MetaDataOpt):
     self.metadata = metadata
     self.opts = opts.copy()
 
@@ -131,44 +136,44 @@ class PlaylistMetaData (MetaData):
   def video_urls(self) -> list[str]:
     return [v.url for v in self.videos]
 
-  def __init__(self, metadata : dict, opts : MetaDataOpt) -> None:
+  def __init__(self, metadata: dict[str, Any], opts : MetaDataOpt) -> None:
     super().__init__(metadata, opts)
     self.videos = self.fetchVideoMd()
 
   def fetchVideoMd(self) -> list[VideoMetaData]:
     """ fetch metadata of videos in the playlist"""
-    res = []
+    res: list[VideoMetaData] = []
     for idx, entry in enumerate(self.metadata['entries']):
       print(f'{Fore.CYAN}Getting info of video {idx + 1} / {self.playlist_count}{Style.RESET_ALL}')
       
       entry_opts : MetaDataOpt = self.opts.copy()
       entry_opts.url = entry['url']
       
-      videoMd = fetchMetaData(entry_opts)
-      
-      if videoMd is None:
-        print(f'{Fore.RED}Skipped {entry_opts.url}, error when getting info of video.{Style.RESET_ALL}')
-      else:
-        assert not videoMd.isPlaylist()
+      try:
+        videoMd = fetchMetaData(entry_opts)
+        assert not videoMd.isPlaylist() and isinstance(videoMd, VideoMetaData)
         res.append(videoMd)
+      except:
+        print(f'{Fore.RED}Skipped {entry_opts.url}, error when getting info of video.{Style.RESET_ALL}')
+      
     return res
   
 class BiliBiliPlaylistMetaData (PlaylistMetaData):
   """Playlist metadata of bilibili"""
-  def __init__(self, metadata, opts:MetaDataOpt):
+  def __init__(self, metadata: dict[str, Any], opts:MetaDataOpt):
     super().__init__(metadata, opts)
     # specify the type of prop videos
     self.videos : list[BiliBiliVideoMetaData] = self.videos
 
-  def fetchVideoMd(self) -> list[BiliBiliVideoMetaData]:
+  def fetchVideoMd (self) -> list[BiliBiliVideoMetaData]:
     cids = get_bili_page_cids(self.id, self.opts.cookie_file_path)
 
-    res = []
+    res: list[BiliBiliVideoMetaData] = []
     for entry, cid in zip(self.metadata['entries'], cids):
-      entry_opts:MetaDataOpt = self.opts.copy()
+      entry_opts = self.opts.copy()
       entry_opts.url = entry['url']
 
-      videoMd = fetch_bili_page_metadata(entry_opts, cid)
+      videoMd = fetch_bili_page_metadata(entry_opts, int(cid))
       res.append(videoMd)
     return res
 # ========================== End Playlist ========================= #
@@ -181,7 +186,7 @@ class VideoMetaData (MetaData):
   def formats(self) -> TMdFormats:
     return self._format
   
-  def __init__(self, metadata, opts : MetaDataOpt):
+  def __init__(self, metadata: dict[str, Any], opts : MetaDataOpt):
     super().__init__(metadata, opts)
 
     # subtitle
@@ -197,8 +202,8 @@ class VideoMetaData (MetaData):
     LOGGER.info(f'Extracted formats: {self._format}')
     
   def _getSubtitles(self) -> tuple[list[Subtitle], list[Subtitle]]:
-    def __restruct_sub_info(sub_info:dict, isAuto:bool=False):
-      res = []
+    def __restruct_sub_info(sub_info: dict[str, Any], isAuto: bool = False) -> list[Subtitle]:
+      res: list[Subtitle] = []
       for code, subs in sub_info.items():
         # find name
         for sub in subs:
@@ -221,19 +226,19 @@ class VideoMetaData (MetaData):
       
     return sub, auto_sub
       
-  def _compare_format(self, a, b):
+  def _compare_format (self, a: dict[str, Any], b: dict[str, Any]) -> int:
     # If a and b is video in the format, compare by resolution first
-    IS_VIDEO = lambda x: 'vcodec' in x and x['vcodec'] != 'none'
+    IS_VIDEO: Callable[[dict[str, Any]], bool] = lambda x: 'vcodec' in x and x['vcodec'] != 'none'
     if IS_VIDEO(a) and IS_VIDEO(b) and a['resolution'] != b['resolution']:
-      a_res = a['resolution'].split('x')
-      b_res = b['resolution'].split('x')
+      a_res: list[str] = a['resolution'].split('x')
+      b_res: list[str] = b['resolution'].split('x')
       if a_res[0] != b_res[0]:
         return int(b_res[0]) - int(a_res[0])
       if a_res[1] != b_res[1]:
         return int(b_res[1]) - int(a_res[1])
 
-    # Compare two formats by tsr, from high to low
-    # If the format has no tsr, it will be placed at the end
+    # Compare two formats by tbr, from high to low
+    # If the format has no tbr, it will be placed at the end
     if 'tbr' not in a or a['tbr'] is None:
       return 1
     if 'tbr' not in b or b['tbr'] is None:
@@ -241,8 +246,8 @@ class VideoMetaData (MetaData):
     return b['tbr'] - a['tbr']
 
   def _extract_format (self) -> TMdFormats:    
-    sorted_raw_formats: list[dict] = sorted(self.metadata['formats'], key=cmp_to_key(self._compare_format))
-    # remove format that has no tsr
+    sorted_raw_formats: list[dict[str, Any]] = sorted(self.metadata['formats'], key=cmp_to_key(self._compare_format))
+    # remove format that has no tbr
     # while len(sorted_raw_formats) > 0 and 'tbr' not in sorted_raw_formats[-1]:
     #   sorted_raw_formats.pop()
     
@@ -256,32 +261,39 @@ class VideoMetaData (MetaData):
         LOGGER.debug(f'format {format["format_id"]} skipped, no tbr')
         continue
 
-      basic_info = {
+      audio: Optional[TFormatAudio] = {
+        'codec': format.get('acodec', 'none'),
+        'ext': format['audio_ext'],
         'format_id': format['format_id'],
         'tbr': format['tbr']
-      }
-      audio : TFormatAudio = {
-        **basic_info,
-        'codec': format.get('acodec', 'none'),
-        'ext': format['audio_ext']
       } if has_audio else None
-      video : TFormatVideo = {
-        **basic_info,
-        'codec': format["vcodec"],
+
+      video: Optional[TFormatVideo] = {
+        'codec': format.get('vcodec', 'none'),
         'ext': format['video_ext'],
-        'width': int(format['resolution'].split('x')[0]),
-        'height': int(format['resolution'].split('x')[1])
+        'format_id': format['format_id'],
+        'height': int(format['resolution'].split('x')[0]),
+        'width': int(format['resolution'].split('x')[1]),
+        'tbr': format['tbr']
       } if has_video else None
       
       if has_audio and has_video:
         LOGGER.debug(f'format {format["format_id"]} added to both')
-        formats['both'].append({**basic_info, 'audio': audio, 'video': video})
+        assert audio is not None and video is not None
+        formats['both'].append({
+          'format_id': format['format_id'],
+          'tbr': format['tbr'],
+          'audio': audio,
+          'video': video
+        })
       if has_audio and not has_video:
         # only accept format that has audio only
         LOGGER.debug(f'format {format["format_id"]} added to audio')
+        assert audio is not None
         formats['audio'].append(audio)  
       if has_video:
         LOGGER.debug(f'format {format["format_id"]} added to video')
+        assert video is not None
         formats['video'].append(video)
       if not has_audio and not has_video:
         LOGGER.debug(f'format {format["format_id"]} skipped, no audio and video')
@@ -300,13 +312,13 @@ class BiliBiliVideoMetaData (VideoMetaData):
     Args:
       cid: cid of the video, should be given if the video is in a playlist
   """
-  def __init__(self, metadata, opts: MetaDataOpt, cid:str = None):
-    self.bvid : str = metadata['id'].split('_')[0]
-    self.cid : str = cid
-    self.aid : str = bvid_2_aid(self.bvid)
+  def __init__(self, metadata: dict[str, Any], opts: MetaDataOpt, cid: Optional[int] = None):
+    self.bvid: str = metadata['id'].split('_')[0]
+    self.cid: Optional[int] = cid
+    self.aid: str = bvid_2_aid(self.bvid)
     super().__init__(metadata, opts)    
 
-  def _getSubtitles(self) -> None:
+  def _getSubtitles(self):
     return get_bili_subs(self.bvid, self.cid, self.opts.cookie_file_path)
 
 class FacebookVideoMetaData (VideoMetaData):
@@ -320,8 +332,19 @@ class FacebookVideoMetaData (VideoMetaData):
       # not append to video and audio because it is hard to esitmate the tbr
       formats['both'].append({
         'format_id': id,
-        'audio': { 'codec': 'avc', 'ext': 'avc' },
-        'video': { 'codec': 'aac', 'ext': 'aac' }
+        'tbr': 0,
+        'audio': {
+          'codec': 'avc',
+          'ext': 'avc',
+          'format_id': id,
+          'tbr': 0
+        },
+        'video': {
+          'codec': 'aac', 'ext': 'aac',
+          'format_id': id,
+          'height': 0, 'width': 0,
+          'tbr': 0
+        }
       })
     
     return formats

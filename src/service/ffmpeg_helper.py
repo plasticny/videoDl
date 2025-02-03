@@ -1,8 +1,9 @@
+ # type: ignore
 from ffmpeg import input as _input, output as ff_out, Error as _Error
 from os import devnull
 from os.path import isfile
 from subprocess import check_call, Popen, PIPE
-from typing import Union, Iterator
+from typing import Union, Iterator, Any
 
 from src.service.fileHelper import FFMPEG_FOLDER_PATH
 from src.structs.video_info import Stream
@@ -11,7 +12,7 @@ from src.structs.video_info import Stream
 ff_in = _input
 ff_Error = _Error
 
-def run_ffmpeg (stream_n_output : list, kwargs : dict):
+def run_ffmpeg (stream_n_output: list[Any], kwargs: dict):
   """ Run ffmpeg with the specified streams and options """
   FFMPEG_PATH = f'{FFMPEG_FOLDER_PATH}\\ffmpeg'
   

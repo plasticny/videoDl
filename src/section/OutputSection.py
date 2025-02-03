@@ -1,5 +1,5 @@
 from tkinter import filedialog as tkFileDialog
-from typing import TypedDict
+from typing import TypedDict, Optional
 from colorama import Fore, Style
 
 from src.section.Section import Section
@@ -7,12 +7,12 @@ from src.service.autofill import get_output_dir_autofill
 
 
 class TOutputSectionRet (TypedDict):
-  dir: str
-  name: str
+  dir: Optional[str]
+  name: Optional[str]
 
 
 class OutputSection (Section):
-  def run(self, askDir:bool=True, askName:bool=True) -> TOutputSectionRet:
+  def run (self, askDir:bool=True, askName:bool=True) -> TOutputSectionRet: # type: ignore
     return super().run(self.__main, askDir=askDir, askName=askName)
   
   def __main(self, askDir:bool=True, askName:bool=True) -> TOutputSectionRet:
@@ -28,7 +28,7 @@ class OutputSection (Section):
     else:
       outputName = None
 
-    res : TOutputSectionRet = {
+    res: TOutputSectionRet = {
       'dir': outputDir,
       'name': outputName
     }

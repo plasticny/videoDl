@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from inquirer import prompt as inq_prompt, List as inq_List, Checkbox as inq_Checkbox
+from inquirer import prompt as inq_prompt, List as inq_List, Checkbox as inq_Checkbox # type: ignore
+from inquirer.render.console import ConsoleRender # type: ignore
 from colorama import Fore, Style
-from typing import Union, Optional
-from enum import Enum
+from typing import Union, Optional, Any
 from dataclasses import dataclass
-from inquirer.render.console import ConsoleRender
 
 from src.section.Section import Section
 from src.section.DownloadSection import BundledFormat
@@ -13,11 +12,10 @@ from src.section.DownloadSection import BundledFormat
 from src.service.MetaData import VideoMetaData
 from src.service.autofill import get_lyd_media_autofill, get_lyd_format_option_autofill
 
-from src.structs.option import MediaType
-  
+from src.structs.video_info import MediaType
 
 class FormatSection (Section):
-  def run(self) -> str:
+  def run (self) -> str: # type: ignore
     return super().run(self.__main)
   
   def __main(self) -> str:
@@ -30,27 +28,23 @@ class FormatSection (Section):
 # ==== Section return ==== #
 @dataclass
 class LazyFormatSectionRet:
-  media : MediaType
+  media: MediaType
   format_ls : list[Union[str, BundledFormat]]
   sort_ls: list[Optional[str]] # not a sorted list, but a list of Sorting Formats string for ytdlp
-
-class LazyMediaType (Enum):
-  VIDEO = 'Video'
-  AUDIO = 'Audio'
 
 class LazyFormatSection (Section):
   """
     Select format with some default options
     instead entering format
   """
-  def run(self, md_ls:list[VideoMetaData]) -> LazyFormatSectionRet:
+  def run (self, md_ls:list[VideoMetaData]) -> LazyFormatSectionRet: # type: ignore
     return super().run(self.__main, md_ls=md_ls)
 
-  def __main(self, md_ls:list[VideoMetaData]) -> list[Union[str, BundledFormat]]:
-    media_option : str = LazyMediaSelector()._ask_media(md_ls)
+  def __main(self, md_ls:list[VideoMetaData]) -> LazyFormatSectionRet:
+    media_option: MediaType = LazyMediaSelector().ask_media(md_ls)
     self.logger.info(f'Media option selected: {media_option}')
     
-    format_option_res: LazyFormatSelector.SelectRes = LazyFormatSelector()._ask_format_option(md_ls, media_option)
+    format_option_res: LazyFormatSelector.SelectRes = LazyFormatSelector().ask_format_option(md_ls, media_option)
     self.logger.info(f'Format option selected: {", ".join([k for k, v in format_option_res.__dict__.items() if v])}')
 
     format_ls: list[Union[str, BundledFormat]] = []
@@ -104,8 +98,8 @@ class LazyFormatSection (Section):
 
 class LazyMediaSelector:
   """ select the media to be downloaded """
-  def _ask_media (self, md_ls:list[VideoMetaData]) -> str:
-    options = self._get_options(md_ls)
+  def ask_media (self, md_ls:list[VideoMetaData]) -> MediaType:
+    options: list[MediaType] = self._get_options(md_ls)
     
     if len(options) == 1:
       print('Only one media option available, select it automatically')
@@ -123,10 +117,10 @@ class LazyMediaSelector:
         'media_option', message=f'{Fore.CYAN}Select the media type{Style.RESET_ALL}', 
         choices=options, default=options[0]
       )
-    ])['media_option']
+    ])['media_option'] # type: ignore
   
-  def _get_options (self, md_ls:list[VideoMetaData]) -> list[str]:
-    options = []
+  def _get_options (self, md_ls:list[VideoMetaData]) -> list[MediaType]:
+    options: list[MediaType] = []
     video_available = True
     audio_available = True
     
@@ -139,9 +133,9 @@ class LazyMediaSelector:
       audio_available = audio_available and len(md.formats['audio']) != 0
 
     if video_available:
-      options.append(LazyMediaType.VIDEO.value)
+      options.append('Video')
     if audio_available:
-      options.append(LazyMediaType.AUDIO.value)
+      options.append('Audio')
       
     return options
   
@@ -163,19 +157,19 @@ class LazyFormatSelector:
   }
 
   class QueryRender (ConsoleRender):
-    def _print_options(self, render):
+    def _print_options(self, render: Any):
       for idx, (option, symbol, color) in enumerate(render.get_options()):
         if idx == render.current:
           message = f"{option.name} ({option.desc})"
         else:
           message = f"{option.name}"
-        self.print_line(" {color}{s} {m}{t.normal}", m=message, color=color, s=symbol)
+        self.print_line(" {color}{s} {m}{t.normal}", m=message, color=color, s=symbol) # type: ignore
 
-  def _ask_format_option(self, md_ls:list[VideoMetaData], media : str) -> SelectRes:
+  def ask_format_option(self, md_ls:list[VideoMetaData], media: MediaType) -> SelectRes:
     """ Ask the user to select the option for choosing the format """
 
     # no specific format option for audio
-    if media == LazyMediaType.AUDIO.value:
+    if media == 'Audio':
       return LazyFormatSelector.SelectRes()
     
     options = self._get_options(md_ls)
@@ -187,10 +181,10 @@ class LazyFormatSelector:
     if autofill is not None:
       default = [self.OPTIONS[k] for k, v in autofill.items() if v]
 
-    selected_options = inq_prompt(
+    selected_options: list[str] = inq_prompt( # type: ignore
       [inq_Checkbox('format_option', message=f'{Fore.CYAN}Select format option(s){Style.RESET_ALL}', choices=options, default=default)],
       render=self.QueryRender()
-    )['format_option']
+    )['format_option'] # type: ignore
 
     res = LazyFormatSelector.SelectRes()
     for k in self.OPTIONS.keys():

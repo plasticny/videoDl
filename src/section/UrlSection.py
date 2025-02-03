@@ -10,7 +10,7 @@ class Message(Enum):
   URL_SOURCE_NOT_TESTED = 'Warning: download may fail because this url source is not tested'
 
 class UrlSection (Section):  
-  def run (self) -> str:
+  def run (self) -> str: # type: ignore
     return super().run(self.__askUrl)
   
   def __askUrl (self) -> str:

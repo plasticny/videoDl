@@ -20,7 +20,7 @@ from src.section.DownloadSection import DownloadOpt
 from src.section.FormatSection import LazyFormatSectionRet
 from src.section.LoginSection import LoginSectionRet
 from src.structs.video_info import Subtitle
-from src.structs.option import MediaType
+from src.structs.video_info import MediaType
 
 @patch('src.lazyYtDownload.OutputSection.run')
 @patch('src.lazyYtDownload.SubTitleSection.run')

@@ -1,14 +1,12 @@
 from __future__ import annotations
-from abc import ABCMeta, abstractmethod
-from typing import TypedDict, Literal
+from abc import ABCMeta
+from typing import TypedDict, Optional
 from typing_extensions import Self
 from copy import deepcopy
 
-# download meida type options
-MediaType = Literal['Video', 'Audio']
-
 class TOpt (TypedDict):
-  cookiefile : str
+  cookiefile: Optional[str]
+  login_browser: Optional[str]
   
 class Opt (metaclass = ABCMeta):
   """
@@ -17,16 +15,16 @@ class Opt (metaclass = ABCMeta):
   @staticmethod
   def to_ytdlp_opt(obj : Opt) -> TOpt:
     """ Convert the properties to a dict for ytdlp options """
-    assert obj.url is not None
+    assert obj.url is not None, 'opt.url is required'
     return {
       'cookiefile': obj.cookie_file_path,
       'login_browser': obj.login_browser
     }
 
-  def __init__ (self, other : Opt = None) -> None:
-    self.url : str = None
-    self.cookie_file_path : str = None
-    self.login_browser : str = None
+  def __init__ (self, other: Optional[Opt] = None) -> None:
+    self.url: Optional[str] = None
+    self.cookie_file_path: Optional[str] = None
+    self.login_browser: Optional[str] = None
 
     if other is not None:
       assert isinstance(other, Opt)
