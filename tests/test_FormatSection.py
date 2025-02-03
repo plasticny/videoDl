@@ -5,7 +5,6 @@ path.append(Path('..').resolve().as_posix())
 from unittest.mock import patch, Mock
 from typing_extensions import Union, Optional
 from dataclasses import dataclass
-from pytest import raises as assert_raises
 from uuid import uuid4
 from random import choice
 
@@ -13,7 +12,7 @@ from src.section.FormatSection import FormatSection
 from src.section.FormatSection import LazyFormatSection, LazyFormatSelector, LazyMediaSelector
 from src.section.FormatSection import LazyFormatSectionRet
 from src.service.MetaData import VideoMetaData
-from src.structs.video_info import BundledFormat, MediaType
+from src.structs.video_info import MediaType
 
 
 # ======= helper ========= #
@@ -68,7 +67,7 @@ def test_lazy_format_main(
   sort_str_ret = str(uuid4())
   
   fake_md = fake_videoMd()
-  media_ret = choice([LazyMediaType.VIDEO.value, LazyMediaType.AUDIO.value])
+  media_ret: MediaType = choice(['Video', 'Audio'])
   
   ask_format_mock.return_value = LazyFormatSelector.SelectRes()
   ask_media_mock.return_value = media_ret
@@ -83,44 +82,41 @@ def test_lazy_format_main(
 def test_lazy_format_format_str ():
   @dataclass
   class Case:
-    meida: str
+    meida: MediaType
     format_option_win: bool
     expected_ret: str
-
-  video = LazyMediaType.VIDEO.value
-  audio = LazyMediaType.AUDIO.value
 
   WIN_VCODEC_REGEX_FILTER = "[vcodec~='^(?!.*(hev|av01)).*$']"
   WIN_ACODEC_REGEX_FILTER = "[acodec~='^(?!.*opus).*$']"
 
   case_ls: list[Case] = [
-    Case(video, False, "bv*+ba/b"),
-    Case(video, True, f'bv*{WIN_VCODEC_REGEX_FILTER}+ba{WIN_ACODEC_REGEX_FILTER}/b{WIN_VCODEC_REGEX_FILTER}{WIN_ACODEC_REGEX_FILTER}'),
-    Case(audio, False, f'ba/b'),
-    Case(audio, True, f'ba{WIN_ACODEC_REGEX_FILTER}/b{WIN_ACODEC_REGEX_FILTER}')
+    Case('Video', False, "bv*+ba/b"),
+    Case('Video', True, f'bv*{WIN_VCODEC_REGEX_FILTER}+ba{WIN_ACODEC_REGEX_FILTER}/b{WIN_VCODEC_REGEX_FILTER}{WIN_ACODEC_REGEX_FILTER}'),
+    Case('Audio', False, f'ba/b'),
+    Case('Audio', True, f'ba{WIN_ACODEC_REGEX_FILTER}/b{WIN_ACODEC_REGEX_FILTER}')
   ]
 
   for case in case_ls:
     format_option = LazyFormatSelector.SelectRes(WIN=case.format_option_win)
-    assert LazyFormatSection()._format_str(case.meida, format_option) == case.expected_ret
+    assert LazyFormatSection()._format_str(case.meida, format_option) == case.expected_ret # type: ignore
 
 def test_lazy_format_sort_str ():
   @dataclass
   class Case:
-    media: str
+    media: MediaType
     format_option_hrls: bool
     expected_ret: Optional[str]
 
   case_ls: list[Case] = [
-    Case(LazyMediaType.VIDEO.value, False, None),
-    Case(LazyMediaType.VIDEO.value, True, 'res,+size'),
-    Case(LazyMediaType.AUDIO.value, False, None),
-    Case(LazyMediaType.AUDIO.value, True, 'asr,+size')
+    Case('Video', False, None),
+    Case('Video', True, 'res,+size'),
+    Case('Audio', False, None),
+    Case('Audio', True, 'asr,+size')
   ]
 
   for case in case_ls:
     format_option = LazyFormatSelector.SelectRes(HRLS=case.format_option_hrls)
-    assert LazyFormatSection()._sort_str(case.media, format_option) == case.expected_ret
+    assert LazyFormatSection()._sort_str(case.media, format_option) == case.expected_ret # type: ignore
 
 # ======================== LazyFormatSelector ======================== #
 @patch('src.section.FormatSection.inq_prompt')

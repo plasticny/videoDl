@@ -61,14 +61,14 @@ class LazyFormatSection (Section):
 
     return LazyFormatSectionRet(media=media_option, format_ls=format_ls, sort_ls=sort_ls)
 
-  def _format_str (self, media_option: str, format_option: LazyFormatSelector.SelectRes) -> str:
+  def _format_str (self, media_option: MediaType, format_option: LazyFormatSelector.SelectRes) -> str:
     WIN_VCODEC_REGEX_FILTER = "[vcodec~='^(?!.*(hev|av01)).*$']"
     WIN_ACODEC_REGEX_FILTER = "[acodec~='^(?!.*opus).*$']"
 
     # both
     both_format_str = 'b'
     if format_option.WIN:
-      if media_option == LazyMediaType.VIDEO.value:
+      if media_option == 'Video':
         both_format_str += WIN_VCODEC_REGEX_FILTER
       both_format_str += WIN_ACODEC_REGEX_FILTER
 
@@ -76,7 +76,7 @@ class LazyFormatSection (Section):
     audio_format_str = 'ba'
     if format_option.WIN:
       audio_format_str += WIN_ACODEC_REGEX_FILTER
-    if media_option == LazyMediaType.AUDIO.value:
+    if media_option == 'Audio':
       # download audio only,
       # or audio with video if no audio only format (audio will be extracted in DownloadSection)
       return f"{audio_format_str}/{both_format_str}"
@@ -89,10 +89,10 @@ class LazyFormatSection (Section):
     # or download best format that has both video and audio
     return f'{video_format_str}+{audio_format_str}/{both_format_str}'
   
-  def _sort_str (self, media_option: str, format_option: LazyFormatSelector.SelectRes) -> Optional[str]:
+  def _sort_str (self, media_option: MediaType, format_option: LazyFormatSelector.SelectRes) -> Optional[str]:
     if not format_option.HRLS:
       return None
-    if media_option == LazyMediaType.AUDIO.value:
+    if media_option == 'Audio':
       return 'asr,+size'
     return 'res,+size'
 
