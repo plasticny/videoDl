@@ -1,9 +1,9 @@
 from __future__ import annotations
-from inquirer import prompt as inq_prompt, List as inq_List, Checkbox as inq_Checkbox
+from inquirer import prompt as inq_prompt, List as inq_List, Checkbox as inq_Checkbox # type: ignore
 from colorama import Fore, Style
 from collections.abc import Iterable
 from enum import Enum
-from typing import TypedDict
+from typing import TypedDict, Optional, Sequence, Union
 
 from src.section.Section import Section
 
@@ -17,7 +17,7 @@ class TSubtitleSectionRet (TypedDict):
   do_write_subtitle : bool
   do_embed : bool
   do_burn : bool
-  subtitle_ls : list[Subtitle]
+  subtitle_ls : Sequence[Optional[Subtitle]]
 
 
 class SelectionMode(Enum):
@@ -35,7 +35,7 @@ class SubTitleSection (Section):
       'do_burn': False
     }
   
-  def run(self, md_ls:list[VideoMetaData]) -> TSubtitleSectionRet:
+  def run (self, md_ls:list[VideoMetaData]) -> TSubtitleSectionRet: # type: ignore
     return super().run(self.__main, md_ls=md_ls)
   
   def __main(self, md_ls:list[VideoMetaData]) -> TSubtitleSectionRet:
@@ -78,7 +78,7 @@ class SubTitleSection (Section):
       'subtitle_ls': selection_res
     }
 
-  def control_sub_selection (self, md_ls:list[VideoMetaData], sub_pos_map:dict[Subtitle, list[int]]) -> list[Subtitle]:
+  def control_sub_selection (self, md_ls:list[VideoMetaData], sub_pos_map:dict[Subtitle, list[int]]) -> list[Optional[Subtitle]]:
     """
       Control the mode to select subtitle, also run the selection process
       Return: a list of selected subtitle
@@ -99,8 +99,8 @@ class SubTitleSection (Section):
     else:
       return self.one_by_one_select(md_ls)
   
-  def one_by_one_select(self, video_mds:list[VideoMetaData]) -> list[Subtitle]:
-    res = []
+  def one_by_one_select(self, video_mds:list[VideoMetaData]) -> list[Optional[Subtitle]]:
+    res: list[Optional[Subtitle]] = []
     
     for idx, md in enumerate(video_mds):
       # if no subtitle, skip
@@ -112,7 +112,7 @@ class SubTitleSection (Section):
       # select subtitle
       print(f'{Fore.GREEN}Video {idx+1}/{len(video_mds)}{Style.RESET_ALL}')
       print(md.title)
-      sub : Subtitle = self.select_sub(
+      sub: Optional[Subtitle] = self.select_sub(
         [*sorted(md.subtitles), *sorted(md.autoSubtitles)],
         can_skip=True, skip_msg='Skip this video'
       )
@@ -120,7 +120,7 @@ class SubTitleSection (Section):
 
     return res
 
-  def batch_select(self, sub_pos_map:dict[Subtitle, list[int]], video_num:int) -> list[Subtitle]:
+  def batch_select(self, sub_pos_map:dict[Subtitle, list[int]], video_num:int) -> list[Optional[Subtitle]]:
     """
       Procedure:
         Repeat until map empty / no more video without subtitle / choose to end selection.\n
@@ -145,7 +145,7 @@ class SubTitleSection (Section):
     sub_pos_map = sub_pos_map.copy()
 
     # result list
-    res : list[Subtitle] = [ None for _ in range(video_num) ]
+    res : list[Optional[Subtitle]] = [ None for _ in range(video_num) ]
     # the number of video that does not have subtitle
     no_sub_cnt:int = len(res)
 
@@ -153,7 +153,7 @@ class SubTitleSection (Section):
     # the map will also be empty if all video assigned subtitle
     while len(sub_pos_map) > 0:
       # sub_pos_map.keys() is the union of all remaining video's subtitles
-      sub:Subtitle = self.select_sub(sorted(sub_pos_map.keys()), can_skip=True, skip_msg='End selection')
+      sub: Optional[Subtitle] = self.select_sub(sorted(sub_pos_map.keys()), can_skip=True, skip_msg='End selection')
 
       # if choose to end the selection, break
       if sub is None:
@@ -177,7 +177,7 @@ class SubTitleSection (Section):
       del sub_pos_map[sub]
       
       # update stacks in the map
-      empty_keys = []
+      empty_keys: list[Subtitle] = []
       for s, pos_ls in sub_pos_map.items():
         # pop every stack until reach the video of the idx is not assigned subtitle, or stack empty
         while len(pos_ls) > 0 and res[pos_ls[-1]] is not None:
@@ -210,12 +210,12 @@ class SubTitleSection (Section):
 
     return sub_pos_map
 
-  def autofill_sub(self, video_mds:list[VideoMetaData], config_preferred_ls:list[str]) -> list[Subtitle]:
+  def autofill_sub(self, video_mds:list[VideoMetaData], config_preferred_ls:list[str]) -> list[Optional[Subtitle]]:
     """
       Args:
         `config_preferred_ls`: list of preferred subtitle code from config file
     """             
-    res : list[Subtitle] = []
+    res: list[Optional[Subtitle]] = []
     for md in video_mds:
       available_sub : dict[str, Subtitle] = {}
       for sub in md.subtitles:
@@ -252,13 +252,12 @@ class SubTitleSection (Section):
         print(f'{Fore.GREEN}do_write_subtitle is set False in Autofill config, subtitle will not be written{Style.RESET_ALL}\n')
       return autofill
     
-    doWriteSub = inq_prompt([
+    return inq_prompt([
       inq_List(
         'writeSub', message=f'{Fore.GREEN}Found subtitle(s). {Fore.CYAN}Write subtitle?{Style.RESET_ALL}', 
         choices=['Yes','No'], default='Yes'
       )
-    ])['writeSub']
-    return doWriteSub == 'Yes'
+    ])['writeSub'] == 'Yes' # type: ignore
 
   def ask_selection_mode(self) -> int:
     """
@@ -270,43 +269,46 @@ class SubTitleSection (Section):
     """
     batch_select_msg = 'Batch select (Select a perferred subtitle, and apply to videos that support it)'
     one_by_one_select_msg = 'Select one by one (Select a subtitle for each video)'
-    ans = inq_prompt([
+    ans: str = inq_prompt([ # type: ignore
       inq_List(
         'selectMode', message=f'{Fore.CYAN}There are multiple videos. Choose the mode of selecting subtitle{Style.RESET_ALL}', 
         choices=[batch_select_msg, one_by_one_select_msg], 
         default=batch_select_msg
       )
-    ])['selectMode']
+    ])['selectMode'] # type: ignore
     return SelectionMode.BATCH.value if ans == batch_select_msg else SelectionMode.ONE_BY_ONE.value
   
-  def select_sub(self, subs:Iterable[Subtitle], can_skip:bool=False, skip_msg:str='') -> Subtitle:
+  def select_sub(self, subs:Iterable[Subtitle], can_skip:bool=False, skip_msg:str='') -> Optional[Subtitle]:
     """
       Ask user to select a subtitle
 
       Returns:
         The selected subtitle. None if skipped.
     """
+    choices: list[Union[str, Subtitle]] = []
     if can_skip:
       skip_msg = f'{Fore.RED}{skip_msg}{Style.RESET_ALL}'
       choices = [skip_msg]
     choices.extend(subs)
 
-    ans = inq_prompt([
+    ans: Union[str, Subtitle] = inq_prompt([ # type: ignore
       inq_List('sub', message=f'{Fore.CYAN}Select a subtitle{Style.RESET_ALL}', choices=choices),
-    ])['sub']
-    return None if ans == skip_msg else ans
+    ])['sub'] # type: ignore
+    if ans == skip_msg:
+      return None
+    assert isinstance(ans, Subtitle)
+    return ans
   
   def ask_show_summary(self) -> bool:
     """
       Ask user to select whether to show the summary of selection
     """
-    showSummary = inq_prompt([
+    return inq_prompt([
       inq_List(
         'showSummary', message=f'{Fore.CYAN}Show the summary of selection?{Style.RESET_ALL}', 
         choices=['Yes','No'], default='Yes'
       )
-    ])['showSummary']
-    return showSummary == 'Yes'
+    ])['showSummary'] == 'Yes' # type: ignore
 
   def select_write_mode(self) -> tuple[bool, bool]:
     """
@@ -322,11 +324,11 @@ class SubTitleSection (Section):
       print()
       return autofill[0], autofill[1]
     
-    ans = inq_prompt([
+    ans: list[str] = inq_prompt([ # type: ignore
       inq_Checkbox(
         'writeMode', message=f'{Fore.CYAN}Choose the mode of writing subtitle (Space to select/deselect, Enter to confirm){Style.RESET_ALL}',
         choices=['Embed', 'Burn'], default=['Embed', 'Burn']
       )
-    ])['writeMode']
+    ])['writeMode'] # type: ignore
     return ('Embed' in ans, 'Burn' in ans)  
   # ==================== End Inquiry functions ==================== #

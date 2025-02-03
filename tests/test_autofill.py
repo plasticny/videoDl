@@ -64,29 +64,39 @@ def test_get_lyd_format_autofill ():
   @dataclass
   class Case:
     do_enable: bool
-    expected_ret: Optional[dict]
+    do_hrls: bool
+    do_win: bool
+    expected_ret: Optional[dict[str, bool]]
 
-  fake_config = {
+  fake_config: dict[str, autofill.TFormatOptionConfig] = {
     'format_option': {
       'enable': False,
-      'option': False
+      'HRLS': False,
+      'WIN': False
     }
   }
 
   case_ls: list[Case] = [
-    Case(False, None),
-    Case(True, { 'option': False })
+    Case(False, False, False, None),
+    Case(False, True, True, None),
+    Case(True, False, False, { 'HRLS': False, 'WIN': False }),
+    Case(True, True, False, { 'HRLS': True, 'WIN': False }),
+    Case(True, False, True, { 'HRLS': False, 'WIN': True })
   ]
   
   for case in case_ls:
     print('testing', case)
-    fake_config['format_option']['enable'] = case.do_enable
+    fake_config['format_option'] = {
+      'enable': case.do_enable,
+      'HRLS': case.do_hrls,
+      'WIN': case.do_win
+    }
     with patch.object(autofill, 'lyd_autofill_config', fake_config):
       assert get_lyd_format_option_autofill() == case.expected_ret
     
 def test_get_do_write_subtitle_autofill ():
   # [(do_enable, val, autofill_value)]
-  case_ls : list[tuple[bool, bool, bool]] = [
+  case_ls : list[tuple[bool, bool, Optional[bool]]] = [
     # when not enable
     (False, True, None),
     # when enable and val is False

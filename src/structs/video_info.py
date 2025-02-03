@@ -1,15 +1,15 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import TypedDict
+from typing import TypedDict, Literal
 from colorama import Fore, Style
 
+MediaType = Literal['Video', 'Audio']
 
 # ============ video format ============ #
 class BundledFormat:
   """ a type that contains both video and audio format """
-  def __init__(self, video:str=None, audio:str=None):
-    self.video : str = video
-    self.audio : str = audio
+  def __init__(self, video: str, audio: str):
+    self.video = video
+    self.audio = audio
     
   def __eq__(self, __value: object) -> bool:
     if not isinstance(__value, BundledFormat):
@@ -18,7 +18,7 @@ class BundledFormat:
 
 class TFormatBase (TypedDict):
   format_id : str
-  tsr : float
+  tbr : float
 
 class TFormatFile (TypedDict):
   codec : str
@@ -40,20 +40,22 @@ class Subtitle:
   """
     Structure of VideoMetaData subtitle
   """
-  def __init__(self, code, name, isAuto=False):
-    self.code : str = code
-    self.name : str = name
-    self.isAuto : bool = isAuto
+  def __init__(self, code: str, name: str, isAuto: bool = False):
+    self.code = code 
+    self.name = name
+    self.isAuto= isAuto
 
   def __str__(self):
     return f'[{self.code}] {self.name} {Fore.LIGHTBLACK_EX}{"(Auto gen)" if self.isAutoGen() else ""}{Style.RESET_ALL}'
   
-  def __eq__(self, __value) -> bool:
+  def __eq__(self, __value: object) -> bool:
+    if not isinstance(__value, Subtitle):
+      return False
     if not hasattr(__value, 'code') or not hasattr(__value, 'isAutoGen'):
       return False
     return self.code == __value.code and self.isAutoGen() == __value.isAutoGen()
   
-  def __gt__(self, __value) -> bool:
+  def __gt__(self, __value: Subtitle) -> bool:
     if self.__eq__(__value):
       return False
     
@@ -75,7 +77,7 @@ class BiliBiliSubtitle(Subtitle):
     Metadata of bilibili video does not distinguish between auto and non-auto subtitle\n
     So isAuto should always be False, and use ai_status for internal distinction
   """
-  def __init__(self, code, name, ai_status):
+  def __init__(self, code: str, name: str, ai_status: int):
     super().__init__(code, name, isAuto=False)
     self.ai_status = ai_status
 
@@ -86,10 +88,11 @@ class BiliBiliSubtitle(Subtitle):
 
 # ============ stream ============ #
 class Stream:
-  """ re-implementation of FFStream in ffprobe-python module """
+  """ type of FFStream in ffprobe-python module """
   def __init__ (self, data_lines : list[bytes]):
     for line in data_lines:
-      self.__dict__.update({key: value for key, value, *_ in [line.strip().split('=')]})
+      v = {str(key): value for key, value, *_ in [line.strip().split(bytes('=', 'UTF-8'))]}
+      self.__dict__.update(v)
       
   @property
   def is_audio (self) -> bool:

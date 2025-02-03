@@ -1,5 +1,6 @@
 import sys
 from enum import Enum
+from typing import Callable, Optional, Any
 
 from src.service.logger import Logger
 
@@ -33,11 +34,9 @@ class Section:
   def footer (self):
     return ''
     
-  def run (self, bodyFunc=None, **kwargs):
+  def run (self, bodyFunc: Optional[Callable[..., Any]] = None, **kwargs: ...) -> Any:
     sys.stdout.flush()
         
-    result = None
-    
     # header
     if self.doShowHeader:
       if self.headerType == HeaderType.HEADER:
@@ -46,8 +45,10 @@ class Section:
         print(self.subHeader)
 
     # body
-    if callable(bodyFunc):
+    if bodyFunc is not None:
       result = bodyFunc(**kwargs)
+    else:
+      result = None
 
     # footer
     if self.doShowFooter:
