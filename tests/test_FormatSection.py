@@ -3,15 +3,15 @@ from pathlib import Path
 path.append(Path('..').resolve().as_posix())
 
 from unittest.mock import patch, Mock
-from typing_extensions import Union, Optional, TypedDict
+from typing_extensions import Union, Optional
 from dataclasses import dataclass
 from pytest import raises as assert_raises
 
 from src.section.FormatSection import FormatSection
 from src.section.FormatSection import LazyFormatSection, LazyFormatSelector, LazyMediaSelector
-from src.section.FormatSection import LazyMediaType, LazyFormatSectionRet
+from src.section.FormatSection import LazyFormatSectionRet
 from src.service.MetaData import VideoMetaData
-from src.structs.video_info import BundledFormat
+from src.structs.video_info import BundledFormat, MediaType
 
 
 # ======= helper ========= #
@@ -56,8 +56,8 @@ def test_format(input_mock:Mock):
 
 @patch('src.section.FormatSection.LazyFormatSection._best_audio')
 @patch('src.section.FormatSection.LazyFormatSection._select_video_format')
-@patch('src.section.FormatSection.LazyMediaSelector._ask_media')
-@patch('src.section.FormatSection.LazyFormatSelector._ask_format_option')
+@patch('src.section.FormatSection.LazyMediaSelector.ask_media')
+@patch('src.section.FormatSection.LazyFormatSelector.ask_format_option')
 def test_lazy_format_main(
     ask_format_mock: Mock, ask_media_mock: Mock,
     select_video_format_mock: Mock, best_audio_mock: Mock
@@ -70,14 +70,14 @@ def test_lazy_format_main(
     video_format: Optional[str]
     expected_media_ret: str
     expected_format_ret: Union[str, BundledFormat, None]
-    expected_err_raised: Optional[Exception] = None
+    expected_err_raised: Optional[type] = None
   
   select_video_format_ret = 'v1'
   best_audio_ret = 'a1'
   
   fake_md = fake_videoMd()
-  video = LazyMediaType.VIDEO.value
-  audio = LazyMediaType.AUDIO.value
+  video: MediaType = 'Video'
+  audio: MediaType = 'Audio'
   
   case_ls : list[Case] = [
     # video
@@ -254,12 +254,12 @@ def test_lazy_format_ask_format(get_options_mock:Mock, prompt_mock:Mock):
   """
   @dataclass
   class Case:
-    media: LazyMediaType
+    media: MediaType
     option_exists: bool
     prompt_called: bool
 
-  video = LazyMediaType.VIDEO.value
-  audio = LazyMediaType.AUDIO.value
+  video: MediaType = 'Video'
+  audio: MediaType = 'Audio'
 
   case_ls: list[Case] = [
     # audio
@@ -276,12 +276,12 @@ def test_lazy_format_ask_format(get_options_mock:Mock, prompt_mock:Mock):
     get_options_mock.reset_mock()
     prompt_mock.reset_mock()
     
-    fake_options = []
+    fake_options: list[str] = []
     if case.option_exists:
       fake_options.append('fake_option')
     get_options_mock.return_value = fake_options
     
-    LazyFormatSelector()._ask_format_option([], case.media)
+    LazyFormatSelector().ask_format_option([], case.media)
     assert prompt_mock.called == case.prompt_called
 
 def test_lazy_format_get_options ():
@@ -303,8 +303,8 @@ def test_lazy_media_ask_media (get_options_mock:Mock, autofill_mock : Mock, prom
     do_autofill_called : bool
     expected_ret : str
     
-  video = LazyMediaType.VIDEO.value
-  audio = LazyMediaType.AUDIO.value
+  video: MediaType = 'Video'
+  audio: MediaType = 'Audio'
   
   case_ls : list[Case] = [
     # video and audio, select video
@@ -354,7 +354,7 @@ def test_lazy_media_ask_media (get_options_mock:Mock, autofill_mock : Mock, prom
     prompt_mock.return_value = { 'media_option': case.prompt_ret }
     autofill_mock.return_value = case.autofill_ret
     
-    res = LazyMediaSelector()._ask_media([])
+    res = LazyMediaSelector().ask_media([])
     
     assert res == case.expected_ret
     assert prompt_mock.called == case.do_prompt_called
@@ -373,15 +373,15 @@ def test_lazy_media_get_options ():
   @dataclass
   class Case:
     md_ls : list[fake_videoMd]
-    expected_ret : list[str]
+    expected_ret : list[MediaType]
     def __str__(self) -> str:
       return f'Case({self.md_ls}, {self.expected_ret})'
       
   case_ls : list[Case] = [
-    Case([fake_md1], [LazyMediaType.VIDEO.value, LazyMediaType.AUDIO.value]),
-    Case([fake_md2], [LazyMediaType.VIDEO.value, LazyMediaType.AUDIO.value]),
-    Case([fake_md3], [LazyMediaType.VIDEO.value]),
-    Case([fake_md4], [LazyMediaType.AUDIO.value])
+    Case([fake_md1], ['Video', 'Audio']),
+    Case([fake_md2], ['Video', 'Audio']),
+    Case([fake_md3], ['Video']),
+    Case([fake_md4], ['Audio'])
   ]
   
   for case in case_ls:

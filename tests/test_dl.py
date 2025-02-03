@@ -6,7 +6,7 @@ from unittest.mock import patch, Mock
 from pytest import raises as pytest_raises
 from os.path import exists
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, Callable
 from uuid import uuid4
 
 from tests.helpers import prepare_output_folder, OUTPUT_FOLDER_PATH
@@ -18,8 +18,8 @@ from src.section.DownloadSection import DownloadOpt
 from src.section.SubTitleSection import TSubtitleSectionRet
 from src.section.OutputSection import TOutputSectionRet
 from src.section.LoginSection import LoginSectionRet
+from src.service.MetaData import VideoMetaData
 from src.structs.video_info import Subtitle
-
 
 @patch('src.dl.DownloadSection')
 @patch('src.dl.Dl.setup')
@@ -31,11 +31,11 @@ def test_download_call_count(
   ):
   """ test run working by checking times of download called """
   class fake_videoMd (VideoMetaData):
-    def __init__ (self, *args, **kwargs):
+    def __init__ (self, *args: ..., **kwargs: ...):
       pass
   
   class fake_UrlSection (UrlSection):
-    def __init__ (self, *args, **kwargs):
+    def __init__ (self, *args: ..., **kwargs: ...):
       pass
     def run (self):
       return ''
@@ -47,10 +47,11 @@ def test_download_call_count(
     expected_call_count : int
   
   video_md = fake_videoMd()
+  fake_setup: Callable[[list[VideoMetaData]], list[DownloadOpt]] = lambda md_ls : [DownloadOpt() for _ in md_ls]
   
   url_mock.return_value = fake_UrlSection()
   login_mock.return_value = LoginSectionRet(False)
-  setup_mock.side_effect = lambda md_ls : [DownloadOpt() for _ in md_ls]
+  setup_mock.side_effect = fake_setup
   
   case_ls : list[Case] = [
     Case([video_md], False, 1),

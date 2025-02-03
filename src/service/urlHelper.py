@@ -1,6 +1,7 @@
 from urllib.parse import urlparse, parse_qs, urlunparse
 from enum import Enum
 from requests import get
+from typing import Optional
 
 # website source of the url
 class UrlSource (Enum):
@@ -64,7 +65,7 @@ def getSource (url : str) -> UrlSource:
 
 # checking if the url is valid
 # return: valid (bool), err (str/None)
-def isValid (url : str) -> tuple[bool, str]:
+def isValid (url : str) -> tuple[bool, Optional[str]]:
   parsedUrl = urlparse(url)
 
   # check if it is url
@@ -90,7 +91,7 @@ def isValid (url : str) -> tuple[bool, str]:
 # return a url string without those params
 def removeSurplusParam (url : str) -> str:
   # helper function
-  def keepQuery(url, keepKey : list):
+  def keepQuery(url: str, keepKey: list[str]):
     parsedUrl = urlparse(url)
     queryParams = parse_qs(parsedUrl.query)
 
