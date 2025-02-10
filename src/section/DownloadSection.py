@@ -207,6 +207,7 @@ class DownloadSection (Section) :
     item_path : str = f'{TEMP_FOLDER_PATH}/{item_nm}'
 
     sample_rate = get_audio_sample_rate(item_path)
+    self.logger.debug(f'Audio sample rate: {sample_rate}')
     if sample_rate is None:
       raise Exception('No audio stream found')
     
@@ -222,6 +223,7 @@ class DownloadSection (Section) :
       'loglevel': 'quiet'
     }
     run_ffmpeg(streams_n_output, kwargs)
+    self.logger.debug(f'Audio is converted to flac with sample rate {sample_rate}')
   
     # move the temp file to the output directory
     assert opts.output_dir is not None

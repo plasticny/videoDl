@@ -91,7 +91,7 @@ class Stream:
   """ type of FFStream in ffprobe-python module """
   def __init__ (self, data_lines : list[bytes]):
     for line in data_lines:
-      v = {str(key): value for key, value, *_ in [line.strip().split(bytes('=', 'UTF-8'))]}
+      v = { str(key): value for key, value, *_ in [str(line).strip().split('=')] }
       self.__dict__.update(v)
       
   @property
