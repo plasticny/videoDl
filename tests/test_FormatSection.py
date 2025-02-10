@@ -3,7 +3,7 @@ from pathlib import Path
 path.append(Path('..').resolve().as_posix())
 
 from unittest.mock import patch, Mock
-from typing_extensions import Union, Optional
+from typing import Union, Optional, Any
 from dataclasses import dataclass
 from uuid import uuid4
 from random import choice
@@ -17,7 +17,11 @@ from src.structs.video_info import MediaType
 
 # ======= helper ========= #
 class fake_videoMd (VideoMetaData):
-  def __init__(self, both_ls=[], video_ls=[], audio_ls=[], *args, **kwargs):
+  def __init__(
+    self,
+    both_ls: list[Any] = [], video_ls: list[Any] = [], audio_ls: list[Any] = [],
+    *args: ..., **kwargs: ...
+  ):
     self._format = {
       'both': both_ls,
       'video': video_ls,
@@ -26,6 +30,12 @@ class fake_videoMd (VideoMetaData):
     
   @property
   def title (self) -> str:
+    return ''
+  @property
+  def opts (Self) -> None:
+    return None
+  @property
+  def url (self) -> str:
     return ''
 
 def create_fake_format (format_id:str):
@@ -55,29 +65,54 @@ def test_format(input_mock:Mock):
     input_mock.return_value = input_mock_ret
     assert FormatSection().run() == exepected_ret
 
+@patch('src.section.FormatSection.LazyFormatSection.check_format_str_available')
 @patch('src.section.FormatSection.LazyFormatSection._sort_str')
 @patch('src.section.FormatSection.LazyFormatSection._format_str')
 @patch('src.section.FormatSection.LazyMediaSelector.ask_media')
 @patch('src.section.FormatSection.LazyFormatSelector.ask_format_option')
 def test_lazy_format_main(
-    ask_format_mock: Mock, ask_media_mock: Mock,
-    format_str_mock: Mock, sort_str_mock: Mock
-  ):
-  format_str_ret = str(uuid4())
-  sort_str_ret = str(uuid4())
-  
-  fake_md = fake_videoMd()
-  media_ret: MediaType = choice(['Video', 'Audio'])
-  
-  ask_format_mock.return_value = LazyFormatSelector.SelectRes()
-  ask_media_mock.return_value = media_ret
-  format_str_mock.return_value = format_str_ret
-  sort_str_mock.return_value = sort_str_ret
+  ask_format_mock: Mock, ask_media_mock: Mock,
+  format_str_mock: Mock, sort_str_mock: Mock,
+  check_format_str_mock: Mock
+):
+  @dataclass
+  class Case:
+    # mock
+    format_available_seq: list[bool]
+    # expected
+    ask_format_called_cnt: int
 
-  ret: LazyFormatSectionRet = LazyFormatSection().run([fake_md])
-  assert ret.media == media_ret
-  assert ret.format_ls == [format_str_ret]
-  assert ret.sort_ls == [sort_str_ret]
+  case_ls: list[Case] = [
+    # format str available
+    Case([True], 1),
+    # format str not available once
+    Case([False, True], 2),
+  ]
+
+  fake_md = fake_videoMd()
+
+  for case in case_ls:
+    format_str_ret = str(uuid4())
+    sort_str_ret = str(uuid4())    
+    media_ret: MediaType = choice(['Video', 'Audio'])
+    
+    ask_format_mock.reset_mock()
+    ask_media_mock.reset_mock()
+    format_str_mock.reset_mock()
+    sort_str_mock.reset_mock()
+    check_format_str_mock.reset_mock()
+
+    ask_format_mock.return_value = LazyFormatSelector.SelectRes()
+    ask_media_mock.return_value = media_ret
+    format_str_mock.return_value = format_str_ret
+    sort_str_mock.return_value = sort_str_ret
+    check_format_str_mock.side_effect = case.format_available_seq
+
+    ret: LazyFormatSectionRet = LazyFormatSection().run([fake_md])
+    assert ret.media == media_ret
+    assert ret.format_ls == [format_str_ret]
+    assert ret.sort_ls == [sort_str_ret]
+    assert ask_format_mock.call_count == case.ask_format_called_cnt
 
 def test_lazy_format_format_str ():
   @dataclass
@@ -118,48 +153,131 @@ def test_lazy_format_sort_str ():
     format_option = LazyFormatSelector.SelectRes(HRLS=case.format_option_hrls)
     assert LazyFormatSection()._sort_str(case.media, format_option) == case.expected_ret # type: ignore
 
+@patch('src.section.FormatSection.DownloadOpt')
+@patch('src.section.FormatSection.Ytdlp')
+def test_lazy_format_check_format_str_available (
+  ytdlp_mock: Mock, download_opt_mock: Mock
+):
+  class fakeDownloadOpt:
+    def __init__ (self, *args: ...):
+      pass
+    def set_format (self, *args: ...):
+      pass
+    @staticmethod
+    def to_ytdlp_dl_opt (*args: ...):
+      pass
+
+  check_format_available_mock = Mock()
+
+  class fakeYtdlp:
+    def __init__ (self, *args: ...):
+      print('fakeYtdlp init')
+      pass
+    def check_format_available (self, *args: ...):
+      return check_format_available_mock()
+    
+  ytdlp_mock.side_effect = fakeYtdlp
+  download_opt_mock.side_effect = fakeDownloadOpt
+
+  @dataclass
+  class Case:
+    format_option_win: bool
+    ytdlp_ret: bool
+    expected_ret: bool
+
+  case_ls: list[Case] = [
+    Case(False, True, True),
+    Case(False, False, True),
+    Case(True, True, True),
+    Case(True, False, False)
+  ]
+
+  for case in case_ls:
+    print('testing', case)
+    
+    check_format_available_mock.return_value = case.ytdlp_ret
+    format_option = LazyFormatSelector.SelectRes(WIN=case.format_option_win)
+
+    ret = LazyFormatSection().check_format_str_available(
+      fake_videoMd(), '', format_option
+    )
+    assert ret == case.expected_ret
+
 # ======================== LazyFormatSelector ======================== #
 @patch('src.section.FormatSection.inq_prompt')
+@patch('src.service.autofill.get_lyd_format_option_autofill')
 @patch('src.section.FormatSection.LazyFormatSelector._get_options')
-def test_lazy_format_ask_format(get_options_mock:Mock, prompt_mock:Mock):
+def test_lazy_format_ask_format(
+  get_options_mock: Mock, autofill_mock: Mock, prompt_mock: Mock
+):
   """
   This testing will not test the autofill and the prompt
   """
   @dataclass
   class Case:
-    media: MediaType
-    option_exists: bool
+    # mock return
+    has_any_option: bool
+    prompt: dict[str, list[LazyFormatSelector.Option]]
+    # expected
+    expected_ret: LazyFormatSelector.SelectRes
     prompt_called: bool
 
-  video: MediaType = 'Video'
-  audio: MediaType = 'Audio'
+  option_hrls = LazyFormatSelector.OPTIONS['HRLS']
+  option_win = LazyFormatSelector.OPTIONS['WIN']
 
   case_ls: list[Case] = [
-    # audio
-    Case(media=audio, option_exists=True, prompt_called=False),
-    # option exists
-    Case(media=video, option_exists=True, prompt_called=True),
-    # option not exists
-    Case(media=video, option_exists=False, prompt_called=False)
+    # no options
+    Case(
+      has_any_option=False, prompt={},
+      expected_ret=LazyFormatSelector.SelectRes(), prompt_called=False
+    ),
+    # has option 1
+    Case(
+      has_any_option=True, prompt={ 'format_option': [] },
+      expected_ret=LazyFormatSelector.SelectRes(HRLS=False, WIN=False), prompt_called=True
+    ),
+    # has option 2
+    Case(
+      has_any_option=True, prompt={ 'format_option': [option_hrls] },
+      expected_ret=LazyFormatSelector.SelectRes(HRLS=True, WIN=False), prompt_called=True
+    ),
+    # has option 3
+    Case(
+      has_any_option=True, prompt={ 'format_option': [option_win] },
+      expected_ret=LazyFormatSelector.SelectRes(HRLS=False, WIN=True), prompt_called=True
+    )
   ]
-  
+
   for case in case_ls:
-    print('testing', case)
-    
     get_options_mock.reset_mock()
+    autofill_mock.reset_mock()
     prompt_mock.reset_mock()
-    
-    fake_options: list[str] = []
-    if case.option_exists:
-      fake_options.append('fake_option')
-    get_options_mock.return_value = fake_options
-    
-    LazyFormatSelector().ask_format_option([], case.media)
+
+    get_options_mock.return_value = [option_hrls, option_win] if case.has_any_option else []
+    autofill_mock.return_value = None
+    prompt_mock.return_value = case.prompt
+
+    ret = LazyFormatSelector().ask_format_option([], 'Video', None)
+
+    assert ret == case.expected_ret
     assert prompt_mock.called == case.prompt_called
 
 def test_lazy_format_get_options ():
-  # currently no test needed
-  pass
+  @dataclass
+  class Case:
+    # input
+    media: MediaType
+    # expected
+    expected_ret_empty: bool
+
+  case_ls: list[Case] = [
+    Case('Video', False),
+    Case('Audio', True)
+  ]
+
+  for case in case_ls:
+    ret = LazyFormatSelector()._get_options([], case.media) # type: ignore
+    assert (len(ret) == 0) == case.expected_ret_empty
 # ======================== LazyFormatSelector ======================== #
 
 # ======================== LazyMediaSelector ======================== #

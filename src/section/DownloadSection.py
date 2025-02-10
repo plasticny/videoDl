@@ -54,7 +54,6 @@ class DownloadOpt (Opt):
  
   @staticmethod
   def to_ytdlp_base_opt (obj : DownloadOpt) -> TDownloadOptBase:
-    assert obj.output_dir is not None
     return {
       **super(DownloadOpt, obj).to_ytdlp_opt(obj),
       # use a temp name first
@@ -67,7 +66,7 @@ class DownloadOpt (Opt):
   @staticmethod
   def to_ytdlp_dl_opt(obj : DownloadOpt) -> TDownloadOpt | BundledTDownloadOpt:
     """ Convert DownloadOpt to YoutubeDL options for downloading video or audio """
-    assert isinstance(obj.format, str) or isinstance(obj.format, BundledFormat)
+    assert isinstance(obj.format, str) or isinstance(obj.format, BundledFormat), 'Invalid format'
     
     if isinstance(obj.format, BundledFormat):      
       return BundledTDownloadOpt(

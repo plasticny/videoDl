@@ -1,6 +1,6 @@
 from os import popen
 from json import loads
-from subprocess import run as run_cmd
+from subprocess import run as run_cmd, DEVNULL
 from typing import TypedDict, Callable, Optional, Any, cast
 
 from src.service.logger import Logger
@@ -73,3 +73,12 @@ class Ytdlp:
     cmd = f'{self.base_cmd} {url}'
     self.logger.debug(f"Running command: {cmd}")
     run_cmd(cmd)
+
+  def check_format_available (self, url: str) -> bool:
+    assert self.params.get('format', None) is not None, 'format is not set'
+    cmd = f'{self.base_cmd} {url}'
+    if self.params.get('skip_download', False):
+      cmd = f'{cmd} --skip-download'
+
+    ret = run_cmd(cmd, stdout=DEVNULL, stderr=DEVNULL).returncode
+    return ret == 0
