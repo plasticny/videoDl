@@ -315,6 +315,7 @@ def test_downloadOpt_to_dl_opt ():
   fake_url = 'url'
   fake_output_dir = 'output_dir'
   fake_format = 'format'
+  fake_sorting = 'sorting'
   fake_bundled_format = BundledFormat('v', 'a')
   
   # [(format, expected is bundled)]
@@ -331,6 +332,7 @@ def test_downloadOpt_to_dl_opt ():
     opts.url = fake_url
     opts.output_dir = fake_output_dir
     opts.format = case_format
+    opts.sorting = fake_sorting
     opts.cookie_file_path = 'cookie_file_path'
     opts.login_browser = 'login_browser'
     
@@ -339,10 +341,13 @@ def test_downloadOpt_to_dl_opt ():
     if isinstance(case_format, BundledFormat):
       assert isinstance(dl_opt, BundledTDownloadOpt)
       assert dl_opt.video['format'] == case_format.video
+      assert dl_opt.video['sorting'] == fake_sorting
       assert dl_opt.audio['format'] == case_format.audio
+      assert dl_opt.audio['sorting'] == fake_sorting
     else:
       assert not isinstance(dl_opt, BundledTDownloadOpt)
       assert dl_opt['format'] == case_format
+      assert dl_opt['sorting'] == fake_sorting
 
 def test_downloadOpt_to_sub_opt():
   """

@@ -52,6 +52,7 @@ class lazyYtDownload(Dl):
     for idx, opt in enumerate(opt_ls):
       opt.set_media(lazy_format_ret.media)
       opt.set_format(lazy_format_ret.format_ls[idx])
+      opt.set_sorting(lazy_format_ret.sort_ls[idx])
       opt.set_subtitle(
         selected_sub_ret['subtitle_ls'][idx],
         selected_sub_ret['do_embed'],

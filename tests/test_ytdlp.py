@@ -1,5 +1,7 @@
 from unittest.mock import patch, Mock
 from uuid import uuid4
+from dataclasses import dataclass
+from typing import Literal
 
 from src.service.ytdlp import Ytdlp, YT_DLP_PATH as EXE_NM
 
@@ -16,6 +18,7 @@ def test_build_base_cmd ():
     'login_browser': None,
     'extract_flat': False,
     'format': None,
+    'sorting': None,
     'overwrites': False,
     'quiet': False,
     'skip_download': False,
@@ -35,6 +38,7 @@ def test_build_base_cmd ():
     'login_browser': str(uuid4()),
     'extract_flat': True,
     'format': str(uuid4()),
+    'sorting': str(uuid4()),
     'overwrites': True,
     'quiet': True,
     'skip_download': True,
@@ -50,6 +54,7 @@ def test_build_base_cmd ():
   assert f'--cookies-from-browser {opt["login_browser"]}' in ytdlp.base_cmd
   assert '--flat-playlist' in ytdlp.base_cmd
   assert f'--format {opt["format"]}' in ytdlp.base_cmd
+  assert f'-S {opt["sorting"]}' in ytdlp.base_cmd
   assert '--force-overwrite' in ytdlp.base_cmd
   assert '-q' in ytdlp.base_cmd
   assert '--skip-download' in ytdlp.base_cmd
@@ -103,3 +108,50 @@ def test_download (base_cmd_mock: Mock, run_cmd_mock: Mock):
   assert len(cmd_comp) == 2
   assert base_cmd in cmd_comp
   assert url in cmd_comp
+
+@patch('src.service.ytdlp.run_cmd')
+@patch('src.service.ytdlp.Ytdlp._build_base_cmd')
+def test_check_format_available (base_cmd_mock: Mock, run_cmd_mock: Mock):
+  @dataclass
+  class Case:
+    # mock
+    skip_download_set: bool
+    return_code: Literal[0, 1]
+    # expected
+    expected_ret: bool
+
+  @dataclass
+  class RunRet:
+    returncode: int
+
+  case_ls: list[Case] = [
+    # skip_download set and return_code is 0
+    Case(True, 0, True),
+    # skip download not set and return_code is 1
+    Case(False, 1, False),
+  ]
+
+  for case in case_ls:
+    print(f'test case: {case}')
+
+    ytdlp = Ytdlp()
+
+    base_cmd_mock.reset_mock()
+    run_cmd_mock.reset_mock()
+
+    base_cmd = str(uuid4())
+    if case.skip_download_set:
+      base_cmd += ' --skip-download'
+      ytdlp.params['skip_download'] = True
+    base_cmd_mock.return_value = base_cmd
+    run_cmd_mock.return_value = RunRet(case.return_code)
+
+    url = str(uuid4())
+    ytdlp.params['format'] = str(uuid4())
+
+    ret = ytdlp.check_format_available(url)
+    assert ret == case.expected_ret
+    
+    executed_cmd: str = run_cmd_mock.call_args[0][0]
+    assert ' --skip-download' in executed_cmd
+    assert url in executed_cmd

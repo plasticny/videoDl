@@ -33,6 +33,7 @@ class TDlSubtitleOpt (TDownloadOptBase):
 class TDownloadOpt (TDownloadOptBase):
   """ additional options for downloading video or audio """
   format: str
+  sorting: Optional[str]
 
 class BundledTDownloadOpt ():
   def __init__(self, video:TDownloadOpt, audio:TDownloadOpt):
@@ -53,7 +54,6 @@ class DownloadOpt (Opt):
  
   @staticmethod
   def to_ytdlp_base_opt (obj : DownloadOpt) -> TDownloadOptBase:
-    assert obj.output_dir is not None
     return {
       **super(DownloadOpt, obj).to_ytdlp_opt(obj),
       # use a temp name first
@@ -66,23 +66,26 @@ class DownloadOpt (Opt):
   @staticmethod
   def to_ytdlp_dl_opt(obj : DownloadOpt) -> TDownloadOpt | BundledTDownloadOpt:
     """ Convert DownloadOpt to YoutubeDL options for downloading video or audio """
-    assert isinstance(obj.format, str) or isinstance(obj.format, BundledFormat)
+    assert isinstance(obj.format, str) or isinstance(obj.format, BundledFormat), 'Invalid format'
     
     if isinstance(obj.format, BundledFormat):      
       return BundledTDownloadOpt(
         video={
           **DownloadOpt.to_ytdlp_base_opt(obj),
           'format': obj.format.video,
+          'sorting': obj.sorting
         },
         audio={
           **DownloadOpt.to_ytdlp_base_opt(obj),
           'format': obj.format.audio,
+          'sorting': obj.sorting
         }
       )
     else:
       return {
         **DownloadOpt.to_ytdlp_base_opt(obj),
-        'format': obj.format
+        'format': obj.format,
+        'sorting': obj.sorting
       }
 
   @staticmethod
@@ -118,8 +121,10 @@ class DownloadOpt (Opt):
     self.media: Optional[MediaType] = None
     # format
     # if it is a string, only download the requested format
-    # if it is a BundledFormat, download the video and audio, and merge them
+    # if it is a BundledFormat, download the video and audio, and merge them (deprecated)
     self.format: Optional[Union[str, BundledFormat]] = None
+    # sorting format
+    self.sorting: Optional[str] = None
     # subtitle
     # this section will write the subtitle if `subtitle` is not None
     self.subtitle: Optional[Subtitle] = None
@@ -129,8 +134,10 @@ class DownloadOpt (Opt):
   # === some setter functions === #
   def set_media (self, val: MediaType):
     self.media = val
-  def set_format (self, val : str | BundledFormat):
+  def set_format (self, val: str | BundledFormat):
     self.format = val
+  def set_sorting (self, val: str):
+    self.sorting = val
   def set_subtitle (self, sub: Optional[Subtitle], do_embed : bool, do_burn : bool):
     self.subtitle = sub
     self.embed_sub = do_embed

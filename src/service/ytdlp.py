@@ -1,6 +1,6 @@
 from os import popen
 from json import loads
-from subprocess import run as run_cmd
+from subprocess import run as run_cmd, DEVNULL
 from typing import TypedDict, Callable, Optional, Any, cast
 
 from src.service.logger import Logger
@@ -12,6 +12,7 @@ class _Params (TypedDict):
   cookiefile: Optional[str]
   extract_flat: Optional[bool]
   format: Optional[str]
+  sorting: Optional[str]
   login_browser: Optional[str]
   outtmpl: Optional[str]
   overwrites: Optional[bool]
@@ -31,6 +32,9 @@ class Ytdlp:
     self.params: _Params = opt.copy() # type: ignore
     self.base_cmd = self._build_base_cmd()
     self.logger = Logger()
+
+    self.logger.info(f'Ytdlp instance created')
+    self.logger.info(f'params: {self.params}')
       
   def _build_base_cmd (self) -> str:
     has_value : Callable[[str], bool] = lambda x : self.params.get(x, None) is not None
@@ -43,6 +47,7 @@ class Ytdlp:
       (f'--cookies-from-browser {self.params["login_browser"]} '                  if has_value('login_browser') else '') + \
       (f'--flat-playlist '                                                        if is_true('extract_flat') else '') + \
       (f'--format {self.params["format"]} '                                       if has_value('format') else '') + \
+      (f'-S {self.params["sorting"]} '                                            if has_value('sorting') else '') + \
       (f'--force-overwrite '                                                      if is_true('overwrites') else '') + \
       (f'-q '                                                                     if is_true('quiet') else '') + \
       (f'--skip-download '                                                        if is_true('skip_download') else '') + \
@@ -68,3 +73,12 @@ class Ytdlp:
     cmd = f'{self.base_cmd} {url}'
     self.logger.debug(f"Running command: {cmd}")
     run_cmd(cmd)
+
+  def check_format_available (self, url: str) -> bool:
+    assert self.params.get('format', None) is not None, 'format is not set'
+    cmd = f'{self.base_cmd} {url}'
+    if self.params.get('skip_download', False):
+      cmd = f'{cmd} --skip-download'
+
+    ret = run_cmd(cmd, stdout=DEVNULL, stderr=DEVNULL).returncode
+    return ret == 0
