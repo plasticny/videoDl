@@ -8,7 +8,7 @@ datas += copy_metadata('inquirer', recursive=True)
 a = Analysis(
     ['src\\lazyYtDownload.py'],
     pathex=['src'],
-    binaries=[('src\\ffmpeg', '.'), ('src\\yt-dlp.exe', '.')],
+    binaries=[('src\\ffmpeg', '.')],
     datas=datas,
     hiddenimports=[],
     hookspath=[],

@@ -184,4 +184,25 @@ def test_get_metadata (fetch_md_mock:Mock):
     opt = fetch_md_mock.call_args[0][0]
     assert opt.url == url
     assert opt.cookie_file_path == cookie_file_path
-    
+
+@patch('src.dl.Ytdlp.upgrade')
+@patch('src.dl.Ytdlp.ensure_installed')
+def test_prepare_ytdlp (install_mock: Mock, upgrade_mock: Mock):
+  @dataclass
+  class Case:
+    check_upgrade: bool
+
+  case_ls : list[Case] = [Case(True), Case(False)]
+
+  for case in case_ls:
+    install_mock.reset_mock()
+    upgrade_mock.reset_mock()
+
+    install_mock.return_value = None
+    upgrade_mock.return_value = None
+
+    Dl(case.check_upgrade)
+
+    install_mock.assert_called()
+    if case.check_upgrade:
+      upgrade_mock.assert_called()

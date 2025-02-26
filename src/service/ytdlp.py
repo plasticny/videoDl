@@ -1,11 +1,17 @@
 from os import popen
 from json import loads
+from os.path import exists
+from subprocess import run as run_cmd
+from typing import TypedDict, Callable
+from requests import get
+from colorama import Fore, Style
 from subprocess import run as run_cmd
 from typing import TypedDict, Callable, Optional, Any, cast
 
 from src.service.logger import Logger
 from src.service.fileHelper import FFMPEG_FOLDER_PATH, YT_DLP_PATH
 
+YT_DLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
 from src.structs.option import TOpt
 
 class _Params (TypedDict):
@@ -23,6 +29,20 @@ class _Params (TypedDict):
   writesubtitles: Optional[bool]
 
 class Ytdlp:
+  @staticmethod
+  def ensure_installed () -> None:
+    if exists(YT_DLP_PATH):
+      return
+    
+    print(f'{Fore.CYAN}Downloading ytdlp...{Style.RESET_ALL}')
+
+    res = get(YT_DLP_URL)
+    if res.status_code != 200:
+      raise ValueError('Failed to download yt-dlp')
+    
+    with open(YT_DLP_PATH, 'wb') as f:
+      f.write(res.content)
+
   @staticmethod
   def upgrade () -> None:
     run_cmd(f'{YT_DLP_PATH} -U')

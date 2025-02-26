@@ -1,5 +1,5 @@
 from unittest.mock import patch, Mock
-from pytest import raises
+from pytest import fixture, raises
 
 from json import loads as jsonLoads
 from typing import Literal, Union, TypedDict, Optional, Type
@@ -12,8 +12,13 @@ from src.service.MetaData import VideoMetaData, BiliBiliVideoMetaData, FacebookV
 from src.service.MetaData import PlaylistMetaData, BiliBiliPlaylistMetaData
 from src.service.MetaData import TMdFormats
 from src.service.urlHelper import UrlSource
+from src.service.ytdlp import Ytdlp
 
 from src.structs.video_info import Subtitle
+
+@fixture(scope='module', autouse=True)
+def prepare ():
+  Ytdlp.ensure_installed()
 
 @patch('src.service.MetaData.FacebookVideoMetaData')
 @patch('src.service.MetaData.BiliBiliPlaylistMetaData')
