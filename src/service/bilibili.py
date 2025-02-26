@@ -4,10 +4,10 @@
 from colorama import Fore, Style
 from json import loads as json_loads
 from os import access as os_access, R_OK as OS_R_OK
-from typing import Optional
+from typing import Optional, Any
 from urllib.request import build_opener, HTTPCookieProcessor
 
-from src.service.ytdlp import YoutubeDLCookieJar
+from src.party3rd.YoutubeDLCookieJar import YoutubeDLCookieJar
 
 from src.structs.video_info import Subtitle, BiliBiliSubtitle
 
@@ -26,7 +26,7 @@ def _get_cookie_jar (cookie_file_path : Optional[str] = None) -> YoutubeDLCookie
     
   return cookiejar
 
-def _fetch (url : str, cookie_file_path : Optional[str] = None) -> dict:
+def _fetch (url : str, cookie_file_path : Optional[str] = None) -> dict[str, Any]:
   """ Return fetch result in json format """
   cookiejar = _get_cookie_jar(cookie_file_path)
   
@@ -37,7 +37,7 @@ def _fetch (url : str, cookie_file_path : Optional[str] = None) -> dict:
     
   return json_loads(opener.open(url).read().decode('utf-8'))
 
-def get_bili_page_cids(bvid:str, cookie_file_path : str = None) -> list[str]:
+def get_bili_page_cids(bvid:str, cookie_file_path: Optional[str] = None) -> list[str]:
   """
     Get all cids of page in a bilibili page list
 
@@ -78,7 +78,7 @@ def bvid_2_aid(bvid:str) -> str:
   
   return json['data']['aid']
 
-def get_bili_subs(bvid:str, cid:int=None, cookie_file_path : str = None) -> tuple[list[Subtitle], list[Subtitle]]:
+def get_bili_subs(bvid:str, cid: Optional[int] = None, cookie_file_path: Optional[str] = None) -> tuple[list[Subtitle], list[Subtitle]]:
   """
     Get subtitles from bilibili
 

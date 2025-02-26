@@ -3,6 +3,7 @@ from os.path import exists
 from os import makedirs, listdir, remove
 from datetime import datetime
 from json import dump as json_dump
+from typing import Any, Optional
 
 from src.service.fileHelper import LOG_FOLDER_PATH
 
@@ -28,7 +29,7 @@ class Logger:
   def error (self, message : str):
     logging.error(message)
     
-  def dump_dict (self, d : dict, name : str = None) -> str:
+  def dump_dict (self, d: dict[str, Any], name: Optional[str] = None) -> str:
     """ return name of saved json file """
     if name is None:
       name = str(int(datetime.timestamp(datetime.now()) * 1000000))

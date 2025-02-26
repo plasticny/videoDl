@@ -1,8 +1,8 @@
 from unittest.mock import patch, Mock
-from pytest import fixture
+from pytest import fixture, raises
 
 from json import loads as jsonLoads
-from typing import Literal, Union, TypedDict
+from typing import Literal, Union, TypedDict, Optional, Type
 from dataclasses import dataclass
 from uuid import uuid4
 
@@ -60,8 +60,8 @@ def test_fetchMetaData_type(
   class Case:
     md_type : Literal['video', 'playlist']
     do_error : bool
-    source : str
-    expected : Union[MetaData, None]
+    source : Union[str, UrlSource]
+    expected : Optional[Type[MetaData]]
     
   case_ls : list[Case] = [
     Case('video', False, 'fake source', fake_video_md),
@@ -85,11 +85,16 @@ def test_fetchMetaData_type(
       extract_metadata_mock.return_value = { '_type': case.md_type }
     getSource_mock.return_value = case.source
     
-    md = fetchMetaData(MetaDataOpt())
-    if case.expected is None:
-      assert md is None
+    opt = MetaDataOpt()
+    opt.url = 'fake url'
+
+    if case.do_error:
+      with raises(Exception):
+        md = fetchMetaData(opt)
+        assert md is None
     else:
-      assert isinstance(md, case.expected)
+      md = fetchMetaData(opt)
+      assert case.expected is not None and isinstance(md, case.expected)
 
 def test_videoMd_getSubtitles():
   """test getSubtitles method of VideoMetaData"""
@@ -227,6 +232,8 @@ def test_MetadataOpt_to_ytdlp_opt(get_source_mock:Mock):
   # not bilibili
   opt = MetaDataOpt()
   opt.url = 'url'
+  opt.cookie_file_path = 'cookie'
+  opt.login_browser = 'browser'
   
   ret_opt = MetaDataOpt.to_ytdlp_opt(opt)
   assert ret_opt['extract_flat']
@@ -252,7 +259,6 @@ def test_fetch_yt_video_ng_():
   assert md.title == expected['title']
   assert md.url == expected['original_url']
   assert len(md.subtitles) == len(expected['subtitles'])
-  # assert len(md.autoSubtitles) == len(expected['automatic_captions'])
 
 def test_fetch_bili_ls_ng_():
   """test fetch metadata of a real bilibili playlist with config object"""

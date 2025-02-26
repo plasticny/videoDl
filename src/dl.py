@@ -12,14 +12,14 @@ from src.section.SubTitleSection import SubTitleSection
 from src.section.FormatSection import FormatSection
 from src.section.OutputSection import OutputSection
 
-from src.service.MetaData import fetchMetaData, VideoMetaData, MetaDataOpt
+from src.service.MetaData import fetchMetaData, VideoMetaData, MetaDataOpt, PlaylistMetaData
 from src.service.fileHelper import perpare_temp_folder, clear_temp_folder
 from src.service.logger import Logger
 from src.service.ytdlp import Ytdlp
 
 
 class Dl:
-  def __init__ (self, check_upgrade = False):
+  def __init__ (self, check_upgrade: bool = False):
     self.logger = Logger()
     self.title = 'Download'
     Ytdlp.ensure_installed()
@@ -32,7 +32,7 @@ class Dl:
     print()
   
   # main process
-  def run (self, loop=True):
+  def run (self, loop: bool = True):
     self.logger.debug('======= Start download process =======')
     self.logger.clear()
 
@@ -95,13 +95,14 @@ class Dl:
       raise exception if fetch metadata failed
     """
     print('Getting download informaton...', end='\n\n')      
-    md = fetchMetaData(opt)
-    
-    if md is None:
+
+    try:
+      md = fetchMetaData(opt)
+      if isinstance(md, PlaylistMetaData):
+        return md.videos
+      return [md]
+    except:
       raise Exception('Failed to get video metadata')
-    
-    # get video metadata list
-    return md.videos if md.isPlaylist() else [md]
   
   def setup(self, md_ls:list[VideoMetaData]) -> list[DownloadOpt]:
     opt_ls = [DownloadOpt(md.opts) for md in md_ls]

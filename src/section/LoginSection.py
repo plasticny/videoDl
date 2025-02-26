@@ -3,7 +3,7 @@ from enum import Enum
 from tkinter import filedialog as tkFileDialog
 from dataclasses import dataclass
 from typing import Optional
-from inquirer import List, prompt
+from inquirer import List, prompt # type: ignore
 
 from src.section.Section import Section
 from src.service.autofill import get_login_autofill
@@ -20,8 +20,8 @@ class LoginSectionRet:
   browser: Optional[str] = None
 
 # ask the login cookie
-class LoginSection(Section):    
-  def run(self, url:str) -> LoginSectionRet:
+class LoginSection(Section):
+  def run (self, url:str) -> LoginSectionRet: # type: ignore
     return super().run(self._login, url=url)
   
   def _login(self, url: str) -> LoginSectionRet:
@@ -65,4 +65,4 @@ class LoginSection(Section):
         message='Select login method',
         choices=[LoginMethod.COOKIE.value, LoginMethod.BROWSER.value, 'Not login']
       )
-    ])['method']
+    ])['method'] # type: ignore
